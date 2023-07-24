@@ -1,0 +1,23 @@
+html,
+body,
+#root
+{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: LightSkyBlue;
+}
+
+canvas {
+    position: absolute;
+    inset: 0;
+}
+
+[data-testid="joystick-base"] {
+    position: absolute;
+    z-index: 1;
+    bottom : 5rem;
+    right: 10rem;
+}
