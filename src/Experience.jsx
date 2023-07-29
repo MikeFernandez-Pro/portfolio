@@ -1,6 +1,6 @@
 import { SoftShadows, BakeShadows, OrbitControls, Environment } from "@react-three/drei";
 import { Perf } from "r3f-perf";
-import { Physics, Debug } from "@react-three/rapier";
+import { Physics } from "@react-three/rapier";
 import Lights from "./Lights.jsx";
 import { useControls } from "leva";
 import { useEffect, useRef, useState } from "react";
@@ -10,6 +10,7 @@ import { Suspense } from "react";
 import Sea from "./LavaMesh.jsx";
 import { useLoader, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import IslandColliders from "./IslandColliders.jsx";
 
 export default function Experience({ joystickAngle, mousePressed }) {
     const { orbitControls, debug } = useControls("Debug", {
@@ -57,13 +58,14 @@ export default function Experience({ joystickAngle, mousePressed }) {
                 size={15}
                 samples={30}
             />
-            <Physics timeStep="vary">
-                {debug && <Debug />}
-                <Lights />
+                 <Lights />
                 <Island
                     setIslandComponentMounted={setIslandComponentMounted}
                 />
-
+            <Physics timeStep="vary">
+                {/* {debug && <Debug />} */}
+           
+            <IslandColliders />
                 {islandComponentMounted && (
                     <Player
                         orbitControls={orbitControls}

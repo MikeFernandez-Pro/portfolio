@@ -3,7 +3,6 @@ import { useState, useRef, useEffect } from "react";
 import CSM from "three-custom-shader-material";
 import { patchShaders } from "gl-noise";
 import { useFrame, useThree } from "@react-three/fiber";
-import { easing } from "maath";
 import { useControls } from "leva";
 import gsap from "gsap";
 
@@ -45,7 +44,7 @@ export default function DissolveEffectShaderMaterial({
 
     const controls = useControls("magicBooks", {
       intensity: {value: 20, min: 0, max: 50, step: 0.1},
-        color: "#724203",
+        color: "#0692c4",
         thickness: { value: 0.02, min: 0, max: 0.1, step: 0.001 },
     });
 
@@ -56,7 +55,7 @@ export default function DissolveEffectShaderMaterial({
     };
 
     if (activation)
-      gsap.to(uniforms.uProgress, {duration: 2, value: 1})
+      gsap.to(uniforms.uProgress, {duration: 3, delay: 0.5, value: 1})
 
     return (
         <>

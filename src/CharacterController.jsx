@@ -66,6 +66,9 @@ const Player = ({ joystickAngle, mousePressed, orbitControls }) => {
 
     let direction;
     useFrame((state, delta) => {
+
+        if (state.clock.elapsedTime > 8)
+            setAnimate("dynamic")
         /**
          * Camera Movement
          */
@@ -75,7 +78,8 @@ const Player = ({ joystickAngle, mousePressed, orbitControls }) => {
         if (orbitControls || knightSleeping)
             return;
                 
-        cameraPosition.addVectors(knightBody.current.translation(), cameraOffset);
+        if (knightBody.current) {
+            cameraPosition.addVectors(knightBody.current.translation(), cameraOffset);
         smoothCameraPosition.lerp(cameraPosition, 5 * delta);
 
         state.camera.position.copy(smoothCameraPosition); // A REACTIVER PÖUR SUIVRE PERSO
@@ -107,6 +111,7 @@ const Player = ({ joystickAngle, mousePressed, orbitControls }) => {
 
         rotateQuaternion.setFromAxisAngle(rotateAngle, direction - Math.PI / 2);
         knightMesh.current.quaternion.rotateTowards(rotateQuaternion, 0.25); //017 avant
+        }
     });
 
     useEffect(() => {
@@ -117,13 +122,17 @@ const Player = ({ joystickAngle, mousePressed, orbitControls }) => {
         };
     }, [knightAnimation]);
 
+    const [ animate, setAnimate ] = useState("fixed")
+    
     return (
         <>
             <RigidBody
+                type={animate}
                 lockRotations
                 ref={knightBody}
                 colliders={false}
-                position={[0, 4, 0]}
+                // position={[0, 4, 0]}
+                position={[6, 6, -30]}
                 onSleep={() => setKnightSleeping(true)}
                 onWake={() => setKnightSleeping(false)}
             >

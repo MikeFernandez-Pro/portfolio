@@ -4,13 +4,14 @@ import Experience from "./Experience.jsx";
 import { KeyboardControls, Loader, Preload } from "@react-three/drei";
 import { Leva } from "leva";
 import { Joystick } from "react-joystick-component";
-import { Bloom, BrightnessContrast  , DepthOfField, EffectComposer, Noise, Vignette, N8AO, SSAO } from '@react-three/postprocessing'
+import { Bloom, BrightnessContrast  , DepthOfField, EffectComposer, Noise, Vignette, SSAO } from '@react-three/postprocessing'
 import * as THREE from "three"
 
 const App = (props) => {
     const [joystickAngle, setJoystickAngle] = useState(0);
     const [mousePressed, setMousePressed] = useState(false);
 
+    //renderer.shadowMap.type = THREE.PCFSoftShadowMapqa
     return (
         <>
             <Joystick
@@ -61,7 +62,7 @@ const App = (props) => {
                     </Suspense>
                 </Canvas>
                 <Loader />
-            </KeyboardControls>
+            </KeyboardControls> 
         </>
     );
 };
