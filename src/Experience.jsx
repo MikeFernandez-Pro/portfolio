@@ -1,4 +1,4 @@
-import { SoftShadows, BakeShadows, OrbitControls, Environment } from "@react-three/drei";
+import { SoftShadows, BakeShadows, OrbitControls, Environment, MeshPortalMaterial, Html, ContactShadows, Circle} from "@react-three/drei";
 import { Perf } from "r3f-perf";
 import { Physics } from "@react-three/rapier";
 import Lights from "./Lights.jsx";
@@ -8,73 +8,63 @@ import Player from "./CharacterController.jsx";
 import Island from "./Island.jsx";
 import { Suspense } from "react";
 import Sea from "./LavaMesh.jsx";
-import { useLoader, useThree } from "@react-three/fiber";
+import { useFrame, useLoader, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import IslandColliders from "./IslandColliders.jsx";
+import gsap from "gsap";
+import ProjectsPortals from "./ProjectsPortals.jsx";
 
-export default function Experience({ joystickAngle, mousePressed }) {
-    const { orbitControls, debug } = useControls("Debug", {
-        orbitControls: false,
-        debug: false,
+export default function Experience({ joystickAngle }) {
+    const { orbitControlsActivation } = useControls("Controls", {
+        orbitControlsActivation: false,
     });
 
     const { scene } = useThree();
 
     const envMap = useLoader(THREE.TextureLoader, '/environmentMaps/envMap.jpg')
     envMap.mapping = THREE.EquirectangularReflectionMapping;
-    envMap.colorSpace = THREE.SRGBColorSpace;
+    // envMap.colorSpace = THREE.SRGBColorSpace;
     scene.background = envMap;
-    
+
     const orbitControlsRef = useRef();
     const [islandComponentMounted, setIslandComponentMounted] = useState(false);
 
-    // useEffect(() => {
-    //     orbitControlsRef.current.enablePan = false;
-    //     orbitControlsRef.current.minDistance = 1;
-    //     orbitControlsRef.current.maxDistance = 5;
-    //     orbitControlsRef.current.minAzimuthAngle = -Math.PI / 2;
-    //     orbitControlsRef.current.maxAzimuthAngle = Math.PI / 2;
-    // }, [])
-    // scene.backgroundIntensity = 1
 
     const softShadowsControls = useControls("SoftShadows", {
         size: { value: 20, step: 0.1 },
         samples: { value: 15, step: 0.1 },
     });
+
+
+
     return (
         <>
             <Perf position="top-left" />
 
-            {orbitControls && <OrbitControls ref={orbitControlsRef} makeDefault />}
-
-            {/* <Environment
-                        //  background
-                        // files="/environmentMaps/sky_floating_islands_composed_of_rocks_and_trees.hdr"
-                        preset="forest"
-                        blur={0.03}
-                        /> */}
-
-            <SoftShadows
+            { orbitControlsActivation && <OrbitControls ref={orbitControlsRef} makeDefault /> }
+            
+            {/* <SoftShadows
                 size={15}
                 samples={30}
+            /> */}
+            <BakeShadows />
+            <Lights />
+
+            <Island
+                setIslandComponentMounted={setIslandComponentMounted}
             />
-                 <Lights />
-                <Island
-                    setIslandComponentMounted={setIslandComponentMounted}
-                />
+
+
+        <ProjectsPortals />
+
             <Physics timeStep="vary">
-                {/* {debug && <Debug />} */}
-           
-            <IslandColliders />
-                {islandComponentMounted && (
-                    <Player
-                        orbitControls={orbitControls}
-                        joystickAngle={joystickAngle}
-                        mousePressed={mousePressed}
-                    />
-                )}
+                <IslandColliders />
+                <Player
+                    orbitControls={orbitControlsActivation}
+                    joystickAngle={joystickAngle}
+                    visible={islandComponentMounted}
+                />
             </Physics>
-            {/* <Sea /> */}
         </>
     );
 }

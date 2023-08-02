@@ -6,7 +6,7 @@ import { StrictMode } from "react";
 
 const root = ReactDOM.createRoot(document.querySelector('#root'))
 
-document.addEventListener('contextmenu', event => event.preventDefault());
+// document.addEventListener('contextmenu', event => event.preventDefault());
 
 root.render(
     <StrictMode>

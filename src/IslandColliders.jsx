@@ -11,6 +11,8 @@ const IslandColliders = (props) => {
 
     const setMagicCircleActivation = useStore(state => state.setMagicCircleActivation)
 
+    const setActivePlate = useStore(state => state.setActivePlate)
+    
     return (
         <>
             <RigidBody type={"fixed"} colliders={"trimesh"}>
@@ -21,11 +23,10 @@ const IslandColliders = (props) => {
                     material={collidersMaterial}
                 />
             </RigidBody>
-            <RigidBody
+            <RigidBody      
                 type={"fixed"}
                 colliders={"trimesh"}
                 onCollisionEnter={() => {
-                    // setMagicCircleActivated(true);
                     setMagicCircleActivation()
                     
                 }}
@@ -34,6 +35,48 @@ const IslandColliders = (props) => {
                     scale={0.45}
                     position={collidersPosition}
                     geometry={nodes.magicCircle.geometry}
+                    material={collidersMaterial}
+                />
+            </RigidBody>
+            <RigidBody      
+                type={"fixed"}
+                colliders={"trimesh"}
+                onCollisionEnter={() => {
+                    setActivePlate("portalPlate")
+                }}
+            >
+                <mesh
+                    scale={0.45}
+                    position={collidersPosition}
+                    geometry={nodes.portalPlate.geometry}
+                    material={collidersMaterial}
+                />
+            </RigidBody>
+            <RigidBody      
+                type={"fixed"}
+                colliders={"trimesh"}
+                onCollisionEnter={() => {
+                    setActivePlate("seaPlate")
+                }}
+            >
+                <mesh
+                    scale={0.45}
+                    position={collidersPosition}
+                    geometry={nodes.seaPlate.geometry}
+                    material={collidersMaterial}
+                />
+            </RigidBody>
+            <RigidBody      
+                type={"fixed"}
+                colliders={"trimesh"}
+                onCollisionEnter={() => {
+                        setActivePlate("galaxyPlate")
+                }}
+            >
+                <mesh
+                    scale={0.45}
+                    position={collidersPosition}
+                    geometry={nodes.galaxyPlate.geometry}
                     material={collidersMaterial}
                 />
             </RigidBody>

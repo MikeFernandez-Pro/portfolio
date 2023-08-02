@@ -15,7 +15,7 @@ const LavaMesh = ({lavaMesh}) => {
         uSmallWavesFrequency: 4,
         uSmallWavesSpeed: 0.2,
         uSmallWavesIterations: 1,
-        uDepthColor: "#ff8345",
+        uDepthColor: "#ffa172",
         uSurfaceColor: "#ff0000"
     })
 
