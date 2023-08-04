@@ -79,7 +79,7 @@ const Player = ({ joystickAngle, orbitControls }) => {
     let direction;
 
     useFrame((state, delta) => {
-        if (state.clock.elapsedTime > 8) setAnimate("dynamic");
+        if (state.clock.elapsedTime > 5) setAnimate("dynamic");
 
         /**
          * Camera Controller

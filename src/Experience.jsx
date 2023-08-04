@@ -15,7 +15,8 @@ import gsap from "gsap";
 import ProjectsPortals from "./ProjectsPortals.jsx";
 
 export default function Experience({ joystickAngle }) {
-    const { orbitControlsActivation } = useControls("Controls", {
+    const { debug, orbitControlsActivation } = useControls("Controls", {
+        debug: false,
         orbitControlsActivation: false,
     });
 
@@ -23,7 +24,7 @@ export default function Experience({ joystickAngle }) {
 
     const envMap = useLoader(THREE.TextureLoader, '/environmentMaps/envMap.jpg')
     envMap.mapping = THREE.EquirectangularReflectionMapping;
-    // envMap.colorSpace = THREE.SRGBColorSpace;
+    envMap.colorSpace = THREE.SRGBColorSpace;
     scene.background = envMap;
 
     const orbitControlsRef = useRef();
@@ -57,7 +58,7 @@ export default function Experience({ joystickAngle }) {
 
         <ProjectsPortals />
 
-            <Physics timeStep="vary">
+            <Physics timeStep="vary" debug={debug}>
                 <IslandColliders />
                 <Player
                     orbitControls={orbitControlsActivation}

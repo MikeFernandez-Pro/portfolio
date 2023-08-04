@@ -131,7 +131,7 @@ const Island = ({ setIslandComponentMounted }) => {
 
   useEffect(() => {
     if (prevPlate)
-      gsap.to(island.materials[prevPlate], { duration: 1, emissiveIntensity: 0 });
+      gsap.to(island.materials[prevPlate], { duration: 0, emissiveIntensity: 0 });
     gsap.to(island.materials[activePlate], { duration: 0.2, emissiveIntensity: 3 });
   }, [activePlate, prevPlate]);
 

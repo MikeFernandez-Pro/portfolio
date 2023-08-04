@@ -15,7 +15,7 @@ const LiquidMeshes = ({ well, cauldron }) => {
         uColorStart: "#b3fc08",
         uColorEnd: "#7bbe72",
     });
-
+    
     const wellShaderMaterial = new ShaderMaterial({
         vertexShader: liquidVertexShader,
         fragmentShader: liquidFragmentShader,
