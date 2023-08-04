@@ -113,7 +113,7 @@ void main()
     // Texture
     vec4 texColor = texture2D(uTextureMap, vUv);
 
-    vec4 finalMix = mix(texColor * 2.0, texColor * 5.0, strength);
+    vec4 finalMix = mix(texColor * 1.5, texColor * 2.0, strength);
 
     gl_FragColor = finalMix;
 }
