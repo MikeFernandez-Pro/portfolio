@@ -13,6 +13,7 @@ body,
 canvas {
     position: absolute;
     inset: 0;
+    pointer-events: none;
 }
 
 [data-testid="joystick-base"] {

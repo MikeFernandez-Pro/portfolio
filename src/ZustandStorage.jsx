@@ -2,6 +2,8 @@ import { create } from 'zustand'
 
 export const useStore = create((set) => ({
 
+    isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
+
     /**
      * Main island initialization handler
      */

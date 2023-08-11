@@ -13,6 +13,7 @@ import * as THREE from "three";
 import IslandColliders from "./IslandColliders.jsx";
 import gsap from "gsap";
 import ProjectsPortals from "./ProjectsPortals.jsx";
+import Sparks from "./Sparks.jsx";
 
 export default function Experience({ joystickAngle }) {
     const { debug, orbitControlsActivation } = useControls("Controls", {
@@ -20,7 +21,7 @@ export default function Experience({ joystickAngle }) {
         orbitControlsActivation: false,
     });
 
-    const { scene } = useThree();
+    const { scene, camera } = useThree();
 
     const envMap = useLoader(THREE.TextureLoader, '/environmentMaps/envMap.jpg')
     envMap.mapping = THREE.EquirectangularReflectionMapping;
@@ -40,9 +41,11 @@ export default function Experience({ joystickAngle }) {
 
     return (
         <>
+        
+        {/* <fog attach="fog" args={['white', 50, 190]} /> */}
             <Perf position="top-left" />
 
-            { orbitControlsActivation && <OrbitControls ref={orbitControlsRef} makeDefault /> }
+            { orbitControlsActivation && <OrbitControls ref={orbitControlsRef} camera={camera} /> }
             
             {/* <SoftShadows
                 size={15}
@@ -55,6 +58,7 @@ export default function Experience({ joystickAngle }) {
                 setIslandComponentMounted={setIslandComponentMounted}
             />
 
+<Sparks />
 
         <ProjectsPortals />
 

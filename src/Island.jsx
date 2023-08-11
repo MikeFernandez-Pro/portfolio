@@ -7,6 +7,7 @@ import LiquidMeshes from "./LiquidMeshes";
 import MagicBooks from "./MagicBooks";
 import gsap from "gsap";
 import { useStore } from "./ZustandStorage";
+import Sparks from "./sparks";
 
 const Island = ({ setIslandComponentMounted }) => {
   const lamps = useControls("lamps", {
@@ -125,7 +126,7 @@ const Island = ({ setIslandComponentMounted }) => {
   /**
    * Projects Activation Plates
    */
-  
+
   const activePlate = useStore(state => state.activePlate)
   const prevPlate = useStore(state => state.prevPlate)
 
@@ -136,9 +137,9 @@ const Island = ({ setIslandComponentMounted }) => {
   }, [activePlate, prevPlate]);
 
   return (
-    <>  
+    <>
       <primitive object={island.scene} scale={0.45} position={islandPosition} />
-      <LiquidMeshes 
+      <LiquidMeshes
         well={island.scene.children[0].children[0].children[7]}
         cauldron={island.scene.children[0].children[0].children[9]}
       />

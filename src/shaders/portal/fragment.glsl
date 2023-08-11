@@ -111,7 +111,8 @@ void main()
     strength = clamp(strength, 0.0, 1.0);
 
     // Texture
-    vec4 texColor = texture2D(uTextureMap, vUv);
+    // vec4 texColor = texture2D(uTextureMap, vUv); // Texture noise desactivated
+    vec4 texColor = texture2D(uTextureMap, vUv + noise * ( 1.0 - (uActivationTimer * 2.0)));
 
     vec4 finalMix = mix(texColor * 1.5, texColor * 2.0, strength);
 

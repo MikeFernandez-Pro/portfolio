@@ -39,7 +39,7 @@ const Player = ({ joystickAngle, orbitControls }) => {
 
     // Character movement speed Controller
     const { speed } = useControls("Character", {
-        speed: { value: 200, min: 100, max: 1000, step: 10 },
+        speed: { value: 400, min: 100, max: 1000, step: 10 },
     });
 
     const islandMounted = useStore((state) => state.islandMounted);
@@ -139,8 +139,8 @@ const Player = ({ joystickAngle, orbitControls }) => {
                 lockRotations
                 ref={knightBody}
                 colliders={false}
-                // position={[0, 4, 0]}
-                position={[-16, 5, -33]}
+                position={[0, 4, 0]}
+                // position={[-16, 5, -33]}
                 onSleep={() => setKnightSleeping(true)}
                 onWake={() => setKnightSleeping(false)}
             >
