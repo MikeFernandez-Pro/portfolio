@@ -14,8 +14,6 @@ const IslandColliders = (props) => {
     const collidersPosition = useMemo(() => [-1.35, 2.3, -15], []);
     const collidersMaterial = useMemo(() => new THREE.MeshBasicMaterial({ visible: false }), [])
 
-    const setActivePlate = useStore(state => state.setActivePlate)
-
     const pressurePlatesGeometry = useMemo(() => new THREE.BoxGeometry(1, 1, 1), [])
     const pressurePlatesMaterial = useMemo(() => new THREE.MeshBasicMaterial({ color: "red" }), [])
 

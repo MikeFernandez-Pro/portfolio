@@ -2,7 +2,7 @@ import { useGLTF, useKeyboardControls, useAnimations } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { CapsuleCollider, RigidBody, useRapier } from "@react-three/rapier";
 import { useControls } from "leva";
-import { useRef, useState, useEffect, useMemo } from "react";
+import { useRef, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { useStore } from "./ZustandStorage.jsx";
 
@@ -45,8 +45,6 @@ const Player = ({ joystickAngle, orbitControls }) => {
     const { speed } = useControls("Character", {
         speed: { value: 4.5, min: 0, max: 500, step: 10 },
     });
-
-    const islandMounted = useStore((state) => state.islandMounted);
     
     /**
      * Character Initialization
@@ -54,15 +52,16 @@ const Player = ({ joystickAngle, orbitControls }) => {
 
     const knightBody = useRef();
     const knightMesh = useRef();
+    const knightAnimation = useRef("Idle");
 
     // Character Model and animations loaders
     const knightModel = useGLTF("/models/KnightCharacter.gltf");
     const knightAnimations = useAnimations(knightModel.animations, knightModel.scene);
 
     // Animation Handler
-    const [knightAnimation, setKnightAnimation] = useState("Idle");
+    // const [knightAnimation, setKnightAnimation] = useState("Idle");
     // Rigid Body current state 
-    const [knightSleeping, setKnightSleeping] = useState(false);
+    const knightSleeping = useRef(false);
 
       // // Shadows initialization
         // knightModel.scene.traverse((child) => {
@@ -74,7 +73,7 @@ const Player = ({ joystickAngle, orbitControls }) => {
         //     }
         // });
 
-    const [animate, setAnimate] = useState("fixed");
+
 
     const { camera } = useThree();
 
@@ -92,7 +91,7 @@ const Player = ({ joystickAngle, orbitControls }) => {
          */
         direction = directionOffset(getKeys(), knightBody);
 
-        if (orbitControls || knightSleeping ) return;
+        if (orbitControls || (knightSleeping && knightSleeping.current)) return;
 
         if (knightBody.current) {
             knightPosition = knightBody.current.translation();
@@ -115,8 +114,12 @@ const Player = ({ joystickAngle, orbitControls }) => {
              * Model Controller
              */
             // Update character velocity and orientation
-            if (direction === null || !islandMounted) {
-                if (knightAnimation !== "Idle") setKnightAnimation("Idle");
+            if (direction === null) {
+                if (knightAnimation.current !== "Idle") {
+                    knightAnimations.actions[knightAnimation.current].fadeOut(0.2);
+                    knightAnimation.current = ("Idle");
+                    knightAnimations.actions[knightAnimation.current].reset().fadeIn(0.2).play();
+                }
 
                 knightBody.current.setLinvel({
                     x: 0,
@@ -126,7 +129,11 @@ const Player = ({ joystickAngle, orbitControls }) => {
                 return;
             }
 
-            if (knightAnimation !== "Run") setKnightAnimation("Run");
+            if (knightAnimation.current !== "Run") {
+                knightAnimations.actions[knightAnimation.current].fadeOut(0.2);
+                knightAnimation.current ="Run";
+                knightAnimations.actions[knightAnimation.current].reset().fadeIn(0.2).play();
+            }
 
             knightBody.current.setLinvel({
                 x: speed * Math.cos(direction) * -1 /* * delta */,
@@ -140,12 +147,8 @@ const Player = ({ joystickAngle, orbitControls }) => {
     });
 
     useEffect(() => {
-        knightAnimations.actions[knightAnimation].reset().fadeIn(0.2).play();
-
-        return () => {
-            knightAnimations.actions[knightAnimation].fadeOut(0.2);
-        };
-    }, [knightAnimation]);
+        knightAnimations.actions["Idle"].fadeIn(0.2).play();
+    }, []);
 
     return (
         <>
@@ -156,8 +159,8 @@ const Player = ({ joystickAngle, orbitControls }) => {
                 colliders={false}
                 position={[0, 1.5, 0]}
                 // position={[-16, 5, -33]}
-                onSleep={() => setKnightSleeping(true)}
-                onWake={() => setKnightSleeping(false)}
+                onSleep={() => knightSleeping.current = true}
+                onWake={() => knightSleeping.current = false}
                 restitution={-10}
                 friction={0}
             >

@@ -3,7 +3,7 @@ import { Perf } from "r3f-perf";
 import { Physics, useRapier } from "@react-three/rapier";
 import Lights from "./Lights.jsx";
 import { useControls } from "leva";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import Player from "./CharacterController.jsx";
 import Island from "./Island.jsx";
 import { Suspense } from "react";
@@ -27,21 +27,13 @@ export default function Experience({ joystickAngle }) {
     scene.background = envMap;
 
     const orbitControlsRef = useRef();
-    const [islandComponentMounted, setIslandComponentMounted] = useState(false);
 
 
     const softShadowsControls = useControls("SoftShadows", {
         size: { value: 20, step: 0.1 },
         samples: { value: 15, step: 0.1 },
     });
-
-    // const {world} = useRapier();
-
-
-    // useEffect(() => {
-    //     world.integrationParameters.predictionDistance = 0.045;
-    // }, [])
-
+    
     return (
         <>
 
@@ -56,9 +48,7 @@ export default function Experience({ joystickAngle }) {
          
             <Lights />
 
-            <Island
-                setIslandComponentMounted={setIslandComponentMounted}
-            />
+            <Island />
 
             <ProjectsPortals />
 
@@ -67,7 +57,6 @@ export default function Experience({ joystickAngle }) {
                 <Player
                     orbitControls={orbitControlsActivation}
                     joystickAngle={joystickAngle}
-                    visible={islandComponentMounted}
                 />
             </Physics>
         </>

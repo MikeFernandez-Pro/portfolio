@@ -11,7 +11,6 @@ import portalFragmentShader from './shaders/portal/fragment.glsl'
 const ProjectsPortals = (props) => {
 
     /*Initalization */
-    const portalRef = useRef();
 
     const portalsTextures = useMemo(() => ({
         portalPlate: useLoader(TextureLoader, "/textures/seaPortalTexture.png"),
@@ -19,7 +18,7 @@ const ProjectsPortals = (props) => {
         galaxyPlate: useLoader(TextureLoader, "/textures/galaxyPortalTexture.jpg")
     }), []);
 
-    const activePlate = useStore(state => state.activePlate)
+    const activePlateRef = useRef(useStore.getState().activePlate)
 
     /**
      * Shader
@@ -40,18 +39,21 @@ const ProjectsPortals = (props) => {
     useFrame((state) => {
         portalMaterial.uniforms.uTime.value = state.clock.elapsedTime;
     })
+
     
-    useEffect(() => {
-        if (activePlate) {
-            portalMaterial.uniforms.uTextureMap.value = portalsTextures[activePlate]
+    useEffect(() => useStore.subscribe(
+        state => {
+          activePlateRef.current = state.activePlate
+          if (activePlateRef.current) {
+            portalMaterial.uniforms.uTextureMap.value = portalsTextures[activePlateRef.current]
             gsap.fromTo(portalMaterial.uniforms.uActivationTimer, {value: 0}, {duration: 0.8, value: 0.5})
         }
-        }, [activePlate]);
+          }
+      ), [])
 
     return (
         <>
             <Circle
-                ref={portalRef}
                 args={[0.8, 32]}
                 material={portalMaterial}
                 position={[-16.12, 7, -37.7]}

@@ -10,7 +10,7 @@ import { useStore } from "./ZustandStorage";
 import { useLoader } from "@react-three/fiber";
 import MagicLetters from "./MagicLetters";
 
-const Island = ({ setIslandComponentMounted }) => {
+const Island = () => {
   const staticLights = useControls("staticLights", {
     intensity: { value: 3, min: 0, max: 50, step: 0.01 },
     color: "#ffaf67",
@@ -93,37 +93,39 @@ const Island = ({ setIslandComponentMounted }) => {
   /**
    * Island Animations Activation
    */
-  const setIslandMounted = useStore(state => state.setIslandMounted)
   useEffect(() => {
     islandAnimations.actions["anvilAnimation"].play();
     islandAnimations.actions["magicPotAnimation"].play();
     islandAnimations.actions["Key.020Action.005"].play();
-    setIslandComponentMounted(true);
-    setIslandMounted();
   }, []);
 
   /**
    * Magic Circle 
    */
 
-  const magicCircleActivation = useStore(state => state.magicCircleActivation)
-
-  if (magicCircleActivation) {
-    gsap.to(island.materials.magicPortal, { duration: 1, emissiveIntensity: 3 })
-  }
+  const magicCircleActivationRef = useRef(useStore.getState().magicCircleActivation)
 
   /**
    * Projects Activation Plates
    */
 
-  const activePlate = useStore(state => state.activePlate)
-  const prevPlate = useStore(state => state.prevPlate)
+  const activePlateRef = useRef(useStore.getState().activePlate)
+  const prevPlateRef = useRef(useStore.getState().prevPlate)
 
-  useEffect(() => {
-    if (prevPlate)
-      gsap.to(island.materials[prevPlate], { duration: 0, emissiveIntensity: 0 });
-    gsap.to(island.materials[activePlate], { duration: 0.2, emissiveIntensity: 3 });
-  }, [activePlate, prevPlate]);
+  useEffect(() => useStore.subscribe(
+    state => {
+      magicCircleActivationRef.current = state.magicCircleActivation
+      if (magicCircleActivationRef.current)
+        gsap.to(island.materials.magicPortal, { duration: 1, emissiveIntensity: 3 })
+
+      activePlateRef.current = state.activePlate
+      prevPlateRef.current =state.prevPlate
+      if (prevPlateRef.current)
+        gsap.to(island.materials[prevPlateRef.current], { duration: 0, emissiveIntensity: 0 });
+    gsap.to(island.materials[activePlateRef.current], { duration: 0.2, emissiveIntensity: 3 });
+    }
+  ), [])
+  
 
   
   return (

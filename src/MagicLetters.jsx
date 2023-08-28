@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three"
 import { useStore } from "./ZustandStorage";
 import gsap from "gsap";
+import { useEffect, useRef } from "react";
 
 const MagicLetters = ({ position }) => {
 
@@ -52,12 +53,16 @@ const MagicLetters = ({ position }) => {
         transparent: true,
         toneMapped: false,
     })
+    
+    const magicCircleActivationRef = useRef(useStore.getState().magicCircleActivation)
 
-    const magicCircleActivation = useStore(state => state.magicCircleActivation)
-
-    if (magicCircleActivation) {
-      gsap.to(material.uniforms.uOpacity, { duration: 2, delay: 2, value: 1 })
-    }
+    useEffect(() => useStore.subscribe(
+        state => {
+          magicCircleActivationRef.current = state.magicCircleActivation
+          if (magicCircleActivationRef.current)
+            gsap.to(material.uniforms.uOpacity, { duration: 2, delay: 2, value: 1 })
+        }
+      ), [])
 
     useFrame(state => {
         material.uniforms.uTime.value = state.clock.elapsedTime;
