@@ -4,31 +4,30 @@ import { useControls } from 'leva'
 
 import waterVertexShader from './shaders/lava/vertex.glsl'
 import waterFragmentShader from './shaders/lava/fragment.glsl'
+import gsap from "gsap";
 
 
 
 const LavaMesh = ({lavaMesh}) => {    
 
-    const controls = useControls({
+    const controls = useControls("Oven Lava", {
 
         uSmallWavesElevation: 0.1,
         uSmallWavesFrequency: 4,
         uSmallWavesSpeed: 0.2,
         uSmallWavesIterations: 1,
         uDepthColor: "#ffa172",
-        uSurfaceColor: "#ff0000"
+        uSurfaceColor: "#ff0000",
+        uColorMultiplier: {value: 5, min: 0, max: 20},
+        uIntensity: {value: 3, min: 0, max: 10}
     })
 
 
-    const WaterMaterial = new ShaderMaterial({
+    const lavaShaderMaterial = new ShaderMaterial({
         vertexShader: waterVertexShader,
         fragmentShader: waterFragmentShader,
         uniforms: {
             uTime: {value: 0},
-            
-            uBigWavesElevation: {value: 0},
-            uBigWavesFrequency: {value: [0, 0]},
-            uBigWavesSpeed: {value: 0},
     
             uSmallWavesElevation: {value: controls.uSmallWavesElevation},
             uSmallWavesFrequency: {value: controls.uSmallWavesFrequency},
@@ -37,23 +36,28 @@ const LavaMesh = ({lavaMesh}) => {
     
             uDepthColor : {value: new Color(controls.uDepthColor)},
             uSurfaceColor : {value: new Color(controls.uSurfaceColor)},
-            uColorOffset: {value: 0.08},
-            uColorMultiplier: {value:5}
+            uColorMultiplier: {value: controls.uColorMultiplier},
+            uIntensity: {value: controls.uIntensity},
         },
     })
 
-    lavaMesh.material = WaterMaterial;
+    lavaMesh.material = lavaShaderMaterial;
+    
+    gsap.fromTo(
+        lavaMesh.material.uniforms.uIntensity,
+        {value: 2 },
+        {
+            value: 3,
+            delay: 1,
+            duration: 1.75,
+            repeat: -1,
+            ease: "back",
+            yoyo:true
+        }
+    )
 
-     useFrame((state, delta) => {
+     useFrame((state, delta) => {   
         lavaMesh.material.uniforms.uTime.value = state.clock.elapsedTime;
-
-        lavaMesh.material.uniforms.uSmallWavesElevation.value = controls.uSmallWavesElevation
-        lavaMesh.material.uniforms.uSmallWavesFrequency.value = controls.uSmallWavesFrequency
-        lavaMesh.material.uniforms.uSmallWavesSpeed.value = controls.uSmallWavesSpeed
-        lavaMesh.material.uniforms.uSmallWavesIterations.value = controls.uSmallWavesIterations
-        lavaMesh.material.uniforms.uDepthColor.value = new Color(controls.uDepthColor)
-        lavaMesh.material.uniforms.uSurfaceColor.value = new Color(controls.uSurfaceColor)
-        
      })
 
 };

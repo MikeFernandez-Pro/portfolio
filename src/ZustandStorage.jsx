@@ -1,6 +1,8 @@
-import { create } from 'zustand'
+import { create } from 'zustand'    
+import { subscribeWithSelector } from 'zustand/middleware'  
 
-export const useStore = create((set) => ({
+
+export const useStore = create(subscribeWithSelector((set) => ({
 
     isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
 
@@ -10,6 +12,11 @@ export const useStore = create((set) => ({
     islandMounted: false,
     setIslandMounted: () => set({ islandMounted: true }),
 
+    /**
+     * Links handler
+     */
+    activeLink: false,
+    currentLink: null,
 
     /**
      * Magic Circle activation handler
@@ -41,5 +48,5 @@ export const useStore = create((set) => ({
     galaxyPlateMaterial: null,
     setPortalPlateMaterial: (material) => set({ portalPlateMaterial: material }),
 
-}))
+})))
 

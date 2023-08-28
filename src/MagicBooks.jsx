@@ -10,16 +10,13 @@ import { useStore } from "./ZustandStorage";
 import dissolveEffectVertexShader from './shaders/dissolveEffect/vertex.glsl'
 import dissolveEffectFragmentShader from './shaders/dissolveEffect/fragment.glsl'
 
-const MagicBooks = ({ islandPosition }) => {
-    const { nodes, materials, animations, scene } = useGLTF("/models/magicBooks.glb");
-
-    const magicBooksAnimations = useAnimations(animations, scene);
+const MagicBooks = ({ magicBooks, texture }) => {
 
     const magicCircleActivation = useStore(state => state.magicCircleActivation)
 
-    useEffect(() => {
-        magicBooksAnimations.actions["levitating"].play();
-    }, [])
+    const magicBooksMaterial = new THREE.MeshStandardMaterial({
+        map: texture,
+    })
 
         const controls = useControls("magicBooks", {
             intensity: { value: 20, min: 0, max: 50, step: 0.1 },
@@ -28,7 +25,7 @@ const MagicBooks = ({ islandPosition }) => {
         });
 
         const disolveEffectMaterial = new CustomShaderMaterial({
-            baseMaterial: nodes.magicBooks.material,
+            baseMaterial: magicBooksMaterial,
             vertexShader: dissolveEffectVertexShader,
             fragmentShader: patchShaders(dissolveEffectFragmentShader),
             silent: true, // Disables the default warning if true
@@ -42,25 +39,12 @@ const MagicBooks = ({ islandPosition }) => {
             toneMapped: false,
             transparent: true,
         });
+
+        magicBooks.material = disolveEffectMaterial.clone();
     
         if (magicCircleActivation)
-            gsap.to(disolveEffectMaterial.uniforms.uProgress, { duration: 3, delay: 0.5, value: 1 });
-
-    return (
-        <mesh
-            position={islandPosition}
-            scale={0.45}
-            castShadow
-            receiveShadow
-            geometry={nodes.magicBooks.geometry}
-            material={disolveEffectMaterial}
-            morphTargetDictionary={nodes.magicBooks.morphTargetDictionary}
-            morphTargetInfluences={nodes.magicBooks.morphTargetInfluences}
-        >
-        </mesh>
-    );
+            gsap.to( magicBooks.material.uniforms.uProgress, { duration: 3, delay: 0.5, value: 1 });
 };
 
-useGLTF.preload("/models/magicBooks.glb");
 
 export default MagicBooks;

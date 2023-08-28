@@ -1,6 +1,6 @@
 import { useGLTF, useKeyboardControls, useAnimations } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { CapsuleCollider, RigidBody } from "@react-three/rapier";
+import { CapsuleCollider, RigidBody, useRapier } from "@react-three/rapier";
 import { useControls } from "leva";
 import { useRef, useState, useEffect, useMemo } from "react";
 import * as THREE from "three";
@@ -8,7 +8,11 @@ import { useStore } from "./ZustandStorage.jsx";
 
 import MobileController from "./Controllers/MobileController.jsx";
 
-const directionOffset = ({ forward, backward, leftward, rightward }, knightBody) => {
+const directionOffset = ({ forward, backward, leftward, rightward, enter }, knightBody) => {
+    
+    // if (enter) 
+    //     window.open("https://www.google.fr/", "_blank")
+    
     if (!forward && !backward && !leftward && !rightward) return null;
 
     if (knightBody.current.isSleeping()) {
@@ -39,11 +43,11 @@ const Player = ({ joystickAngle, orbitControls }) => {
 
     // Character movement speed Controller
     const { speed } = useControls("Character", {
-        speed: { value: 400, min: 100, max: 1000, step: 10 },
+        speed: { value: 4.5, min: 0, max: 500, step: 10 },
     });
 
     const islandMounted = useStore((state) => state.islandMounted);
-
+    
     /**
      * Character Initialization
      */
@@ -60,16 +64,17 @@ const Player = ({ joystickAngle, orbitControls }) => {
     // Rigid Body current state 
     const [knightSleeping, setKnightSleeping] = useState(false);
 
-    // Shadows initialization
-    knightModel.scene.traverse((child) => {
-        // Check if the child object is a Mesh
-        if (child.isMesh && child.material.isMeshStandardMaterial) {
-            // Set the sha<<w<<dowSide property to THREE.DoubleSide
-            child.castShadow = true;
-            //   child.receiveShadow = true;
-        }
-    });
+      // // Shadows initialization
+        // knightModel.scene.traverse((child) => {
+        //     // Check if the child object is a Mesh
+        //     if (child.isMesh && child.material.isMeshStandardMaterial) {
+        //         // Set the sha<<w<<dowSide property to THREE.DoubleSide
+        //         child.castShadow = true;
+        //         //   child.receiveShadow = true;
+        //     }
+        // });
 
+    const [animate, setAnimate] = useState("fixed");
 
     const { camera } = useThree();
 
@@ -77,9 +82,10 @@ const Player = ({ joystickAngle, orbitControls }) => {
 
     // current character direction
     let direction;
+    let knightPosition;
+
 
     useFrame((state, delta) => {
-        if (state.clock.elapsedTime > 5) setAnimate("dynamic");
 
         /**
          * Camera Controller
@@ -89,7 +95,18 @@ const Player = ({ joystickAngle, orbitControls }) => {
         if (orbitControls || knightSleeping ) return;
 
         if (knightBody.current) {
-            cameraPosition.addVectors(knightBody.current.translation(), cameraOffset);
+            knightPosition = knightBody.current.translation();
+            
+            if (knightPosition.y < 0) {
+                knightBody.current.setTranslation({
+                    x: 0,
+                    y: 1.5,
+                    z: 0
+                })
+            }
+
+            
+            cameraPosition.addVectors(knightPosition, cameraOffset);
             smoothCameraPosition.lerp(cameraPosition, 5 * delta);
 
             state.camera.position.copy(smoothCameraPosition); // A REACTIVER PÖUR SUIVRE PERSO
@@ -112,9 +129,9 @@ const Player = ({ joystickAngle, orbitControls }) => {
             if (knightAnimation !== "Run") setKnightAnimation("Run");
 
             knightBody.current.setLinvel({
-                x: speed * delta * Math.cos(direction) * -1,
+                x: speed * Math.cos(direction) * -1 /* * delta */,
                 y: knightBody.current.linvel().y,
-                z: speed * delta * Math.sin(direction),
+                z: speed  * Math.sin(direction) /* * delta */,
             });
 
             rotateQuaternion.setFromAxisAngle(rotationAngle, direction - Math.PI / 2);
@@ -130,24 +147,24 @@ const Player = ({ joystickAngle, orbitControls }) => {
         };
     }, [knightAnimation]);
 
-    const [animate, setAnimate] = useState("fixed");
-
     return (
         <>
             <RigidBody
-                type={animate}
+                type={"dynamic"}
                 lockRotations
                 ref={knightBody}
                 colliders={false}
-                position={[0, 4, 0]}
+                position={[0, 1.5, 0]}
                 // position={[-16, 5, -33]}
                 onSleep={() => setKnightSleeping(true)}
                 onWake={() => setKnightSleeping(false)}
+                restitution={-10}
+                friction={0}
             >
                 <primitive
                     ref={knightMesh}
                     object={knightModel.scene}
-                    scale={0.2}
+                    scale={0.18}
                     rotation-y={Math.PI}
                 />
                 <CapsuleCollider args={[0.3, 0.25]} position={[0, 0.55, 0]} />

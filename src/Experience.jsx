@@ -1,6 +1,6 @@
-import { SoftShadows, BakeShadows, OrbitControls, Environment, MeshPortalMaterial, Html, ContactShadows, Circle} from "@react-three/drei";
+import { SoftShadows, BakeShadows, OrbitControls, Environment, MeshPortalMaterial, Html, ContactShadows, Circle, AccumulativeShadows, RandomizedLight } from "@react-three/drei";
 import { Perf } from "r3f-perf";
-import { Physics } from "@react-three/rapier";
+import { Physics, useRapier } from "@react-three/rapier";
 import Lights from "./Lights.jsx";
 import { useControls } from "leva";
 import { useEffect, useRef, useState } from "react";
@@ -11,9 +11,7 @@ import Sea from "./LavaMesh.jsx";
 import { useFrame, useLoader, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import IslandColliders from "./IslandColliders.jsx";
-import gsap from "gsap";
 import ProjectsPortals from "./ProjectsPortals.jsx";
-import Sparks from "./Sparks.jsx";
 
 export default function Experience({ joystickAngle }) {
     const { debug, orbitControlsActivation } = useControls("Controls", {
@@ -37,32 +35,34 @@ export default function Experience({ joystickAngle }) {
         samples: { value: 15, step: 0.1 },
     });
 
+    // const {world} = useRapier();
 
+
+    // useEffect(() => {
+    //     world.integrationParameters.predictionDistance = 0.045;
+    // }, [])
 
     return (
         <>
-        
-        {/* <fog attach="fog" args={['white', 50, 190]} /> */}
+
+            {/* <fog attach="fog" args={['white', 50, 190]} /> */}
             <Perf position="top-left" />
 
-            { orbitControlsActivation && <OrbitControls ref={orbitControlsRef} camera={camera} /> }
-            
-            {/* <SoftShadows
-                size={15}
-                samples={30}
-            /> */}
+            {orbitControlsActivation && <OrbitControls ref={orbitControlsRef} camera={camera} />}
+
+            <SoftShadows size={ 5 } samples={ 10 } />
+            <Environment preset="night"/>
             <BakeShadows />
+         
             <Lights />
 
             <Island
                 setIslandComponentMounted={setIslandComponentMounted}
             />
 
-<Sparks />
+            <ProjectsPortals />
 
-        <ProjectsPortals />
-
-            <Physics timeStep="vary" debug={debug}>
+            <Physics timeStep="vary" debug={debug} gravity={[0, -50, 0]}>
                 <IslandColliders />
                 <Player
                     orbitControls={orbitControlsActivation}

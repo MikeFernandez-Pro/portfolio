@@ -1,4 +1,4 @@
-import { useState, Suspense } from "react";
+import { useState, Suspense, useRef } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import Experience from "./Experience.jsx";
 import { KeyboardControls, Loader, PerformanceMonitor, Preload } from "@react-three/drei";
@@ -25,13 +25,16 @@ const App = (props) => {
                 }}
                 stop={() => setJoystickAngle(0)}
             ></Joystick> */}
-            <Leva collapsed={false} />
+            <Leva collapsed={false} theme={{
+                sizes: { rootWidth: 'auto' },
+            }} />
             <KeyboardControls
                 map={[
                     { name: "forward", keys: ["ArrowUp", "KeyW"] },
                     { name: "backward", keys: ["ArrowDown", "KeyS"] },
                     { name: "leftward", keys: ["ArrowLeft", "KeyA"] },
                     { name: "rightward", keys: ["ArrowRight", "KeyD"] },
+                    { name: "enter", keys: ["Enter", "NumpadEnter "]}
                 ]}
             >
                 <Canvas
@@ -56,7 +59,7 @@ const App = (props) => {
     bokehScale={2} // bokeh size
   /> */}
                     </EffectComposer>
-            
+
                     <Suspense fallback={null}>
                         <Experience
                             joystickAngle={joystickAngle}

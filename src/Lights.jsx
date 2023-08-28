@@ -11,25 +11,25 @@ export default function Lights() {
     const { scene } = useThree();
 
     const keyLightControls = useControls("KeyLight", {
-        intensity: { value: 27.3, min: 0, max: 30, step: 0.1 },
+        intensity: { value: 27.3, min: 0, max: 100, step: 0.1 },
         color: "#3a62c8",
         position: { value: [-6.5, 3.8, 4.8], step: 1 }
     });
 
     const fillLightControls = useControls("FillLight", {
-        intensity: { value: 2.6, min: 0, max: 30, step: 0.1 },
+        intensity: { value: 2.6, min: 0, max: 100, step: 0.1 },
         color: "#526cad",
         position: { value: [22, 15, -48], step: 1 },
     });
 
     const backLightControls = useControls("BackLight", {
-        intensity: { value: 1.3, min: 0, max: 30, step: 0.1 },
+        intensity: { value: 1.3, min: 0, max: 100, step: 0.1 },
         color: "#4b6eb4",
         position: { value: [-7, 4, 9], step: 1 },
     });
 
     const ambiantLightControls = useControls("AmbiantLight", {
-        intensity: { value: 0.81, min: 0, max: 5, step: 0.001 },
+        intensity: { value: 0.81, min: 0, max: 100, step: 0.001 },
         color: "#526cad",
     });
 
@@ -37,19 +37,19 @@ export default function Lights() {
         <>
             <directionalLight
                 ref={keyLightRef}
-                castShadow
                 position={keyLightControls.position}
                 intensity={keyLightControls.intensity}
-                shadow-mapSize={[2048, 2048]}
-                shadow-radius={10}
+                color={keyLightControls.color}
+                castShadow
+                shadow-mapSize={[4096, 4096]}
+                // shadow-radius={10000}
                 shadow-camera-near={1}
                 shadow-camera-far={40}
                 shadow-camera-top={25}
                 shadow-camera-right={2}
                 shadow-camera-bottom={-3}
                 shadow-camera-left={-70}
-                color={keyLightControls.color}
-                // shadow-normalBias={0.1}
+                shadow-bias = {-0.01}
             />
 
             <directionalLight

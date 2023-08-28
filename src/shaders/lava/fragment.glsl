@@ -2,6 +2,7 @@ uniform vec3 uDepthColor;
 uniform vec3 uSurfaceColor;
 uniform float uColorOffset;
 uniform float uColorMultiplier;
+uniform float uIntensity;
 
 varying float vElevation;
 
@@ -92,6 +93,6 @@ float cnoise(vec3 P)
 
 void main() {
   float  mixStrengh = (vElevation + uColorOffset) * uColorMultiplier;
-  vec3 color = mix(uDepthColor, uSurfaceColor, mixStrengh) * 3.0;
+  vec3 color = mix(uDepthColor, uSurfaceColor, mixStrengh) * uIntensity;
   gl_FragColor = vec4(color, 1.0);
 } 

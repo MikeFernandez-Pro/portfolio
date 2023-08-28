@@ -1,27 +1,223 @@
-import { useGLTF, Instances, Instance } from "@react-three/drei";
+import { useGLTF, Instances, Instance, Image, Box } from "@react-three/drei";
 import { InstancedRigidBodies, RigidBody } from "@react-three/rapier";
-import { BoxGeometry, MeshBasicMaterial } from "three";
 import { useStore } from "./ZustandStorage";
-import { extend } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
-
+import { extend, useFrame, useLoader } from "@react-three/fiber";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useControls } from "leva";
+import gsap from "gsap";
+import * as THREE from "three"
 
 
 const IslandColliders = (props) => {
 
-    const { nodes, materials } = useGLTF("/models/IslandCollider.glb");
+    const { nodes, materials } = useGLTF("/models/collidersCollection.glb");
     const collidersPosition = useMemo(() => [-1.35, 2.3, -15], []);
-    const collidersMaterial = useMemo(() => new MeshBasicMaterial({ visible: false }), [])
-
-    const setMagicCircleActivation = useStore(state => state.setMagicCircleActivation)
+    const collidersMaterial = useMemo(() => new THREE.MeshBasicMaterial({ visible: false }), [])
 
     const setActivePlate = useStore(state => state.setActivePlate)
 
-    const pressurePlatesGeometry = useMemo(() => new BoxGeometry(1, 1, 1), [])
-    const pressurePlatesMaterial = useMemo(() => new MeshBasicMaterial({ color: "red" }), [])
-        
+    const pressurePlatesGeometry = useMemo(() => new THREE.BoxGeometry(1, 1, 1), [])
+    const pressurePlatesMaterial = useMemo(() => new THREE.MeshBasicMaterial({ color: "red" }), [])
+
+    const activePlateRef = useRef(useStore.getState().activePlate)
+    const prevPlateRef = useRef(useStore.getState().prevPlate)
+
+    const imgRef = useRef();
+
+    const activeLink = useRef(false)
+
+    const mailBoxRef = useRef()
+
+    const imageLink = useControls('imageLink', {
+        position: { value: { x: -4.47, y: 2.40, z: -7 }, step: 0.01 },
+        rotationY: { value: 0 }
+    })
+
+    const activateLink = (link) => {
+        if (activeLink && !activeLink.current && imgRef.current) {
+            activeLink.current= true
+            gsap.to(imgRef.current.material, { opacity: 1, duration: 0.5 })
+            imgRef.current.scale.set(link.textScale, link.textScale, link.textScale)
+            imgRef.current.position.set(...link.textPosition)
+            imgRef.current.rotation.y = link.textRotationY;
+        }
+    }
+
+    const deactivateLink = () => {
+        if (activeLink && activeLink.current && imgRef.current) {
+            activeLink.current= false
+            gsap.to(imgRef.current.material, { opacity: 0, duration: 0.5 })
+        }
+    }
+
+    
+    const activatePlate = (data) => {
+        useStore.setState(state => ({
+            prevPlate: state.activePlate,
+            activePlate: data.id
+        }))
+    }
+
+    const linksInstancesDatas = [
+        {
+            key: "mailBox",
+            userData: {
+                textPosition: [-4.47, 2.40, -8.14],
+                textRotationY: 0.26,
+                textScale: 0.8,
+                link: "",
+                enterFunction: activateLink,
+                exitFunction: deactivateLink,
+            },
+            position: [-4.24, 0.5, -8.07],
+            rotation: [0, 0.49, 0],
+            scale: [0.9, 0.9, 0.9],
+
+        },
+        {
+            key: "linkedIn",
+            userData: {
+                textPosition: [-3.68, 2.25, -8.50],
+                textRotationY: 0.26,
+                textScale: 0.8,
+                link: "",
+                enterFunction: activateLink,
+                exitFunction: deactivateLink,
+            },
+            position: [-3.11, 0.5, -8.64],
+            rotation: [0, 0.49, 0],
+            scale: [0.9, 0.9, 0.9],
+        },
+        {
+            key: "vercel",
+            userData: {
+                textPosition: [-2.62, 2.25, -9.06],
+                textRotationY: 0.26,
+                textScale: 0.8,
+                link: "",
+                enterFunction: activateLink,
+                exitFunction: deactivateLink,
+            },
+            position: [-2.03, 0.5, -9.20],
+            rotation: [0, 0.48, 0],
+            scale: [0.9, 0.9, 0.9],
+        },
+        {
+            key: "portal",
+            userData: {
+                textPosition: [-16.79, 6.16, -36.86],
+                textRotationY: 0,
+                textScale: 1,
+                link: "",
+                enterFunction: activateLink,
+                exitFunction: deactivateLink,
+            },
+            position: [-16.10, 5.24, -37.49],
+            rotation: [0.43, 0, 0],
+            scale: [1.04, 0.97, 3],
+        },
+        {
+            key: "statue",
+            userData: {
+                textPosition: [-10.08, 7.90, -58.80],
+                textRotationY: 0,
+                textScale: 0.9,
+                link: "",
+                enterFunction: activateLink,
+                exitFunction: deactivateLink,
+            },
+            position: [-9.76, 6.43, -58.20],
+            rotation: [0, 0, 0],
+            scale: [1.5, 1, 1.5],
+        },
+        {
+            key: "magicCircle",
+            userData: {
+                enterFunction: () => useStore.setState({ magicCircleActivation: true }),
+            },
+            position: [6.34, 2.69, -33.53],
+            rotation: [0, -0.15, 0],
+            scale: [2.85, 0.35, 2.85],
+        },
+        {
+            key: "portalPlate",
+            userData: {
+                id: "portalPlate",
+                enterFunction: activatePlate,
+            },
+            position: [-15.085, 4.4, -32.45],
+            rotation: [0, 0, 0],
+            scale: [1, 1, 1],
+        },
+        {
+            key: "seaPlate",
+            userData: {
+                id: "seaPlate",
+                enterFunction: activatePlate
+            },
+            position: [-15.085, 4.4, -34.495],
+            rotation: [0, 0, 0],
+            scale: [1, 1, 1],
+        },
+        {
+            key: "galaxyPlate",
+            userData: {
+                id: "galaxyPlate",
+                enterFunction: activatePlate
+            },
+            position: [-17.14, 4.4, -34.495],
+            rotation: [0, 0, 0],
+            scale: [1, 1, 1],
+        },
+    ]
+
+    const instances = useMemo(() => {
+        const instances = new Array(linksInstancesDatas.length);
+
+        for (let i = 0; i < linksInstancesDatas.length; i++) {
+            instances[i] = {
+                key: "instance_" + i,
+                ...linksInstancesDatas[i]
+            };
+        }
+        return instances;
+    }, []);
+
+
+    const instanceControls = useControls("instance", {
+        position: { value: [-2.03, 0.42, -9.20], step: 0.01 },
+        rotation: { value: [0, 0, 0], step: 0.01 },
+        scale: { value: [1, 1, 1], step: 0.01 },
+    })
+
+    const box = useRef();
+
+
     return (
         <>
+            <Box ref={box}
+                // ²
+                position={instanceControls.position}
+                rotation={instanceControls.rotation}
+                scale={instanceControls.scale}
+            />
+
+            <InstancedRigidBodies
+                instances={instances}
+                colliders="cuboid"
+                type={"fixed"}
+                sensor
+                onIntersectionEnter={(state) =>
+                    state.target.rigidBody.userData.enterFunction(state.target.rigidBody.userData)
+                }
+                onIntersectionExit={(state) => state.target.rigidBody.userData.exitFunction()}
+            >
+                <instancedMesh args={[null, null, linksInstancesDatas.length]}>
+                    <boxGeometry args={[1,1,1]} />
+                    <meshBasicMaterial transparent opacity={0} />
+                </instancedMesh>
+            </InstancedRigidBodies>
+
             <RigidBody type={"fixed"} colliders={"trimesh"}>
                 <mesh
                     scale={0.45}
@@ -30,63 +226,31 @@ const IslandColliders = (props) => {
                     material={collidersMaterial}
                 />
             </RigidBody>
-            <RigidBody      
+
+
+            <RigidBody
                 type={"fixed"}
-                colliders={"trimesh"}
-                onCollisionEnter={() => {
-                    setMagicCircleActivation()
-                }}
+                colliders={"hull"}
             >
                 <mesh
                     scale={0.45}
                     position={collidersPosition}
-                    geometry={nodes.magicCircle.geometry}
+                    geometry={nodes.portal.geometry}
                     material={collidersMaterial}
                 />
             </RigidBody>
 
-            <RigidBody      
-                type={"fixed"}
-                colliders={"cuboid"}
-                onCollisionEnter={() => {
-                    setActivePlate("portalPlate")
-                }}
-                position={[-15.085, 4.4, -32.45]}
-            >
-                <mesh
-                   scale={0.95}
-                    geometry={pressurePlatesGeometry}
-                    material={collidersMaterial}
-                />
-            </RigidBody>
-            <RigidBody     
-                type={"fixed"}
-                colliders={"cuboid"}
-                onCollisionEnter={() => {
-                    setActivePlate("seaPlate")
-                }}
-                position={[-15.085, 4.4, -34.495]}
-            >
-                <mesh
-                   scale={0.95}
-                    geometry={pressurePlatesGeometry}
-                    material={collidersMaterial}
-                />
-            </RigidBody>
-            <RigidBody      
-                type={"fixed"}
-                colliders={"cuboid"}
-                onCollisionEnter={() => {
-                        setActivePlate("galaxyPlate")
-                }}
-                position={[-17.14, 4.4, -34.495]}
-            >
-                <mesh
-                    scale={0.95}
-                    geometry={pressurePlatesGeometry}
-                    material={collidersMaterial}
-                />
-            </RigidBody>
+            <Image
+                ref={imgRef}
+                url="/svg/Component 2.png"
+                position={[imageLink.position.x, imageLink.position.y, imageLink.position.z]}
+                rotation-y={0}
+                scale={2}
+                color={[3, 1.5, 1]}
+                transparent
+                toneMapped={false}
+                opacity={0}
+            />
         </>
     );
 };
