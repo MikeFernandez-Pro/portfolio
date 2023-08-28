@@ -2,17 +2,17 @@ import { useGLTF, useKeyboardControls, useAnimations } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { CapsuleCollider, RigidBody, useRapier } from "@react-three/rapier";
 import { useControls } from "leva";
-import { useRef, useEffect, useMemo } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { useStore } from "./ZustandStorage.jsx";
 
 import MobileController from "./Controllers/MobileController.jsx";
 
-const directionOffset = ({ forward, backward, leftward, rightward, enter }, knightBody) => {
-    
+const directionOffset = ({ forward, backward, leftward, rightward }, knightBody) => {
+
     // if (enter) 
     //     window.open("https://www.google.fr/", "_blank")
-    
+
     if (!forward && !backward && !leftward && !rightward) return null;
 
     if (knightBody.current.isSleeping()) {
@@ -31,7 +31,6 @@ const directionOffset = ({ forward, backward, leftward, rightward, enter }, knig
 };
 
 const Player = ({ joystickAngle, orbitControls }) => {
-
     /**
      * Default Controller Settings
      */
@@ -45,7 +44,7 @@ const Player = ({ joystickAngle, orbitControls }) => {
     const { speed } = useControls("Character", {
         speed: { value: 4.5, min: 0, max: 500, step: 10 },
     });
-    
+
     /**
      * Character Initialization
      */
@@ -63,17 +62,30 @@ const Player = ({ joystickAngle, orbitControls }) => {
     // Rigid Body current state 
     const knightSleeping = useRef(false);
 
-      // // Shadows initialization
-        // knightModel.scene.traverse((child) => {
-        //     // Check if the child object is a Mesh
-        //     if (child.isMesh && child.material.isMeshStandardMaterial) {
-        //         // Set the sha<<w<<dowSide property to THREE.DoubleSide
-        //         child.castShadow = true;
-        //         //   child.receiveShadow = true;
-        //     }
-        // });
+    // // Shadows initialization
+    // knightModel.scene.traverse((child) => {
+    //     // Check if the child object is a Mesh
+    //     if (child.isMesh && child.material.isMeshStandardMaterial) {
+    //         // Set the sha<<w<<dowSide property to THREE.DoubleSide
+    //         child.castShadow = true;
+    //         //   child.receiveShadow = true;
+    //     }
+    // });
 
 
+    const pageVisibiliy = useRef(true)
+
+    useEffect(() => {
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+                pageVisibiliy.current = true;
+                //   backgroundMusic.play();
+            } else {
+                pageVisibiliy.current = false;
+                //   backgroundMusic.pause();
+            }
+        });
+    }, []);
 
     const { camera } = useThree();
 
@@ -95,16 +107,16 @@ const Player = ({ joystickAngle, orbitControls }) => {
 
         if (knightBody.current) {
             knightPosition = knightBody.current.translation();
-            
+
             if (knightPosition.y < 0) {
                 knightBody.current.setTranslation({
-                    x: 0,
+                    x:0,
                     y: 1.5,
                     z: 0
                 })
             }
 
-            
+
             cameraPosition.addVectors(knightPosition, cameraOffset);
             smoothCameraPosition.lerp(cameraPosition, 5 * delta);
 
@@ -114,7 +126,7 @@ const Player = ({ joystickAngle, orbitControls }) => {
              * Model Controller
              */
             // Update character velocity and orientation
-            if (direction === null) {
+            if (direction === null || !pageVisibiliy.current) {
                 if (knightAnimation.current !== "Idle") {
                     knightAnimations.actions[knightAnimation.current].fadeOut(0.2);
                     knightAnimation.current = ("Idle");
@@ -131,14 +143,14 @@ const Player = ({ joystickAngle, orbitControls }) => {
 
             if (knightAnimation.current !== "Run") {
                 knightAnimations.actions[knightAnimation.current].fadeOut(0.2);
-                knightAnimation.current ="Run";
+                knightAnimation.current = "Run";
                 knightAnimations.actions[knightAnimation.current].reset().fadeIn(0.2).play();
             }
 
             knightBody.current.setLinvel({
                 x: speed * Math.cos(direction) * -1 /* * delta */,
                 y: knightBody.current.linvel().y,
-                z: speed  * Math.sin(direction) /* * delta */,
+                z: speed * Math.sin(direction) /* * delta */,
             });
 
             rotateQuaternion.setFromAxisAngle(rotationAngle, direction - Math.PI / 2);
@@ -162,7 +174,7 @@ const Player = ({ joystickAngle, orbitControls }) => {
                 onSleep={() => knightSleeping.current = true}
                 onWake={() => knightSleeping.current = false}
                 restitution={-10}
-                friction={0}
+                friction={0.4}
             >
                 <primitive
                     ref={knightMesh}

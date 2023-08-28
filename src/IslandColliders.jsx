@@ -1,4 +1,4 @@
-import { useGLTF, Instances, Instance, Image, Box } from "@react-three/drei";
+import { useGLTF, Instances, Instance, Image, Box, useKeyboardControls } from "@react-three/drei";
 import { InstancedRigidBodies, RigidBody } from "@react-three/rapier";
 import { useStore } from "./ZustandStorage";
 import { extend, useFrame, useLoader } from "@react-three/fiber";
@@ -9,6 +9,8 @@ import * as THREE from "three"
 
 
 const IslandColliders = (props) => {
+
+
 
     const { nodes, materials } = useGLTF("/models/collidersCollection.glb");
     const collidersPosition = useMemo(() => [-1.35, 2.3, -15], []);
@@ -22,9 +24,9 @@ const IslandColliders = (props) => {
 
     const imgRef = useRef();
 
-    const activeLink = useRef(false)
+    const activeLink = useRef(null)
 
-    const mailBoxRef = useRef()
+    const mailBoxRef = useRef() 
 
     const imageLink = useControls('imageLink', {
         position: { value: { x: -4.47, y: 2.40, z: -7 }, step: 0.01 },
@@ -32,8 +34,10 @@ const IslandColliders = (props) => {
     })
 
     const activateLink = (link) => {
+        if (link.id === "portal" && !activePlateRef.current)
+            return;
         if (activeLink && !activeLink.current && imgRef.current) {
-            activeLink.current= true
+            activeLink.current = link;
             gsap.to(imgRef.current.material, { opacity: 1, duration: 0.5 })
             imgRef.current.scale.set(link.textScale, link.textScale, link.textScale)
             imgRef.current.position.set(...link.textPosition)
@@ -43,12 +47,12 @@ const IslandColliders = (props) => {
 
     const deactivateLink = () => {
         if (activeLink && activeLink.current && imgRef.current) {
-            activeLink.current= false
+            activeLink.current = null;
             gsap.to(imgRef.current.material, { opacity: 0, duration: 0.5 })
         }
     }
 
-    
+
     const activatePlate = (data) => {
         useStore.setState(state => ({
             prevPlate: state.activePlate,
@@ -60,10 +64,10 @@ const IslandColliders = (props) => {
         {
             key: "mailBox",
             userData: {
+                id: "mailBox",
                 textPosition: [-4.47, 2.40, -8.14],
                 textRotationY: 0.26,
                 textScale: 0.8,
-                link: "",
                 enterFunction: activateLink,
                 exitFunction: deactivateLink,
             },
@@ -75,10 +79,11 @@ const IslandColliders = (props) => {
         {
             key: "linkedIn",
             userData: {
+                id: "linkedIn",
                 textPosition: [-3.68, 2.25, -8.50],
                 textRotationY: 0.26,
                 textScale: 0.8,
-                link: "",
+                href: "https://www.linkedin.com/in/mike-fernandez-front-end-dev/",
                 enterFunction: activateLink,
                 exitFunction: deactivateLink,
             },
@@ -89,10 +94,11 @@ const IslandColliders = (props) => {
         {
             key: "vercel",
             userData: {
+                id: "vercel",
                 textPosition: [-2.62, 2.25, -9.06],
                 textRotationY: 0.26,
                 textScale: 0.8,
-                link: "",
+                href: "https://vercel.com/mikefernandez-pro",
                 enterFunction: activateLink,
                 exitFunction: deactivateLink,
             },
@@ -103,10 +109,15 @@ const IslandColliders = (props) => {
         {
             key: "portal",
             userData: {
+                id: "portal",
                 textPosition: [-16.79, 6.16, -36.86],
                 textRotationY: 0,
                 textScale: 1,
-                link: "",
+                href: {
+                    portalPlate: "https://magic-portal-threejs.vercel.app/",
+                    seaPlate: "https://raging-sea-shader-flame.vercel.app/",
+                    galaxyPlate: "https://galaxy-generator-threejs-ten.vercel.app/"
+                },
                 enterFunction: activateLink,
                 exitFunction: deactivateLink,
             },
@@ -117,10 +128,11 @@ const IslandColliders = (props) => {
         {
             key: "statue",
             userData: {
+                id: "statue",
                 textPosition: [-10.08, 7.90, -58.80],
                 textRotationY: 0,
                 textScale: 0.9,
-                link: "",
+                href: "https://www.google.fr/",
                 enterFunction: activateLink,
                 exitFunction: deactivateLink,
             },
@@ -131,6 +143,7 @@ const IslandColliders = (props) => {
         {
             key: "magicCircle",
             userData: {
+                id: "magicCircle",
                 enterFunction: () => useStore.setState({ magicCircleActivation: true }),
             },
             position: [6.34, 2.69, -33.53],
@@ -191,10 +204,31 @@ const IslandColliders = (props) => {
     const box = useRef();
 
 
+
+    useEffect(() => {
+        window.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                if (activeLink) {
+                    activeLink.current.id === "mailBox" ?
+                        window.location.href = 'mailto:mike.fernandez.pro@gmail.com' :
+                        activeLink.current.id === "portal" ?
+                        window.open(activeLink.current.href[activePlateRef.current], "_blank"):
+                        window.open(activeLink.current.href, "_blank")
+                }
+            }
+        })
+
+    }, []);
+
+    useStore.subscribe(state => ({prevPlate: state.prevPlate, activePlate: state.activePlate}),
+        (states) => {
+            activePlateRef.current = states.activePlate;
+            prevPlateRef.current = states.prevPlate;    
+})
+
     return (
         <>
             <Box ref={box}
-                // ²
                 position={instanceControls.position}
                 rotation={instanceControls.rotation}
                 scale={instanceControls.scale}
@@ -211,7 +245,7 @@ const IslandColliders = (props) => {
                 onIntersectionExit={(state) => state.target.rigidBody.userData.exitFunction()}
             >
                 <instancedMesh args={[null, null, linksInstancesDatas.length]}>
-                    <boxGeometry args={[1,1,1]} />
+                    <boxGeometry args={[1, 1, 1]} />
                     <meshBasicMaterial transparent opacity={0} />
                 </instancedMesh>
             </InstancedRigidBodies>
