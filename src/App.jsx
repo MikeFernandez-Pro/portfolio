@@ -1,10 +1,11 @@
 import { useState, Suspense, useRef } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import Experience from "./Experience.jsx";
-import { KeyboardControls, Loader, PerformanceMonitor, Preload } from "@react-three/drei";
+import { AdaptiveDpr, KeyboardControls, Loader, PerformanceMonitor, Preload } from "@react-three/drei";
 import { Leva } from "leva";
+import { BlurPass, Resizer, KernelSize } from 'postprocessing'
 import { Joystick } from "react-joystick-component";
-import { Bloom, BrightnessContrast, DepthOfField, EffectComposer, Noise, Vignette, SSAO } from '@react-three/postprocessing'
+import { Bloom, SelectiveBloom, BrightnessContrast, DepthOfField, EffectComposer, Noise, Vignette, SSAO } from '@react-three/postprocessing'
 import * as THREE from "three"
 
 const App = (props) => {
@@ -47,16 +48,28 @@ const App = (props) => {
                         rotation: [-Math.PI / 8, 0, 0],
                     }}
                     dpr={dpr}
-                    performance={{ min: 0.5 }}
+                    performance={{ min: 0.5  }}
                 >
-                    <PerformanceMonitor onIncline={() => setDpr(2)} onDecline={() => setDpr(0.5)} />
-
+                    <PerformanceMonitor onIncline={() => setDpr(2)} onDecline={() => setDpr(1)} />
+                    <AdaptiveDpr pixelated />
                     <EffectComposer disableNormalPass>
                         <Bloom mipmapBlur luminanceThreshold={1} luminanceSmoothing={1} intensity={2} />
                         {/* <DepthOfField
     focusDistance={0} // where to focus
     focalLength={0.15} // focal length
     bokehScale={2} // bokeh size
+  /> */}
+    {/* <SelectiveBloom
+    lights={[]} // ⚠️ REQUIRED! all relevant lights
+    selection={[]} // selection of objects that will have bloom effect
+    selectionLayer={10} // selection layer
+    intensity={1.0} // The bloom intensity.
+    blurPass={undefined} // A blur pass.
+    width={Resizer.AUTO_SIZE} // render width
+    height={Resizer.AUTO_SIZE} // render height
+    kernelSize={KernelSize.LARGE} // blur kernel size
+    luminanceThreshold={0.9} // luminance threshold. Raise this value to mask out darker elements in the scene.
+    luminanceSmoothing={0.025} // smoothness of the luminance threshold. Range is [0, 1]
   /> */}
                     </EffectComposer>
 

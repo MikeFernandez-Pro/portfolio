@@ -1,4 +1,4 @@
-import { useGLTF, useAnimations, SoftShadows, shaderMaterial, Svg, Image } from "@react-three/drei";
+import { useGLTF, useAnimations, SoftShadows, shaderMaterial, Svg, Image, Text, Instance, Instances, Html } from "@react-three/drei";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useControls } from "leva";
@@ -7,8 +7,12 @@ import LiquidMeshes from "./LiquidMeshes";
 import MagicBooks from "./MagicBooks";
 import gsap from "gsap";
 import { useStore } from "./ZustandStorage";
-import { useLoader } from "@react-three/fiber";
+import { extend, useFrame, useLoader } from "@react-three/fiber";
 import MagicLetters from "./MagicLetters";
+import { DoubleSide } from "three";
+import { MeshStandardMaterial } from "three";
+import SleepText from "./SleepText";
+
 
 const Island = () => {
   const staticLights = useControls("staticLights", {
@@ -36,44 +40,53 @@ const Island = () => {
   /**
    * Island initialization
    */
-  const island = useGLTF("/models/islandCollection.glb");
+  const island = useGLTF("/models/islandShadows.glb");
   const islandAnimations = useAnimations(island.animations, island.scene)
   const islandPosition = useMemo(() => [-1.35, 2.3, -15], []);
 
-  const islandTexture = useLoader(THREE.TextureLoader, "textures/islandTexture.webp")
+  const islandTexture = useLoader(THREE.TextureLoader, "textures/TextureWithEye.png")
+  const islandShadowMap = useLoader(THREE.TextureLoader, "textures/shadowsBakedBlurred.png")
+  
   islandTexture.flipY = false;
   islandTexture.colorSpace = THREE.SRGBColorSpace
-
+  
+  islandShadowMap.flipY = false;
+  islandShadowMap.colorSpace = THREE.SRGBColorSpace
+  islandShadowMap.channel = 1
+  
   island.materials.islandTexture.map = islandTexture;
+  island.materials.islandTexture.aoMap = islandShadowMap;
+  island.materials.islandTexture.aoMapIntensity = 8;
   island.materials.islandTexture.color = new THREE.Color(1, 1, 1);
 
+  const { envMapIntensity } = useControls('environment map', {
+    envMapIntensity: { value: 1, min: 0, max: 12 }
+})
 
   island.scene.traverse((child) => {
     if (child.isMesh && child.material.isMeshStandardMaterial && child.material.name !== "hammer") {
-      child.castShadow = true;
-      child.receiveShadow = true;
+      // child.castShadow = true;
+      // child.receiveShadow = true;
       child.material.roughness = 1;
-      // child.material.envMapIntensity = 5
+      // child.material.envMapIntensity = envMapIntensity
     }
   });
 
   island.materials.hammer.map = islandTexture;
   island.materials.hammer.color = new THREE.Color(1, 1, 1);
-  
+
   island.materials.staticLights.emissiveIntensity = staticLights.intensity;
   island.materials.staticLights.toneMapped = false;
- 
-  island.materials.mailBoxLights.emissive = new THREE.Color(pressurePlates.color);
-  island.materials.mailBoxLights.emissiveIntensity = 10
-  island.materials.mailBoxLights.toneMapped = false;
-
-  
 
   island.materials.magicPortal.color = new THREE.Color(magicCircle.color)
   island.materials.magicPortal.emissiveIntensity = 0;
   island.materials.magicPortal.emissive = new THREE.Color(magicCircle.color);
   island.materials.magicPortal.toneMapped = false;
-    
+
+  island.materials.magicLetters.emissiveIntensity =4;
+  island.materials.magicLetters.toneMapped = false;
+  island.materials.magicLetters.map = islandTexture;
+  
   island.materials.galaxyPlate.emissiveIntensity = 0;
   island.materials.galaxyPlate.emissive = new THREE.Color(pressurePlates.color);
   island.materials.galaxyPlate.toneMapped = false;
@@ -96,7 +109,7 @@ const Island = () => {
   useEffect(() => {
     islandAnimations.actions["anvilAnimation"].play();
     islandAnimations.actions["magicPotAnimation"].play();
-    islandAnimations.actions["Key.020Action.005"].play();
+    islandAnimations.actions["Key.020Action.001"].play();
   }, []);
 
   /**
@@ -111,35 +124,34 @@ const Island = () => {
 
   const activePlateRef = useRef(useStore.getState().activePlate)
   const prevPlateRef = useRef(useStore.getState().prevPlate)
+  const magicCircleActivation = useStore(state => state.magicCircleActivation)
+
+  if (magicCircleActivation) {
+    gsap.to(island.materials.magicPortal, { duration: 1, emissiveIntensity: 2.3 })
+  }
 
   useEffect(() => useStore.subscribe(
     state => {
-      magicCircleActivationRef.current = state.magicCircleActivation
-      if (magicCircleActivationRef.current)
-        gsap.to(island.materials.magicPortal, { duration: 1, emissiveIntensity: 3 })
-
       activePlateRef.current = state.activePlate
-      prevPlateRef.current =state.prevPlate
+      prevPlateRef.current = state.prevPlate
       if (prevPlateRef.current)
         gsap.to(island.materials[prevPlateRef.current], { duration: 0, emissiveIntensity: 0 });
-    gsap.to(island.materials[activePlateRef.current], { duration: 0.2, emissiveIntensity: 3 });
+      gsap.to(island.materials[activePlateRef.current], { duration: 0.2, emissiveIntensity: 3 });
     }
   ), [])
-  
 
-  
   return (
     <>
       <primitive object={island.scene} scale={0.45} position={islandPosition} />
       <LiquidMeshes
         well={island.scene.children[0].children[0].children[2]}
-        cauldron={island.scene.children[0].children[0].children[6]}
+        cauldron={island.scene.children[0].children[0].children[5]}
       />
       <LavaMesh lavaMesh={island.scene.children[0].children[0].children[3]} />
-      <MagicBooks magicBooks={island.scene.children[0].children[0].children[10]} texture={islandTexture} />
-      <MagicLetters position={islandPosition} />
-
-    </>
+      <MagicBooks magicBooks={island.scene.children[0].children[0].children[9]} texture={islandTexture} />
+      <MagicLetters magicLetters={island.scene.children[0].children[0].children[11]} texture={islandTexture}/>
+      <SleepText />
+    </>    
   );
 };
 

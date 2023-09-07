@@ -6,7 +6,13 @@ import { useHelper } from "@react-three/drei";
 
 export default function Lights() {
     const keyLightRef = useRef();
-    const [shadowCameraHelper, setShadowCameraHelper] = useState(false);
+    const  fillLightRef = useRef();
+    const backLightRef = useRef();
+ 
+    useHelper(keyLightRef, THREE.DirectionalLightHelper, 1)
+    useHelper(fillLightRef, THREE.DirectionalLightHelper, 1)
+    useHelper(backLightRef, THREE.DirectionalLightHelper, 1)
+
 
     const { scene } = useThree();
 
@@ -15,21 +21,25 @@ export default function Lights() {
         color: "#3a62c8",
         position: { value: [-6.5, 3.8, 4.8], step: 1 }
     });
-
+    
     const fillLightControls = useControls("FillLight", {
         intensity: { value: 2.6, min: 0, max: 100, step: 0.1 },
         color: "#526cad",
-        position: { value: [22, 15, -48], step: 1 },
+        position: { value: [20, 15, -22], step: 1 },
     });
 
     const backLightControls = useControls("BackLight", {
-        intensity: { value: 1.3, min: 0, max: 100, step: 0.1 },
+        intensity: { value: 16, min: 0, max: 100, step: 0.1 },
         color: "#4b6eb4",
-        position: { value: [-7, 4, 9], step: 1 },
+        position: { value: [-7, 15,-47 ], step: 1 },
     });
 
+    // if (backLightRef.current)
+    // scene.add(new THREE.CameraHelper(backLightRef.current.shadow.camera))
+
+    
     const ambiantLightControls = useControls("AmbiantLight", {
-        intensity: { value: 0.81, min: 0, max: 100, step: 0.001 },
+        intensity: { value: 1.75, min: 0, max: 100, step: 0.001 },
         color: "#526cad",
     });
 
@@ -40,9 +50,9 @@ export default function Lights() {
                 position={keyLightControls.position}
                 intensity={keyLightControls.intensity}
                 color={keyLightControls.color}
-                castShadow
-                shadow-mapSize={[4096, 4096]}
-                // shadow-radius={10000}
+                // castShadow
+                shadow-mapSize={[128, 128]}
+                // shadow-radius={20}
                 shadow-camera-near={1}
                 shadow-camera-far={40}
                 shadow-camera-top={25}
@@ -53,14 +63,23 @@ export default function Lights() {
             />
 
             <directionalLight
+            ref={fillLightRef}
                 position={fillLightControls.position}
                 intensity={fillLightControls.intensity}
                 color={fillLightControls.color}
+                target-position={[-18.5, 4, -36]}
             />
-            <directionalLight
+            {/* <directionalLight
                 position={backLightControls.position}
                 intensity={backLightControls.intensity}
                 color={backLightControls.color}
+            /> */}
+              <directionalLight
+                ref={backLightRef}
+                position={[-7, 15,-47 ]}
+                intensity={backLightControls.intensity}
+                color={backLightControls.color}
+                target-position={[-9.7, 8, -59]}
             />
             <ambientLight
                 intensity={ambiantLightControls.intensity}

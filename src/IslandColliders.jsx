@@ -1,4 +1,4 @@
-import { useGLTF, Instances, Instance, Image, Box, useKeyboardControls } from "@react-three/drei";
+import { useGLTF, Instances, Instance, Image, Box, useKeyboardControls, Float } from "@react-three/drei";
 import { InstancedRigidBodies, RigidBody } from "@react-three/rapier";
 import { useStore } from "./ZustandStorage";
 import { extend, useFrame, useLoader } from "@react-three/fiber";
@@ -20,14 +20,14 @@ const IslandColliders = (props) => {
     const pressurePlatesMaterial = useMemo(() => new THREE.MeshBasicMaterial({ color: "red" }), [])
 
     const activePlateRef = useRef(useStore.getState().activePlate)
-    const prevPlateRef = useRef(useStore.getState().prevPlate)
+    const magicCircleActivation = useStore(state => state.magicCircleActivation)
 
     const imgRef = useRef();
 
     const activeLink = useRef(null)
 
-    const mailBoxRef = useRef() 
-
+    const mailBoxRef = useRef()
+    
     const imageLink = useControls('imageLink', {
         position: { value: { x: -4.47, y: 2.40, z: -7 }, step: 0.01 },
         rotationY: { value: 0 }
@@ -38,8 +38,7 @@ const IslandColliders = (props) => {
             return;
         if (activeLink && !activeLink.current && imgRef.current) {
             activeLink.current = link;
-            gsap.to(imgRef.current.material, { opacity: 1, duration: 0.5 })
-            imgRef.current.scale.set(link.textScale, link.textScale, link.textScale)
+            gsap.to(imgRef.current.scale, {x: link.textScale, y: link.textScale, z: link.textScale, duration: 0.3, ease: "back"})
             imgRef.current.position.set(...link.textPosition)
             imgRef.current.rotation.y = link.textRotationY;
         }
@@ -48,12 +47,15 @@ const IslandColliders = (props) => {
     const deactivateLink = () => {
         if (activeLink && activeLink.current && imgRef.current) {
             activeLink.current = null;
-            gsap.to(imgRef.current.material, { opacity: 0, duration: 0.5 })
+            gsap.to(imgRef.current.scale, {x: 0, y: 0, z: 0, duration: 0.2})
         }
     }
 
 
     const activatePlate = (data) => {
+        if (data.id === activePlateRef.current)
+            return;
+
         useStore.setState(state => ({
             prevPlate: state.activePlate,
             activePlate: data.id
@@ -65,8 +67,8 @@ const IslandColliders = (props) => {
             key: "mailBox",
             userData: {
                 id: "mailBox",
-                textPosition: [-4.47, 2.40, -8.14],
-                textRotationY: 0.26,
+                textPosition: [-4.47, 2.45, -8.14],
+                textRotationY: 0.40,
                 textScale: 0.8,
                 enterFunction: activateLink,
                 exitFunction: deactivateLink,
@@ -80,8 +82,8 @@ const IslandColliders = (props) => {
             key: "linkedIn",
             userData: {
                 id: "linkedIn",
-                textPosition: [-3.68, 2.25, -8.50],
-                textRotationY: 0.26,
+                textPosition: [-3.37, 2.45, -8.63],
+                textRotationY: 0.40,
                 textScale: 0.8,
                 href: "https://www.linkedin.com/in/mike-fernandez-front-end-dev/",
                 enterFunction: activateLink,
@@ -95,8 +97,8 @@ const IslandColliders = (props) => {
             key: "vercel",
             userData: {
                 id: "vercel",
-                textPosition: [-2.62, 2.25, -9.06],
-                textRotationY: 0.26,
+                textPosition: [-2.26, 2.45, -9.27],
+                textRotationY: 0.4,
                 textScale: 0.8,
                 href: "https://vercel.com/mikefernandez-pro",
                 enterFunction: activateLink,
@@ -129,7 +131,7 @@ const IslandColliders = (props) => {
             key: "statue",
             userData: {
                 id: "statue",
-                textPosition: [-10.08, 7.90, -58.80],
+                textPosition: [-9.77, 8, -58.80],
                 textRotationY: 0,
                 textScale: 0.9,
                 href: "https://www.google.fr/",
@@ -144,7 +146,10 @@ const IslandColliders = (props) => {
             key: "magicCircle",
             userData: {
                 id: "magicCircle",
-                enterFunction: () => useStore.setState({ magicCircleActivation: true }),
+                enterFunction: () => {
+                    if (!magicCircleActivation)
+                        useStore.setState({ magicCircleActivation: true })
+                },
             },
             position: [6.34, 2.69, -33.53],
             rotation: [0, -0.15, 0],
@@ -199,6 +204,7 @@ const IslandColliders = (props) => {
         position: { value: [-2.03, 0.42, -9.20], step: 0.01 },
         rotation: { value: [0, 0, 0], step: 0.01 },
         scale: { value: [1, 1, 1], step: 0.01 },
+        color: "red"
     })
 
     const box = useRef();
@@ -212,19 +218,23 @@ const IslandColliders = (props) => {
                     activeLink.current.id === "mailBox" ?
                         window.location.href = 'mailto:mike.fernandez.pro@gmail.com' :
                         activeLink.current.id === "portal" ?
-                        window.open(activeLink.current.href[activePlateRef.current], "_blank"):
-                        window.open(activeLink.current.href, "_blank")
+                            window.open(activeLink.current.href[activePlateRef.current], "_blank") :
+                            window.open(activeLink.current.href, "_blank")
                 }
             }
         })
 
+        useStore.subscribe(
+            state => (activePlateRef.current = state.activePlate)
+        )
+
     }, []);
 
-    useStore.subscribe(state => ({prevPlate: state.prevPlate, activePlate: state.activePlate}),
-        (states) => {
-            activePlateRef.current = states.activePlate;
-            prevPlateRef.current = states.prevPlate;    
-})
+    // useStore.subscribe(state => ({ prevPlate: state.prevPlate, activePlate: state.activePlate }),
+    //     (states) => {
+    //         activePlateRef.current = states.activePlate;
+    //         prevPlateRef.current = states.prevPlate;
+    //     })
 
     return (
         <>
@@ -243,6 +253,7 @@ const IslandColliders = (props) => {
                     state.target.rigidBody.userData.enterFunction(state.target.rigidBody.userData)
                 }
                 onIntersectionExit={(state) => state.target.rigidBody.userData.exitFunction()}
+
             >
                 <instancedMesh args={[null, null, linksInstancesDatas.length]}>
                     <boxGeometry args={[1, 1, 1]} />
@@ -276,12 +287,20 @@ const IslandColliders = (props) => {
                 ref={imgRef}
                 url="/svg/Component 2.png"
                 position={[imageLink.position.x, imageLink.position.y, imageLink.position.z]}
-                rotation-y={0}
-                scale={2}
+                rotation-y={imageLink.rotationY}
+                scale={0.01}
                 color={[3, 1.5, 1]}
                 transparent
                 toneMapped={false}
-                opacity={0}
+                onClick={() => {
+                    if (activeLink) {
+                    activeLink.current.id === "mailBox" ?
+                        window.location.href = 'mailto:mike.fernandez.pro@gmail.com' :
+                        activeLink.current.id === "portal" ?
+                            window.open(activeLink.current.href[activePlateRef.current], "_blank") :
+                            window.open(activeLink.current.href, "_blank")
+                }
+                }}
             />
         </>
     );

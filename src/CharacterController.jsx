@@ -1,4 +1,4 @@
-import { useGLTF, useKeyboardControls, useAnimations } from "@react-three/drei";
+import { useGLTF, useKeyboardControls, useAnimations, ContactShadows } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { CapsuleCollider, RigidBody, useRapier } from "@react-three/rapier";
 import { useControls } from "leva";
@@ -67,7 +67,7 @@ const Player = ({ joystickAngle, orbitControls }) => {
     //     // Check if the child object is a Mesh
     //     if (child.isMesh && child.material.isMeshStandardMaterial) {
     //         // Set the sha<<w<<dowSide property to THREE.DoubleSide
-    //         child.castShadow = true;
+    //         // child.castShadow = true;
     //         //   child.receiveShadow = true;
     //     }
     // });
@@ -82,6 +82,7 @@ const Player = ({ joystickAngle, orbitControls }) => {
                 //   backgroundMusic.play();
             } else {
                 pageVisibiliy.current = false;
+                knightBody.current.sleep();
                 //   backgroundMusic.pause();
             }
         });
@@ -110,7 +111,7 @@ const Player = ({ joystickAngle, orbitControls }) => {
 
             if (knightPosition.y < 0) {
                 knightBody.current.setTranslation({
-                    x:0,
+                    x: 0,
                     y: 1.5,
                     z: 0
                 })
@@ -154,7 +155,7 @@ const Player = ({ joystickAngle, orbitControls }) => {
             });
 
             rotateQuaternion.setFromAxisAngle(rotationAngle, direction - Math.PI / 2);
-            knightMesh.current.quaternion.rotateTowards(rotateQuaternion, 0.25); //017 avant
+            knightMesh.current.quaternion.rotateTowards(rotateQuaternion, 0.3); //017 avant
         }
     });
 

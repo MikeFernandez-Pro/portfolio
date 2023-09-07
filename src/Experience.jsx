@@ -14,9 +14,10 @@ import IslandColliders from "./IslandColliders.jsx";
 import ProjectsPortals from "./ProjectsPortals.jsx";
 
 export default function Experience({ joystickAngle }) {
-    const { debug, orbitControlsActivation } = useControls("Controls", {
+    const { debug, orbitControlsActivation, envMapColor } = useControls("Controls", {
         debug: false,
         orbitControlsActivation: false,
+        envMapColor: "blue"
     });
 
     const { scene, camera } = useThree();
@@ -42,9 +43,11 @@ export default function Experience({ joystickAngle }) {
 
             {orbitControlsActivation && <OrbitControls ref={orbitControlsRef} camera={camera} />}
 
-            <SoftShadows size={ 5 } samples={ 10 } />
-            <Environment preset="night"/>
-            <BakeShadows />
+            {/* <SoftShadows size={ 10 } samples={ 10 } /> */}
+            {/* <Environment preset="sunset">
+            <color args={ [ envMapColor ] } attach="background" />
+                </Environment> */}
+            {/* <BakeShadows /> */}
          
             <Lights />
 

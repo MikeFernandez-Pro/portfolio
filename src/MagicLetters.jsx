@@ -3,17 +3,20 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three"
 import { useStore } from "./ZustandStorage";
 import gsap from "gsap";
-import { useEffect, useRef } from "react";
 
-const MagicLetters = ({ position }) => {
+import floatingTextVertexShader from "/shaders/floatingText/vertex.glsl"
+import floatingTextFragmentShader from "/shaders/floatingText/fragment.glsl"
+
+const MagicLetters = ({ magicLetters, texture}) => {
 
     const { nodes } = useGLTF("/models/magicLetters.glb")
 
     const material = new THREE.ShaderMaterial({
         uniforms: {
             uTime: { value: 0 },
-            uOpacity: {value: 0}
-        },
+            uOpacity: {value: 0},
+            uTexture: {value: texture},
+         },
         vertexShader: `
         uniform float uTime;
 
@@ -25,6 +28,7 @@ const MagicLetters = ({ position }) => {
             
 
             modelPosition.y += sin(modelPosition.x * 10.0 + uTime) * 0.02;
+
              modelPosition.y += sin(modelPosition.y * 0.5 + uTime) * 0.01;
 
 
@@ -39,43 +43,35 @@ const MagicLetters = ({ position }) => {
         }
         `,
         fragmentShader: `
+        uniform sampler2D uTexture;
         uniform float uOpacity;
 
         varying vec2 vUv;
 
         void main()
 {
-
-    gl_FragColor = vec4(0.97, 0.37, 0.24, uOpacity) * 2.5;
+    vec4 textureColor = texture2D(uTexture, vUv);
+    textureColor.rgb = mix(textureColor.rgb, vec3(0.93, 0.5, 0.2), 1.0);
+    textureColor.a *= uOpacity;
+    gl_FragColor = textureColor * 2.0;
 }
         `,
         side: THREE.DoubleSide,
         transparent: true,
         toneMapped: false,
     })
-    
-    const magicCircleActivationRef = useRef(useStore.getState().magicCircleActivation)
 
-    useEffect(() => useStore.subscribe(
-        state => {
-          magicCircleActivationRef.current = state.magicCircleActivation
-          if (magicCircleActivationRef.current)
-            gsap.to(material.uniforms.uOpacity, { duration: 2, delay: 2, value: 1 })
-        }
-      ), [])
+    magicLetters.material = material;
+
+    const magicCircleActivation = useStore(state => state.magicCircleActivation)
+
+    if (magicCircleActivation) {
+      gsap.to(magicLetters.material.uniforms.uOpacity, { duration: 1, delay: 1.5, value: 1 })
+    }
 
     useFrame(state => {
-        material.uniforms.uTime.value = state.clock.elapsedTime;
+        magicLetters.material.uniforms.uTime.value = state.clock.elapsedTime;
     })
-
-    return (
-        <mesh
-            position={position}
-            scale={0.45}
-            geometry={nodes.magicLetters.geometry}
-            material={material}
-        />
-    );
 };
 
 useGLTF.preload("/models/magicLetters.glb")
