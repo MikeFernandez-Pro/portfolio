@@ -105,6 +105,7 @@ const Player = ({ joystickAngle, orbitControls }) => {
 
     useFrame((state, delta) => {
 
+
         /**
          * Camera Controller
          */
@@ -127,7 +128,7 @@ const Player = ({ joystickAngle, orbitControls }) => {
             cameraPosition.addVectors(knightPosition, cameraOffset);
             smoothCameraPosition.lerp(cameraPosition, 5 * delta);
 
-            state.camera.position.copy(smoothCameraPosition); // A REACTIVER PÖUR SUIVRE PERSO
+            // state.camera.position.copy(smoothCameraPosition); // A REACTIVER PÖUR SUIVRE PERSO
 
             /**
              * Model Controller

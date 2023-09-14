@@ -9,9 +9,17 @@ export default function Lights() {
     const  fillLightRef = useRef();
     const backLightRef = useRef();
  
-    useHelper(keyLightRef, THREE.DirectionalLightHelper, 1)
-    useHelper(fillLightRef, THREE.DirectionalLightHelper, 1)
-    useHelper(backLightRef, THREE.DirectionalLightHelper, 1)
+    const keyLightHelper = useHelper(keyLightRef, THREE.DirectionalLightHelper, 0)
+    const fillLighHelper = useHelper(fillLightRef, THREE.DirectionalLightHelper, 0)
+    const backLightHelper = useHelper(backLightRef, THREE.DirectionalLightHelper, 0)
+
+    if (keyLightHelper.current) {
+        keyLightHelper.current.targetLine.geometry.setDrawRange(0, 0);
+        fillLighHelper.current.targetLine.geometry.setDrawRange(0, 0);
+        backLightHelper.current.targetLine.geometry.setDrawRange(0, 0);
+    }
+
+
 
 
     const { scene } = useThree();

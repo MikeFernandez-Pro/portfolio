@@ -12,8 +12,22 @@ body,
 
 canvas {
     position: absolute;
-    inset: 0;
+    inset-block-start: auto;
+    inset-inline-start: auto;
+    inset-inline-end: auto;
     pointer-events: none;
+}
+
+
+#loader {
+    position: absolute;
+    z-index: 2;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 10rem;
+    text-align: center;
+    color: white;
+    cursor: pointer;
 }
 
 [data-testid="joystick-base"] {

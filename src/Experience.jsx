@@ -51,6 +51,8 @@ export default function Experience({ joystickAngle }) {
          
             <Lights />
 
+
+
             <Island />
 
             <ProjectsPortals />
