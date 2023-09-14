@@ -17,20 +17,20 @@ export default function Lights() {
     const { scene } = useThree();
 
     const keyLightControls = useControls("KeyLight", {
-        intensity: { value: 27.3, min: 0, max: 100, step: 0.1 },
+        intensity: { value:24.5, min: 0, max: 50, step: 0.1 },
         color: "#3a62c8",
         position: { value: [-6.5, 3.8, 4.8], step: 1 }
     });
     
     const fillLightControls = useControls("FillLight", {
-        intensity: { value: 2.6, min: 0, max: 100, step: 0.1 },
+        intensity: { value: 2.3, min: 0, max: 50, step: 0.1 },
         color: "#526cad",
         position: { value: [20, 15, -22], step: 1 },
     });
 
     const backLightControls = useControls("BackLight", {
-        intensity: { value: 16, min: 0, max: 100, step: 0.1 },
-        color: "#4b6eb4",
+        intensity: { value: 8.2, min: 0, max: 50, step: 0.1 },
+        color: "#6988c4",
         position: { value: [-7, 15,-47 ], step: 1 },
     });
 
@@ -39,7 +39,7 @@ export default function Lights() {
 
     
     const ambiantLightControls = useControls("AmbiantLight", {
-        intensity: { value: 1.75, min: 0, max: 100, step: 0.001 },
+        intensity: { value: 8.2, min: 0, max: 50, step: 0.1 },
         color: "#526cad",
     });
 

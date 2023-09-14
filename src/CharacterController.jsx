@@ -73,6 +73,12 @@ const Player = ({ joystickAngle, orbitControls }) => {
     // });
 
 
+
+
+    // CLAMP DELTA TO AVOID FRAMES BUG WHEN GO BACK TO WEBSITE TAB
+    // const clampedDelta = Math.min(delta, 1/30) 
+
+
     const pageVisibiliy = useRef(true)
 
     useEffect(() => {

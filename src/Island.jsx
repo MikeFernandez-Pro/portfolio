@@ -1,4 +1,4 @@
-import { useGLTF, useAnimations, SoftShadows, shaderMaterial, Svg, Image, Text, Instance, Instances, Html } from "@react-three/drei";
+import { useGLTF, useAnimations, SoftShadows, shaderMaterial, Svg, Image, Text, Instance, Instances, Html, Plane } from "@react-three/drei";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useControls } from "leva";
@@ -13,11 +13,12 @@ import { DoubleSide } from "three";
 import { MeshStandardMaterial } from "three";
 import SleepText from "./SleepText";
 
-
 const Island = () => {
   const staticLights = useControls("staticLights", {
-    intensity: { value: 3, min: 0, max: 50, step: 0.01 },
+    // intensity: { value: 17.21, min: 2, max: 50, step: 0.001 },
+    intensity: { value: 0, min: 2, max: 50, step: 0.001 },
     color: "#ffaf67",
+    aoMapIntensity: { value: 1, min: 0, max: 5, step: 0.001 },
   });
   const magicCircle = useControls("magicCircle", {
     intensity: { value: 3, min: 0, max: 50, step: 0.01 },
@@ -40,53 +41,57 @@ const Island = () => {
   /**
    * Island initialization
    */
-  const island = useGLTF("/models/islandShadows.glb");
+  const island = useGLTF("/models/island.glb");
   const islandAnimations = useAnimations(island.animations, island.scene)
   const islandPosition = useMemo(() => [-1.35, 2.3, -15], []);
 
-  const islandTexture = useLoader(THREE.TextureLoader, "textures/TextureWithEye.png")
+  const islandTexture = useLoader(THREE.TextureLoader, "textures/islandTexture.png")
   const islandShadowMap = useLoader(THREE.TextureLoader, "textures/shadowsBakedBlurred.png")
-  
+
   islandTexture.flipY = false;
   islandTexture.colorSpace = THREE.SRGBColorSpace
-  
+
   islandShadowMap.flipY = false;
   islandShadowMap.colorSpace = THREE.SRGBColorSpace
   islandShadowMap.channel = 1
-  
+
   island.materials.islandTexture.map = islandTexture;
   island.materials.islandTexture.aoMap = islandShadowMap;
-  island.materials.islandTexture.aoMapIntensity = 8;
+  island.materials.islandTexture.aoMapIntensity = staticLights.aoMapIntensity;
   island.materials.islandTexture.color = new THREE.Color(1, 1, 1);
 
   const { envMapIntensity } = useControls('environment map', {
     envMapIntensity: { value: 1, min: 0, max: 12 }
-})
+  })
 
   island.scene.traverse((child) => {
     if (child.isMesh && child.material.isMeshStandardMaterial && child.material.name !== "hammer") {
       // child.castShadow = true;
       // child.receiveShadow = true;
       child.material.roughness = 1;
-      // child.material.envMapIntensity = envMapIntensity
+      child.material.envMapIntensity = envMapIntensity
     }
   });
 
   island.materials.hammer.map = islandTexture;
   island.materials.hammer.color = new THREE.Color(1, 1, 1);
 
-  island.materials.staticLights.emissiveIntensity = staticLights.intensity;
-  island.materials.staticLights.toneMapped = false;
+
+  island.materials.staticLights.map = islandTexture;
+  island.materials.staticLights.color = new THREE.Color(1, 1, 1);
+  island.materials.staticLights.emissiveIntensity = 5;
+
+
 
   island.materials.magicPortal.color = new THREE.Color(magicCircle.color)
   island.materials.magicPortal.emissiveIntensity = 0;
   island.materials.magicPortal.emissive = new THREE.Color(magicCircle.color);
   island.materials.magicPortal.toneMapped = false;
 
-  island.materials.magicLetters.emissiveIntensity =4;
+  island.materials.magicLetters.emissiveIntensity = 4;
   island.materials.magicLetters.toneMapped = false;
   island.materials.magicLetters.map = islandTexture;
-  
+
   island.materials.galaxyPlate.emissiveIntensity = 0;
   island.materials.galaxyPlate.emissive = new THREE.Color(pressurePlates.color);
   island.materials.galaxyPlate.toneMapped = false;
@@ -140,6 +145,8 @@ const Island = () => {
     }
   ), [])
 
+  const planeTest = useRef();
+
   return (
     <>
       <primitive object={island.scene} scale={0.45} position={islandPosition} />
@@ -149,9 +156,9 @@ const Island = () => {
       />
       <LavaMesh lavaMesh={island.scene.children[0].children[0].children[3]} />
       <MagicBooks magicBooks={island.scene.children[0].children[0].children[9]} texture={islandTexture} />
-      <MagicLetters magicLetters={island.scene.children[0].children[0].children[11]} texture={islandTexture}/>
+      <MagicLetters magicLetters={island.scene.children[0].children[0].children[11]} texture={islandTexture} />
       <SleepText />
-    </>    
+    </>
   );
 };
 
