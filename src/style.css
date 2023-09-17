@@ -24,15 +24,68 @@ canvas {
     z-index: 2;
     left: 50%;
     transform: translateX(-50%);
-    bottom: 10rem;
+    bottom: 5vh;
+    bottom: 5dvh;
     text-align: center;
     color: white;
     cursor: pointer;
 }
+
 
 [data-testid="joystick-base"] {
     position: absolute;
     z-index: 1;
     bottom : 5rem;
     right: 10rem;
+}
+
+.loader {
+    width:96px;
+    height:96px;
+    border-radius: 50%;
+    border-top: 8px solid #FFF;
+    border-right: 8px solid transparent;
+    position: absolute;
+    z-index: 2;
+    left: 50%;
+    /* transform: translateX(-50%); */
+    bottom: 7rem;
+    text-align: center;
+    animation: rotation 1s linear infinite;
+  }
+  .loader::after {
+    content: '';  
+    box-sizing: border-box;
+    position: absolute;
+   inset: 0;
+    width:96px;
+    height:96px;
+    border-radius: 50%;
+    border-left: 8px solid #2b97d1;
+    border-bottom: 8px solid transparent;
+    animation: rotation 0.5s linear infinite reverse;
+  }
+  @keyframes rotation {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  } 
+
+.tunnel-test {
+    position: absolute;
+    z-index: 2;
+    color: white;
+   bottom: 5rem;
+}
+
+.background-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgb(14, 23, 41);
 }

@@ -42,7 +42,7 @@ export default function Experience({ joystickAngle }) {
             <Perf position="top-left" />
 
             {orbitControlsActivation && <OrbitControls ref={orbitControlsRef} camera={camera} />}
-
+        
             {/* <SoftShadows size={ 10 } samples={ 10 } /> */}
             {/* <Environment preset="sunset">
             <color args={ [ envMapColor ] } attach="background" />
@@ -50,8 +50,6 @@ export default function Experience({ joystickAngle }) {
             {/* <BakeShadows /> */}
          
             <Lights />
-
-
 
             <Island />
 

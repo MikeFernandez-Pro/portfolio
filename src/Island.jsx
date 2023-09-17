@@ -65,9 +65,7 @@ const Island = () => {
   })
 
   island.scene.traverse((child) => {
-    if (child.isMesh && child.material.isMeshStandardMaterial && child.material.name !== "hammer") {
-      // child.castShadow = true;
-      // child.receiveShadow = true;
+    if (child.isMesh && child.material.isMeshStandardMaterial) {
       child.material.roughness = 1;
       child.material.envMapIntensity = envMapIntensity
     }
@@ -127,25 +125,16 @@ const Island = () => {
    * Projects Activation Plates
    */
 
-  const activePlateRef = useRef(useStore.getState().activePlate)
-  const prevPlateRef = useRef(useStore.getState().prevPlate)
+  // Subscribe to activePlate and prevPlate zustand store states
+  const subPrevPlate = useStore.subscribe((state) => state.prevPlate, (state) => gsap.to(island.materials[state], { duration: 0, emissiveIntensity: 0 }))
+  const subActivePlate = useStore.subscribe((state) => state.activePlate, (state) => gsap.to(island.materials[state], { duration: 0.2, emissiveIntensity: 3 }))
+
+  // Retrieve magicCircleActivation zustand state
   const magicCircleActivation = useStore(state => state.magicCircleActivation)
 
   if (magicCircleActivation) {
     gsap.to(island.materials.magicPortal, { duration: 1, emissiveIntensity: 2.3 })
   }
-
-  useEffect(() => useStore.subscribe(
-    state => {
-      activePlateRef.current = state.activePlate
-      prevPlateRef.current = state.prevPlate
-      if (prevPlateRef.current)
-        gsap.to(island.materials[prevPlateRef.current], { duration: 0, emissiveIntensity: 0 });
-      gsap.to(island.materials[activePlateRef.current], { duration: 0.2, emissiveIntensity: 3 });
-    }
-  ), [])
-
-  const planeTest = useRef();
 
   return (
     <>

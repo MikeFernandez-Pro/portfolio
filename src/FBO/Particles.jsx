@@ -109,6 +109,7 @@ const Particles = () => {
         getPixelDataFromImage(t1, SIZE, viewport.aspect).then((dataTexture) => {
             setOriginalPosition(dataTexture);
         });
+        
 
         // Define particles scale according to aspectRatio
         renderMat.current.uniforms.uScaleRatio.value = viewport.aspect;

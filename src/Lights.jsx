@@ -58,16 +58,6 @@ export default function Lights() {
                 position={keyLightControls.position}
                 intensity={keyLightControls.intensity}
                 color={keyLightControls.color}
-                // castShadow
-                shadow-mapSize={[128, 128]}
-                // shadow-radius={20}
-                shadow-camera-near={1}
-                shadow-camera-far={40}
-                shadow-camera-top={25}
-                shadow-camera-right={2}
-                shadow-camera-bottom={-3}
-                shadow-camera-left={-70}
-                shadow-bias = {-0.01}
             />
 
             <directionalLight

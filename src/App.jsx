@@ -1,7 +1,7 @@
 import { useState, Suspense, useRef } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import Experience from "./Experience.jsx";
-import { AdaptiveDpr, Cloud, KeyboardControls, Loader, PerformanceMonitor, PerspectiveCamera, Preload } from "@react-three/drei";
+import { AdaptiveDpr, Cloud, KeyboardControls, Loader, PerformanceMonitor, PerspectiveCamera, Plane, Preload, SoftShadows } from "@react-three/drei";
 import { Leva, useControls } from "leva";
 import { BlurPass, Resizer, KernelSize } from 'postprocessing'
 import { Joystick } from "react-joystick-component";
@@ -10,6 +10,10 @@ import * as THREE from "three"
 import Particles from "./FBO/Particles.jsx";
 import gsap from "gsap";
 import CustomEase from "gsap/CustomEase";
+import tunnel from 'tunnel-rat'
+
+const ui = tunnel()
+gsap.registerPlugin(CustomEase);
 
 const App = (props) => {
     const [joystickAngle, setJoystickAngle] = useState(0);
@@ -40,21 +44,23 @@ const App = (props) => {
             y: 3.4,
             z: 5.5,
             duration: 4.5,
-            ease: 
-            CustomEase.create("custom", "M0,0,C0,0,0.706,1.009,0.784,1.01,0.872,1.01,0.911,1,0.964,1,1,1,1,1,1,1")
+            ease:
+                CustomEase.create("custom", "M0,0,C0,0,0.706,1.009,0.784,1.01,0.872,1.01,0.911,1,0.964,1,1,1,1,1,1,1")
         })
         gsap.to(cameraRef.current.rotation, {
             x: -Math.PI / 8,
             y: 0,
             z: 0,
             duration: 4,
-            ease: 
-            CustomEase.create("custom", "M0,0,C0,0,0.706,1.009,0.784,1.01,0.872,1.01,0.911,1,0.964,1,1,1,1,1,1,1")
+            ease:
+                CustomEase.create("custom", "M0,0,C0,0,0.706,1.009,0.784,1.01,0.872,1.01,0.911,1,0.964,1,1,1,1,1,1,1")
         })
     }
 
     return (
         <>
+            {/* tunnel */}
+            <ui.Out />
 
             <h1 id="loader" onClick={() => loadExperience()}>CLICK ON ME !</h1>
 
@@ -81,7 +87,6 @@ const App = (props) => {
                 ]}
             >
                 <Canvas
-                    shadows
                     // camera={{
                     //     fov: 45,
                     //     near: 0.1,
@@ -108,22 +113,27 @@ const App = (props) => {
                         position={controls.cameraPosition}
                         rotation={controls.cameraRotation}
                         fov={45}
-                        near={0.1}
+                        near={0.5} // Previously 0.1, try to change in order to improve bloom postprocessing effect
                         far={200}
 
                     />
 
                     <Cloud position={[8, 46, -20]} speed={0.2} opacity={0.3} />
+                    
+
                     <Particles />
 
-                    <Suspense fallback={null}>
+                    
+                    <Suspense fallback={<ui.In>
+                         <span className="loader"></span>
+                    </ui.In>}>
                         <Experience
                             joystickAngle={joystickAngle}
                         />
                         <Preload all />
                     </Suspense>
                 </Canvas>
-                <Loader />
+                {/* <Loader /> */}
             </KeyboardControls>
         </>
     );
