@@ -238,12 +238,6 @@ const IslandColliders = (props) => {
 
     return (
         <>
-            <Box ref={box}
-                position={instanceControls.position}
-                rotation={instanceControls.rotation}
-                scale={instanceControls.scale}
-            />
-
             <InstancedRigidBodies
                 instances={instances}
                 colliders="cuboid"

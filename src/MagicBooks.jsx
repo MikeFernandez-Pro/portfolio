@@ -24,7 +24,7 @@ const MagicBooks = ({ magicBooks, texture }) => {
         thickness: { value: 0.02, min: 0, max: 0.1, step: 0.001 },
     });
 
-    const disolveEffectMaterial = new CustomShaderMaterial({
+    const disolveShaderMaterial = new CustomShaderMaterial({
         baseMaterial: magicBooksMaterial,
         vertexShader: dissolveEffectVertexShader,
         fragmentShader: patchShaders(dissolveEffectFragmentShader),
@@ -40,14 +40,21 @@ const MagicBooks = ({ magicBooks, texture }) => {
         transparent: true,
     });
 
-    magicBooks.material = disolveEffectMaterial.clone();
-
-
     const magicCircleActivation = useStore(state => state.magicCircleActivation)
 
     if (magicCircleActivation) {
-        gsap.to( magicBooks.material.uniforms.uProgress, { duration: 3, delay: 0.5, value: 1 });
+        gsap.to(disolveShaderMaterial.uniforms.uProgress, { duration: 3, delay: 0.5, value: 1 });
     }
+
+    return (
+        <skinnedMesh
+            geometry={magicBooks.geometry}
+            material={disolveShaderMaterial}
+            skeleton={magicBooks.skeleton}
+            morphTargetDictionary={magicBooks.morphTargetDictionary}
+            morphTargetInfluences={magicBooks.morphTargetInfluences}
+        />
+    )
 };
 
 
