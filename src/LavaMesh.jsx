@@ -8,14 +8,14 @@ import gsap from "gsap";
 
 
 
-const LavaMesh = ({furnace}) => {    
+const LavaMesh = ({lavaMesh}) => {    
 
     const controls = useControls("Oven Lava", {
 
-        uWavesElevation: 0.1,
-        uWavesFrequency: 4,
-        uWavesSpeed: 0.2,
-        uWavesIterations: 1,
+        uSmallWavesElevation: 0.1,
+        uSmallWavesFrequency: 4,
+        uSmallWavesSpeed: 0.2,
+        uSmallWavesIterations: 1,
         uDepthColor: "#ffa172",
         uSurfaceColor: "#ff0000",
         uColorMultiplier: {value: 5, min: 0, max: 20},
@@ -29,10 +29,10 @@ const LavaMesh = ({furnace}) => {
         uniforms: {
             uTime: {value: 0},
     
-            uWavesElevation: {value: controls.uWavesElevation},
-            uWavesFrequency: {value: controls.uWavesFrequency},
-            uWavesSpeed: {value: controls.uWavesSpeed},
-            uWavesIterations: {value: controls.uWavesIterations},
+            uSmallWavesElevation: {value: controls.uSmallWavesElevation},
+            uSmallWavesFrequency: {value: controls.uSmallWavesFrequency},
+            uSmallWavesSpeed: {value: controls.uSmallWavesSpeed},
+            uSmallWavesIterations: {value: controls.uSmallWavesIterations},
     
             uDepthColor : {value: new Color(controls.uDepthColor)},
             uSurfaceColor : {value: new Color(controls.uSurfaceColor)},
@@ -40,9 +40,11 @@ const LavaMesh = ({furnace}) => {
             uIntensity: {value: controls.uIntensity},
         },
     })
+
+    lavaMesh.material = lavaShaderMaterial;
     
     gsap.fromTo(
-        lavaShaderMaterial.uniforms.uIntensity,
+        lavaMesh.material.uniforms.uIntensity,
         {value: 2 },
         {
             value: 3,
@@ -55,18 +57,8 @@ const LavaMesh = ({furnace}) => {
     )
 
      useFrame((state, delta) => {   
-        lavaShaderMaterial.uniforms.uTime.value = state.clock.elapsedTime;
+        lavaMesh.material.uniforms.uTime.value = state.clock.elapsedTime;
      })
-
-     return (
-        <skinnedMesh
-        geometry={furnace.geometry}
-        material={lavaShaderMaterial}
-        skeleton={furnace.skeleton}
-        morphTargetDictionary={furnace.morphTargetDictionary}
-        morphTargetInfluences={furnace.morphTargetInfluences}
-      />
-     )
 
 };
 

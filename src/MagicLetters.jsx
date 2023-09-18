@@ -11,7 +11,7 @@ const MagicLetters = ({ magicLetters, texture}) => {
 
     const { nodes } = useGLTF("/models/magicLetters.glb")
 
-    const wordsShaderMaterial = new THREE.ShaderMaterial({
+    const material = new THREE.ShaderMaterial({
         uniforms: {
             uTime: { value: 0 },
             uOpacity: {value: 0},
@@ -33,7 +33,7 @@ const MagicLetters = ({ magicLetters, texture}) => {
 
 
             vec4 viewPosition = viewMatrix * modelPosition;
-            
+
            
             vec4 projectionPosition = projectionMatrix * viewPosition;
         
@@ -61,26 +61,17 @@ const MagicLetters = ({ magicLetters, texture}) => {
         toneMapped: false,
     })
 
+    magicLetters.material = material;
+
     const magicCircleActivation = useStore(state => state.magicCircleActivation)
 
     if (magicCircleActivation) {
-      gsap.to(wordsShaderMaterial.uniforms.uOpacity, { duration: 1, delay: 1.5, value: 1 })
+      gsap.to(magicLetters.material.uniforms.uOpacity, { duration: 1, delay: 1.5, value: 1 })
     }
 
     useFrame(state => {
-        wordsShaderMaterial.uniforms.uTime.value = state.clock.elapsedTime;
+        magicLetters.material.uniforms.uTime.value = state.clock.elapsedTime;
     })
-
-    console.log(magicLetters.geometry)
-    return (
-        <skinnedMesh
-              geometry={magicLetters.geometry} 
-              material={wordsShaderMaterial}
-              skeleton={magicLetters.skeleton}
-              morphTargetDictionary={magicLetters.morphTargetDictionary}
-              morphTargetInfluences={magicLetters.morphTargetInfluences}
-            />
-    )
 };
 
 useGLTF.preload("/models/magicLetters.glb")

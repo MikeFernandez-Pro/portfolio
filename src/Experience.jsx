@@ -1,4 +1,4 @@
-import { SoftShadows, BakeShadows, OrbitControls, Environment, MeshPortalMaterial, Html, ContactShadows, Circle, AccumulativeShadows, RandomizedLight } from "@react-three/drei";
+import { SoftShadows, BakeShadows, OrbitControls, Environment, MeshPortalMaterial, Html, ContactShadows, Circle, AccumulativeShadows, RandomizedLight, useDetectGPU } from "@react-three/drei";
 import { Perf } from "r3f-perf";
 import { Physics, useRapier } from "@react-three/rapier";
 import Lights from "./Lights.jsx";
@@ -28,7 +28,6 @@ export default function Experience({ joystickAngle }) {
     scene.background = envMap;
 
     const orbitControlsRef = useRef();
-
 
     const softShadowsControls = useControls("SoftShadows", {
         size: { value: 20, step: 0.1 },
