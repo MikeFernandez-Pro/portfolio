@@ -74,6 +74,6 @@ const MagicLetters = ({ magicLetters, texture}) => {
     })
 };
 
-useGLTF.preload("/models/magicLetters.glb")
+// useGLTF.preload("/models/magicLetters.glb")
 
 export default MagicLetters;

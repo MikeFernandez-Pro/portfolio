@@ -1,6 +1,6 @@
 import "./RenderMaterial";
 import "./SimulationMaterial";
-import { getPixelDataFromImage } from "../utils/getPixelDataFromImage";
+import { createDataTexture, getPixelDataFromImage } from "../utils/getPixelDataFromImage";
 import { createPortal } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
@@ -13,6 +13,7 @@ import t1 from "/textures/TestVector.jpg";
 
 const Particles = () => {
     // Define particles default positon depending on dataTexture
+    const textureRef = useRef(null);
     const [originalPosition, setOriginalPosition] = useState(null);
 
     // Create simulation and render materials refs
@@ -92,24 +93,32 @@ const Particles = () => {
         target1 = temp;
     });
 
-    // Update particles positon depending on mouse position and time
-    useFrame(({ mouse, clock }) => {
-                
-        simMat.current.uniforms.uMouse.value.x = ((mouse.x * viewport.width) / 2) * 0.165;
-        simMat.current.uniforms.uMouse.value.y = ((mouse.y * viewport.height) / 2) * 0.165;
-        // simMat.current.uniforms.uMouse.value.x = ((mouse.x * viewport.width) / 2);
-        // simMat.current.uniforms.uMouse.value.y = ((mouse.y * viewport.height) / 2);
+    // Update particles positon depending on pointer position and time
+    useFrame(({ pointer, clock }) => {
+
+        simMat.current.uniforms.uMouse.value.x = ((pointer.x * viewport.width) / 2) * 0.165;
+        simMat.current.uniforms.uMouse.value.y = ((pointer.y * viewport.height) / 2) * 0.165;
+        // simMat.current.uniforms.uMouse.value.x = ((pointer.x * viewport.width) / 2);
+        // simMat.current.uniforms.uMouse.value.y = ((pointer.y * viewport.height) / 2);
         simMat.current.uniforms.uTime.value = clock.elapsedTime;
         renderMat.current.uniforms.uTime.value = clock.elapsedTime;
         renderMat.current.uniforms.uSize.value = controls.uSize; // A DELETE
     });
 
+
     useEffect(() => {
+        const generateFBOTexture = async () => {
+            const imgDatas = await getPixelDataFromImage(t1, SIZE, viewport.aspect)
+            setOriginalPosition(imgDatas);
+        }
+        generateFBOTexture(); 
+    }, []);
+
+    useEffect(() => {
+        if (!originalPosition) return;
+
         // Retrieve dataTexture coordinates from image
-        getPixelDataFromImage(t1, SIZE, viewport.aspect).then((dataTexture) => {
-            setOriginalPosition(dataTexture);
-        });
-        
+        setOriginalPosition(createDataTexture(originalPosition.pixels, SIZE, viewport.aspect))
 
         // Define particles scale according to aspectRatio
         renderMat.current.uniforms.uScaleRatio.value = viewport.aspect;
@@ -127,8 +136,8 @@ const Particles = () => {
                     <planeGeometry args={[2, 2]} />
                     <simulationMaterial
                         ref={simMat}
-                        uPosition={originalPosition}
-                        uOriginalPosition={originalPosition}
+                        uPosition={originalPosition?.dataTexture}
+                        uOriginalPosition={originalPosition?.dataTexture}
                     />
                 </mesh>,
                 scene

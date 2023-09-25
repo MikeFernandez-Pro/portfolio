@@ -1,7 +1,7 @@
 import { useState, Suspense, useRef } from "react";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import Experience from "./Experience.jsx";
-import { AdaptiveDpr, Cloud, KeyboardControls, Loader, PerformanceMonitor, PerspectiveCamera, Plane, Preload, SoftShadows } from "@react-three/drei";
+import { AdaptiveDpr, Box, Cloud, KeyboardControls, Loader, PerformanceMonitor, PerspectiveCamera, Plane, Preload, SoftShadows } from "@react-three/drei";
 import { Leva, useControls } from "leva";
 import { BlurPass, Resizer, KernelSize } from 'postprocessing'
 import { Joystick } from "react-joystick-component";
@@ -11,6 +11,7 @@ import Particles from "./FBO/Particles.jsx";
 import gsap from "gsap";
 import CustomEase from "gsap/CustomEase";
 import tunnel from 'tunnel-rat'
+import { useStore } from "./ZustandStorage.jsx";
 
 const ui = tunnel()
 gsap.registerPlugin(CustomEase);
@@ -39,6 +40,8 @@ const App = (props) => {
     const cameraRef = useRef()
 
     const loadExperience = () => {
+        useStore.setState({ runExperience: true })
+
         gsap.to(cameraRef.current.position, {
             x: 0,
             y: 3.4,
@@ -62,7 +65,7 @@ const App = (props) => {
             {/* tunnel */}
             <ui.Out />
 
-            <h1 id="loader" onClick={() => loadExperience()}>CLICK ON ME !</h1>
+            <h1 id="loader" onClick={() => loadExperience()}>ENTER</h1>
 
             {/* <Joystick
                 size={100}
@@ -87,6 +90,7 @@ const App = (props) => {
                 ]}
             >
                 <Canvas
+                shadows
                     // camera={{
                     //     fov: 45,
                     //     near: 0.1,
@@ -118,10 +122,10 @@ const App = (props) => {
 
                     />
 
-                    <Cloud position={[8, 46, -20]} speed={0.2} opacity={0.3} />
+                    {/* <Cloud position={[8, 46, -20]} speed={0.2} opacity={0.3} /> */}
                     
 
-                    <Particles />
+                    {/* <Particles /> */}
 
                     
                     <Suspense fallback={<ui.In>

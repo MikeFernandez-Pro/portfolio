@@ -57,7 +57,7 @@ const SleepText = () => {
             limit={3} // Optional: max amount of items (for calculating buffer size)
         >
             <planeGeometry />
-            <meshStandardMaterial />
+            <meshBasicMaterial transparent opacity={0}/>
             {
                 onomatopoeiaRefs.map((onomatopoeiaRef, index) => (
                     <Instance

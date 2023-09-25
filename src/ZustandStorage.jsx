@@ -6,6 +6,8 @@ export const useStore = create(subscribeWithSelector((set) => ({
 
     isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
 
+    runExperience: false,
+
     /**
      * Magic Circle activation handler
      */
@@ -23,5 +25,6 @@ export const useStore = create(subscribeWithSelector((set) => ({
     seaPlateMaterial: null,
     galaxyPlateMaterial: null,
 
+    characterPosition: null,
 })))
 

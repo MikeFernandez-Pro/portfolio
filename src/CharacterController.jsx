@@ -54,25 +54,24 @@ const Player = ({ joystickAngle, orbitControls }) => {
     const knightAnimation = useRef("Idle");
 
     // Character Model and animations loaders
-    const knightModel = useGLTF("/models/KnightCharacter.gltf");
+    const knightModel = useGLTF("/models/character/character.glb");
     const knightAnimations = useAnimations(knightModel.animations, knightModel.scene);
 
     // Animation Handler
     // const [knightAnimation, setKnightAnimation] = useState("Idle");
     // Rigid Body current state 
     const knightSleeping = useRef(false);
+    // console.log(knightModel.materials)
 
-    // // Shadows initialization
-    // knightModel.scene.traverse((child) => {
-    //     // Check if the child object is a Mesh
-    //     if (child.isMesh && child.material.isMeshStandardMaterial) {
-    //         // Set the sha<<w<<dowSide property to THREE.DoubleSide
-    //         // child.castShadow = true;
-    //         //   child.receiveShadow = true;
-    //     }
-    // });
-
-
+        // Shadows initialization
+    knightModel.scene.traverse((child) => {
+        // Check if the child object is a Mesh
+        if (child.isMesh && child.material.isMeshStandardMaterial) {
+            // Set the sha<<w<<dowSide property to THREE.DoubleSide
+            child.castShadow = true;
+              child.receiveShadow = true;
+        }
+    }); 
 
 
     // CLAMP DELTA TO AVOID FRAMES BUG WHEN GO BACK TO WEBSITE TAB
@@ -123,7 +122,7 @@ const Player = ({ joystickAngle, orbitControls }) => {
                 })
             }
 
-
+            useStore.setState({ characterPosition: knightPosition });
             cameraPosition.addVectors(knightPosition, cameraOffset);
             smoothCameraPosition.lerp(cameraPosition, 5 * delta);
 
@@ -196,6 +195,6 @@ const Player = ({ joystickAngle, orbitControls }) => {
     );
 };
 
-useGLTF.preload("/models/KnightCharacter.gltf");
+useGLTF.preload("/models/character/character.glb");
 
 export default Player;

@@ -1,15 +1,47 @@
-import * as THREE from "three"
+import * as THREE from "three";
 
-const loadImage = path => {
+const loadImage = (path) => {
     return new Promise((resolve, reject) => {
         const img = new Image();
-        img.crossOrigin = "Anonymous" // avoid CORS if used with Canvas
+        img.crossOrigin = "Anonymous"; // avoid CORS if used with Canvas
         img.src = path;
         img.onload = () => {
-            resolve(img)
+            resolve(img);
+        };
+        img.onerror = (e) => reject(e);
+    });
+};
+
+export function createDataTexture(pixels, size, aspectRatio) {
+    const data = new Float32Array(4 * size * size);
+    for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+            const index = i * size + j;
+            let randomPxiels = pixels[Math.floor(Math.random() * pixels.length)];
+            if (Math.random() > 0.9) {
+                randomPxiels = { x: 3 * (Math.random() - 0.5), y: 3 * (Math.random() - 0.5) };
+            }
+            data[4 * index] =
+                aspectRatio * 8 * randomPxiels.x +
+                ((Math.random() - 0.1) * 0.2 * aspectRatio) / 2;
+            data[4 * index + 1] =
+                aspectRatio * 8 * randomPxiels.y +
+                ((Math.random() - 0.5) * 0.2 * aspectRatio) / 2;
+            data[4 * index + 2] = (Math.random() - 0.5) * 0.01;
+            data[4 * index + 3] = (Math.random() - 0.5) * 0.01;
         }
-        img.onerror = e => reject(e)
-    })
+    }
+
+    let dataTexture = new THREE.DataTexture(
+        data,
+        size,
+        size,
+        THREE.RGBAFormat,
+        THREE.FloatType
+    );
+    dataTexture.needsUpdate = true;
+
+    return { pixels, dataTexture };
 }
 
 export async function getPixelDataFromImage(url, size, aspectRatio) {
@@ -31,29 +63,5 @@ export async function getPixelDataFromImage(url, size, aspectRatio) {
         }
     }
 
-    const data = new Float32Array(4 * size * size);
-        for (let i = 0; i < size; i++) {
-            for (let j = 0; j < size; j++) {
-                const index = i * size + j;
-                let randomPxiels = pixels[Math.floor(Math.random() * pixels.length)]
-                if (Math.random() > 0.9) {
-                    randomPxiels = {x: 3 * (Math.random() - 0.5), y:3 * (Math.random() - 0.5)}
-                }
-                data[4 * index] = aspectRatio * 8 * randomPxiels.x + (Math.random() - 0.10) * 0.2 * aspectRatio / 2;
-                data[4 * index + 1] =  aspectRatio * 8 * randomPxiels.y + (Math.random() - 0.5) * 0.2 * aspectRatio / 2;
-                data[4 * index + 2] = (Math.random() - 0.5) * 0.01;
-                data[4 * index + 3] = (Math.random() - 0.5) * 0.01;
-            }
-        }
-
-    let dataTexture = new THREE.DataTexture(
-        data,
-        size,
-        size,
-        THREE.RGBAFormat,
-        THREE.FloatType
-    );
-    dataTexture.needsUpdate = true;
-
-    return dataTexture;
+    return createDataTexture(pixels, size, aspectRatio);
 }

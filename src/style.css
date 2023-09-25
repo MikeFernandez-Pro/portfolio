@@ -22,6 +22,7 @@ canvas {
 #loader {
     position: absolute;
     z-index: 2;
+    font-size: 5dvh;
     left: 50%;
     transform: translateX(-50%);
     bottom: 5vh;

@@ -18,7 +18,7 @@ const ProjectsPortals = (props) => {
         galaxyPlate: useLoader(TextureLoader, "/textures/galaxyPortalTexture.jpg")
     }), []);
 
-    const activePlateRef = useRef(useStore.getState().activePlate)
+    const activePlate = useStore(state => state.activePlate)
 
     /**
      * Shader
@@ -41,15 +41,12 @@ const ProjectsPortals = (props) => {
     })
 
     
-    useEffect(() => useStore.subscribe(
-        state => {
-          activePlateRef.current = state.activePlate
-          if (activePlateRef.current) {
-            portalMaterial.uniforms.uTextureMap.value = portalsTextures[activePlateRef.current]
+    useEffect(() => {
+        if (activePlate) {
+            portalMaterial.uniforms.uTextureMap.value = portalsTextures[activePlate]
             gsap.fromTo(portalMaterial.uniforms.uActivationTimer, {value: 0}, {duration: 0.8, value: 0.5})
         }
-          }
-      ), [])
+        }, [activePlate]);
 
     return (
         <>

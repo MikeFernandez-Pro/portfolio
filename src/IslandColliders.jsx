@@ -12,7 +12,7 @@ const IslandColliders = (props) => {
 
 
 
-    const { nodes, materials } = useGLTF("/models/collidersCollection.glb");
+    const { nodes, materials } = useGLTF("/models/islandColliders/islandColliders.glb");
     const collidersPosition = useMemo(() => [-1.35, 2.3, -15], []);
     const collidersMaterial = useMemo(() => new THREE.MeshBasicMaterial({ visible: false }), [])
 
@@ -53,6 +53,7 @@ const IslandColliders = (props) => {
 
 
     const activatePlate = (data) => {
+        console.log("activated " + data.id)
         if (data.id === activePlateRef.current)
             return;
 
@@ -73,7 +74,7 @@ const IslandColliders = (props) => {
                 enterFunction: activateLink,
                 exitFunction: deactivateLink,
             },
-            position: [-4.24, 0.5, -8.07],
+            position: [-4.24, 0.55, -8.07],
             rotation: [0, 0.49, 0],
             scale: [0.9, 0.9, 0.9],
 
@@ -264,19 +265,6 @@ const IslandColliders = (props) => {
                 />
             </RigidBody>
 
-
-            <RigidBody
-                type={"fixed"}
-                colliders={"hull"}
-            >
-                <mesh
-                    scale={0.45}
-                    position={collidersPosition}
-                    geometry={nodes.portal.geometry}
-                    material={collidersMaterial}
-                />
-            </RigidBody>
-
             <Image
                 ref={imgRef}
                 url="/svg/Component 2.png"
@@ -300,6 +288,6 @@ const IslandColliders = (props) => {
     );
 };
 
-useGLTF.preload("/models/IslandCollider.glb");
+useGLTF.preload("/models/islandColliders/islandColliders.glb");
 
 export default IslandColliders;
