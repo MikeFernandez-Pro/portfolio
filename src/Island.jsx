@@ -13,7 +13,7 @@ import SleepText from "./SleepText";
 
 const Island = () => {
   const shadowsIntensity = useControls("shadowsIntensity", {
-    shadowsIntensity: { value: 1.39, min: 0, max: 5, step: 0.001 }
+    shadowsIntensity: { value: 3.64, min: 0, max: 5, step: 0.001 }
   })
   
   const signs = useControls("signs", {
@@ -31,7 +31,7 @@ const Island = () => {
   });
   const lanternsAndHomes = useControls("lanternsAndHomes", {
     intensity: { value: 5.67, min: 0, max: 50, step: 0.001 },
-    color: "#de5112",
+    color: "#b77c6a",
   });
 
   const magicPortal = useControls("magicPortal", {
@@ -45,14 +45,14 @@ const Island = () => {
   });
 
   const torchesAndFire = useControls("torchesAndFire", {
-    intensity: { value: 3.94, min: 0, max: 50, step: 0.01 },
+    intensity: { value: 4.87, min: 0, max: 50, step: 0.01 },
     color: "#f85f3d",
   });
 
   //   /**
   //    * Island initialization
   //    */
-  const island = useGLTF("/models/island/island.glb");
+  const island = useGLTF("/models/island/islandFixed.glb");
 
   island.scene.traverse((child) => {
     // Check if the child object is a Mesh
@@ -72,6 +72,7 @@ const Island = () => {
 
   const islandTexture = useLoader(THREE.TextureLoader, "textures/islandTexture.webp")
   const islandShadowMap = useLoader(THREE.TextureLoader, "textures/shadowMap.webp")
+
 
   islandTexture.flipY = false;
   islandTexture.colorSpace = THREE.SRGBColorSpace
@@ -172,7 +173,7 @@ const Island = () => {
   const magicCircleActivation = useStore(state => state.magicCircleActivation)
 
   if (magicCircleActivation) {
-    gsap.to(island.materials.magicPortal, { duration: 1, emissiveIntensity: 3.17 })
+    gsap.to(island.materials.magicPortal, { duration: 1, emissiveIntensity: 3.95 })
   }
 
   return (

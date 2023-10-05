@@ -9,7 +9,6 @@ import floatingTextFragmentShader from "/shaders/floatingText/fragment.glsl"
 
 const MagicLetters = ({ magicLetters, texture}) => {
 
-    const { nodes } = useGLTF("/models/magicLetters.glb")
 
     const material = new THREE.ShaderMaterial({
         uniforms: {

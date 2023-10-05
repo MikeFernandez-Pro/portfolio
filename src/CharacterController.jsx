@@ -8,12 +8,15 @@ import { useStore } from "./ZustandStorage.jsx";
 
 import MobileController from "./Controllers/MobileController.jsx";
 
-const directionOffset = ({ forward, backward, leftward, rightward }, knightBody) => {
+const directionOffset = ({ forward, backward, leftward, rightward }, knightBody, activateCameraTracking) => {
 
     // if (enter) 
     //     window.open("https://www.google.fr/", "_blank")
 
     if (!forward && !backward && !leftward && !rightward) return null;
+
+    if (!activateCameraTracking.current)
+        activateCameraTracking.current = true
 
     if (knightBody.current.isSleeping()) {
         knightBody.current.wakeUp();
@@ -40,6 +43,8 @@ const Player = ({ joystickAngle, orbitControls }) => {
     const cameraOffset = useMemo(() => new THREE.Vector3(0, 4, 5.5), []);
     const smoothCameraPosition = useMemo(() => new THREE.Vector3(0, 0, 0), []);
 
+    const activateCameraTracking = useRef(false)
+
     // Character movement speed Controller
     const { speed } = useControls("Character", {
         speed: { value: 4.5, min: 0, max: 500, step: 10 },
@@ -63,15 +68,15 @@ const Player = ({ joystickAngle, orbitControls }) => {
     const knightSleeping = useRef(false);
     // console.log(knightModel.materials)
 
-        // Shadows initialization
+    // Shadows initialization
     knightModel.scene.traverse((child) => {
         // Check if the child object is a Mesh
         if (child.isMesh && child.material.isMeshStandardMaterial) {
             // Set the sha<<w<<dowSide property to THREE.DoubleSide
             child.castShadow = true;
-              child.receiveShadow = true;
+            child.receiveShadow = true;
         }
-    }); 
+    });
 
 
     // CLAMP DELTA TO AVOID FRAMES BUG WHEN GO BACK TO WEBSITE TAB
@@ -107,7 +112,7 @@ const Player = ({ joystickAngle, orbitControls }) => {
         /**
          * Camera Controller
          */
-        direction = directionOffset(getKeys(), knightBody);
+        direction = directionOffset(getKeys(), knightBody, activateCameraTracking);
 
         if (orbitControls || (knightSleeping && knightSleeping.current)) return;
 
@@ -126,7 +131,10 @@ const Player = ({ joystickAngle, orbitControls }) => {
             cameraPosition.addVectors(knightPosition, cameraOffset);
             smoothCameraPosition.lerp(cameraPosition, 5 * delta);
 
-            state.camera.position.copy(smoothCameraPosition); // A REACTIVER PÖUR SUIVRE PERSO
+            if (activateCameraTracking.current) {
+                state.camera.position.copy(smoothCameraPosition); // A REACTIVER PÖUR SUIVRE PERSO
+            }
+            
 
             /**
              * Model Controller

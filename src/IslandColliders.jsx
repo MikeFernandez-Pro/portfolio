@@ -10,8 +10,6 @@ import * as THREE from "three"
 
 const IslandColliders = (props) => {
 
-
-
     const { nodes, materials } = useGLTF("/models/islandColliders/islandColliders.glb");
     const collidersPosition = useMemo(() => [-1.35, 2.3, -15], []);
     const collidersMaterial = useMemo(() => new THREE.MeshBasicMaterial({ visible: false }), [])

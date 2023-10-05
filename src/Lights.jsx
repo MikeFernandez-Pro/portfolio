@@ -60,26 +60,26 @@ export default function Lights() {
     });
     
     const fillLightControls = useControls("FillLight", {
-        intensity: { value: 2.1, min: 0, max: 50, step: 0.1 },
+        intensity: { value: 2, min: 0, max: 50, step: 0.1 },
         color: "#526cad",
         position: { value: [20, 15, -22], step: 1 },
     });
 
     const backLightControls = useControls("BackLight", {
-        intensity: { value: 7.8, min: 0, max: 50, step: 0.1 },
-        color: "#6988c4",
+        intensity: { value: 7, min: 0, max: 50, step: 0.1 },
+        color: "#49659d",
         position: { value: [-7, 15,-47 ], step: 1 },
     });
 
     const characterLightControls = useControls("CharacterLight", {
-        intensity: { value: 29.5, min: 0, max: 50, step: 0.1 },
+        intensity: { value: 5.2, min: 0, max: 50, step: 0.1 },
         color: "#3a62c8",
         position: { value: [0, 4, 2], step: 1 },
         bias: {value: -0.01, step: 0.00001}
     });
     
     const ambiantLightControls = useControls("AmbiantLight", {
-        intensity: { value: 8.2, min: 0, max: 50, step: 0.1 },
+        intensity: { value: 1.4, min: 0, max: 50, step: 0.1 },
         color: "#526cad",
     });
 

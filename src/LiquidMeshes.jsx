@@ -12,8 +12,8 @@ const LiquidMeshes = ({ well, cauldron }) => {
     });
 
     const cauldronControls = useControls("Cauldron", {
-        uColorStart: "#b3fc08",
-        uColorEnd: "#7bbe72",
+        uColorStart: "#a2d16b",
+        uColorEnd: "#75ad6d",
     });
     
     const wellShaderMaterial = new ShaderMaterial({

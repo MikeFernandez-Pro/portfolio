@@ -1,7 +1,7 @@
 import "./RenderMaterial";
 import "./SimulationMaterial";
 import { createDataTexture, getPixelDataFromImage } from "../utils/getPixelDataFromImage";
-import { createPortal } from "@react-three/fiber";
+import { createPortal, useLoader } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
@@ -105,6 +105,8 @@ const Particles = () => {
         renderMat.current.uniforms.uSize.value = controls.uSize; // A DELETE
     });
 
+    const textureFBO = useLoader(THREE.TextureLoader, "textures/TestVector.jpg")
+    console.log(textureFBO)
 
     useEffect(() => {
         const generateFBOTexture = async () => {
