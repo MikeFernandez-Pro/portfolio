@@ -18,6 +18,7 @@
     "@react-three/postprocessing": "^2.15.0",
     "@react-three/rapier": "^1.1.1",
     "gl-noise": "^1.6.1",
+    "glsl-fast-gaussian-blur": "^1.0.2",
     "gsap": "^3.12.2",
     "jotai": "^2.4.3",
     "leva": "^0.9.35",

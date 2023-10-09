@@ -37,8 +37,8 @@ export default function Experience({ joystickAngle }) {
 
     const loadingProgres = useProgress();
 
-    if (loadingProgres.loaded === 18)
-        console.log(loadingProgres)
+    // if (loadingProgres.loaded === 18)
+    //     console.log(loadingProgres)
     
     return (
         <>
@@ -53,6 +53,7 @@ export default function Experience({ joystickAngle }) {
             <color args={ [ envMapColor ] } attach="background" />
                 </Environment> */}
             {/* <BakeShadows /> */}
+         
          
             <Lights />
 
