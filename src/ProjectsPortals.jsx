@@ -28,7 +28,7 @@ const ProjectsPortals = (props) => {
         fragmentShader: portalFragmentShader,
         uniforms: {
             uTime: { value: 0 },
-            uActivationTimer: { value: 0 },
+            uSize: { value: -0.2},
             uTextureMap: { value: null }
         },
     }), []);
@@ -44,7 +44,7 @@ const ProjectsPortals = (props) => {
     useEffect(() => {
         if (activePlate) {
             portalMaterial.uniforms.uTextureMap.value = portalsTextures[activePlate]
-            gsap.fromTo(portalMaterial.uniforms.uActivationTimer, {value: 0}, {duration: 0.8, value: 0.5})
+            gsap.fromTo(portalMaterial.uniforms.uSize, {value: 0}, {duration: 0.8, value: 0.5})
         }
         }, [activePlate]);
 

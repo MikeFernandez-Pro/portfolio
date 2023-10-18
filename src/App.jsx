@@ -3,7 +3,6 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import Experience from "./Experience.jsx";
 import { AdaptiveDpr, Box, Cloud, KeyboardControls, Loader, PerformanceMonitor, PerspectiveCamera, Plane, Preload, SoftShadows, useProgress } from "@react-three/drei";
 import { Leva, useControls } from "leva";
-import { Joystick } from "react-joystick-component";
 import { Bloom, EffectComposer } from '@react-three/postprocessing'
 import * as THREE from "three"
 import Particles from "./FBO/Particles.jsx";
@@ -11,6 +10,7 @@ import gsap from "gsap";
 import CustomEase from "gsap/CustomEase";
 import { useStore } from "./ZustandStorage.jsx";
 import SceneRevealer from "./SceneRevealer.jsx";
+import ReactNipple from 'react-nipple';
 
 gsap.registerPlugin(CustomEase);
 
@@ -19,7 +19,6 @@ const App = (props) => {
     const cameraRef = useRef()
     const sceneRevealerRef = useRef()
 
-    const [joystickAngle, setJoystickAngle] = useState(0);
     const [dpr, setDpr] = useState(1.5)
 
     const controls = useControls("camera", {
@@ -45,26 +44,50 @@ const App = (props) => {
         window.addEventListener('mousemove', mouseEventListener)
     }, [])
 
-    const [enableCanvas, setEnableCanvas] = useState(false)
-
-
-    let { progress, thickness, offset, size } = useControls("SceneRevealer", {
-        progress: { value: 0.2, min: -1, max: 10, step: 0.01 },
-        thickness: { value: 6.17, min: 0, max: 20, step: 0.01 },
-        offset: { value: 0, min: -0.1, max: 5, step: 0.001 },
-        size: { value: 0, min: 0, max: 1, step: 0.001 }
+    let { progress, size } = useControls("SceneRevealer", {
+        progress: { value: -0.1, min: -0.1, max: 1, step: 0.01 },
+        size: { value: 4.5, min: 0, max: 10, step: 0.001 }
 
     })
 
 
+    const isMobile = useStore(state => state.isMobile);
 
+    const joystickAngle = useStore(state => state.joystickAngle);
 
     return (
         <>
+            {
+                isMobile &&
+                <ReactNipple
+                    options={{
+                        mode: 'static',
+                        position: { top: '50%', left: '50%' },
+                        size: 70,
+                        dynamicPage: true,
+                    }}
+                    style={{
+                        position: 'absolute',
+                        top: "90%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        outline: '1px dashed red',
+                        width: 150,
+                        height: 150,
+                        zIndex: 4,
+
+                    }}
+                    onMove={(evt, data) => {
+                        useStore.setState({ joystickAngle: data.angle.radian })
+                    }
+                    }
+                />
+            }
             <div className="grid">
                 <div className="wrapper" >
                     <div className="hero">
                         <h1 className="hero__heading">Mike Fernandez</h1>
+                        <h2>FRONT END DEVELOPER</h2>
                     </div>
                     <div ref={heroRef} className="hero hero--secondary" aria-hidden="true">
                         <h1 className="hero__heading">Mike Fernandez</h1>
@@ -75,36 +98,19 @@ const App = (props) => {
                     <div className="experience">
                         <p className="entry-text" onClick={() => {
                             window.removeEventListener('mousemove', mouseEventListener)
-                            setEnableCanvas(true);
 
-                            // gsap.to(sceneRevealerRef.current?.uniforms.get("size"),
-                            //     { value: 0.65, duration: 2.5, ease: "steps(3)" })
-
-                            gsap.to(sceneRevealerRef.current?.uniforms.get("size"),
-                                { value: 0.8, duration: 1.8, ease: CustomEase.create("custom", "M0,0 C0,0 0.199,0.309 0.2,0.326 0.215,0.326 0.386,0.328 0.402,0.328 0.402,0.344 0.603,0.637 0.604,0.654 0.619,0.654 0.8,0.652 0.8,0.652 0.8,0.668 1,1 1,1 ") })
-
-
-                                
-                            gsap.to(sceneRevealerRef.current?.uniforms.get("thickness"),
-                                { value: 0, duration: 2, delay: 1.8, ease: "power4.out"})
-
-                            gsap.to(sceneRevealerRef.current?.uniforms.get("offset"),
-                                { value: 8, duration: 2, delay: 1.8, })
-
+                            gsap.to(sceneRevealerRef.current?.uniforms.get("progress"),
+                                { value: 1, duration: 2, ease: "power4.in" })
 
                         }}
+                            onTouchStart={() => {
+                                useStore.setState({ isMobile: true })
+
+                                gsap.to(sceneRevealerRef.current?.uniforms.get("progress"),
+                                    { value: 1, duration: 2, ease: "power4.in" })
+                            }}
                         >Enter</p>
 
-                        {/* <Joystick
-                         size={100}
-                         sticky={false} 
-                         baseColor="hsla(232, 7%, 20%, 0.5)"
-                         stickColor="hsla(232, 7%, 20%, 1)"
-                         move={(e) => {
-                             setJoystickAngle(Math.atan2(e.y, e.x));
-                         }}
-                         stop={() => setJoystickAngle(0)}
-                     ></Joystick> */}
                         <Leva collapsed={false} theme={{
                             sizes: { rootWidth: 'auto' },
                         }} />
@@ -126,11 +132,9 @@ const App = (props) => {
                                 <PerformanceMonitor onIncline={() => setDpr(2)} onDecline={() => setDpr(1)} />
                                 <AdaptiveDpr pixelated />
                                 <EffectComposer disableNormalPass>
-                                <SceneRevealer
+                                    <SceneRevealer
                                         ref={sceneRevealerRef}
                                         progress={progress}
-                                        thickness={thickness}
-                                        offset={offset}
                                         size={size}
                                     />
                                     <Bloom mipmapBlur luminanceThreshold={1} luminanceSmoothing={1} intensity={2} />
@@ -139,7 +143,7 @@ const App = (props) => {
             focalLength={0.15} // focal length
             bokehScale={2} // bokeh size
           />  */}
-                                  
+
                                 </EffectComposer>
                                 <PerspectiveCamera
                                     ref={cameraRef}
@@ -152,10 +156,7 @@ const App = (props) => {
                                 />
 
 
-                                <Experience
-                                    joystickAngle={joystickAngle}
-                                    visible={false}
-                                />
+                                <Experience />
                                 <Preload all />
                             </Canvas>
                         </KeyboardControls>

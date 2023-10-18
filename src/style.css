@@ -62,34 +62,18 @@ body {
 .hero__heading {
   font-size: clamp(3.5rem, 10vw, 10rem);
   text-align: center;
-  -webkit-user-select: none; /* Safari */
-  -ms-user-select: none; /* IE 10 and IE 11 */
-  user-select: none; /* Standard syntax */
-  margin: 0;
 }
+
+.hero > h2 {
+    font-size: clamp(2rem, 10vw, 4rem);
+    text-align: center;
+}
+
+
 
 .hero--secondary .hero__heading {
   color: transparent;
   -webkit-text-stroke: 1px  var(--primary-text-color);
-}
-
-/*
-p {
-  font-size: clamp(1.75rem, 3vw, 3rem);
-  cursor: pointer;
-} */
-
-.layout {
-  width: 100%;
-  height: 100vh;
-  height: 100dvh;
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background-color: red;
-  opacity: 0.5;
-  filter: blur(5rem);
-  z-index: 4;
 }
 
 canvas {
@@ -99,7 +83,7 @@ canvas {
   height: 100dvh;
   position: absolute;
   inset: 0;
-  z-index: 99;
+  z-index: 3;
    /* position: absolute; 
     inset-block-start: auto;
     inset-inline-start: auto;
@@ -113,14 +97,6 @@ canvas {
   inset: 0;
   width: 100%;
   height: 100vh;
-}
-
-
-[data-testid="joystick-base"] {
-    position: absolute;
-    z-index: 1;
-    bottom : 5rem;
-    right: 10rem;
 }
 
 .loader {
@@ -153,5 +129,5 @@ canvas {
   justify-self: center;
   cursor: pointer;
   font-size: clamp(2rem, 3.5vw, 3.5rem);
-  z-index: 3;
+  z-index: 2;
   }

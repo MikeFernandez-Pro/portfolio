@@ -25,12 +25,19 @@
     "r3f-perf": "^7.1.2",
     "react": "18.2",
     "react-dom": "18.2",
-    "react-joystick-component": "^6.2.1",
+    "react-nipple": "^1.0.2",
     "three": "^0.155.0",
     "three-custom-shader-material": "^5.4.0",
     "tunnel-rat": "^0.1.2",
     "vercel": "^31.1.1",
     "vite-plugin-glsl": "^1.1.2",
     "zustand": "^4.3.9"
+  },
+  "overrides": {
+    "react-nipple": {
+      "react": "^18.2.0",
+      "react-dom": "^18.2.0",
+      "typescript": "^5.2.2"
+    }
   }
 }

@@ -10,10 +10,13 @@ import { useStore } from "./ZustandStorage";
 import { useLoader, useThree } from "@react-three/fiber";
 import MagicLetters from "./MagicLetters"
 import SleepText from "./SleepText";
+import { KTX2Loader } from "three/examples/jsm/loaders/KTX2Loader";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
 
 const Island = () => {
   const shadowsIntensity = useControls("shadowsIntensity", {
-    shadowsIntensity: { value: 3.64, min: 0, max: 5, step: 0.001 }
+    shadowsIntensity: { value: 2.73, min: 0, max: 5, step: 0.001 }
   })
   
   const signs = useControls("signs", {
@@ -52,7 +55,20 @@ const Island = () => {
   //   /**
   //    * Island initialization
   //    */
-  const island = useGLTF("/models/island/islandFixed.glb");
+  const island = useGLTF("/models/island/islandNewShadows.glb");
+  // const {gl} = useThree()
+
+  // const island = useLoader(GLTFLoader, "/models/island/islandNewShadows.glb", (loader) => {
+  //   const dracoLoader = new DRACOLoader();
+  //   dracoLoader.setDecoderPath( '/draco/' );
+    
+  //   const ktxLoader = new KTX2Loader()
+  //   ktxLoader.setTranscoderPath('/basis/')
+  //   ktxLoader.detectSupport( gl );
+  //   loader.setKTX2Loader(ktxLoader)
+  //   loader.setDRACOLoader(dracoLoader)
+  // })  
+  
 
   island.scene.traverse((child) => {
     // Check if the child object is a Mesh
@@ -144,7 +160,7 @@ const Island = () => {
   island.materials.seaPlate.toneMapped = false;
   // island.materials.seaPlate.map = islandTexture;
 
-  // console.log(island.scene.children[0].children[0])
+  console.log(island.scene.children[0].children[0])
   // console.log(islandAnimations)
   /**
    * Island Animations Activation

@@ -1,5 +1,5 @@
 uniform float uTime;
-uniform float uActivationTimer;
+uniform float uSize;
 uniform sampler2D uTextureMap; // The texture uniform
 
 varying vec2 vUv;
@@ -83,22 +83,22 @@ float cnoise(vec3 P)
 
 void main()
 {
-     vec2 centeredUv = vUv - 0.5;
-        float distanceToCenter = length(centeredUv);
+    vec2 centeredUv = vUv - 0.5;
+    float distanceToCenter = length(centeredUv);
 
     // Initial Noise 
-    float noise = cnoise(vec3(vUv * 4.0, uTime * 0.1));
+    float noise = cnoise(vec3(vUv * 10.0, uTime * 0.5));
 
     // Displace the UV
     vec2 displacedUv = vUv + noise;
 
     // Outer noise
-     if (distanceToCenter - cnoise(vec3(vUv * 10.0, uTime )) * 0.1 > uActivationTimer) {
+     if (distanceToCenter - noise * 0.1 > uSize) {
             discard;
      }
      
     // Perlin noise
-    float strength = cnoise(vec3(displacedUv * 6.0, uTime * 0.2));
+    float strength = cnoise(vec3(displacedUv * 2.0, uTime ));
 
     // Outer glow
     float outerGlow = distance(vUv, vec2(0.5)) * 5.0 - 1.6;
@@ -112,7 +112,7 @@ void main()
 
     // Texture
     // vec4 texColor = texture2D(uTextureMap, vUv); // Texture noise desactivated
-    vec4 texColor = texture2D(uTextureMap, vUv + noise * ( 1.0 - (uActivationTimer * 2.0)));
+    vec4 texColor = texture2D(uTextureMap, vUv + noise * ( 1.0 - (uSize * 2.0)));
 
     vec4 finalMix = mix(texColor * 1.5, texColor * 2.0, strength);
 

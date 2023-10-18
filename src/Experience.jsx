@@ -12,8 +12,9 @@ import { useFrame, useLoader, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import IslandColliders from "./IslandColliders.jsx";
 import ProjectsPortals from "./ProjectsPortals.jsx";
+import FireFlies from "./FireFlies.jsx";
 
-export default function Experience({ joystickAngle }) {
+export default function Experience() {
     const { debug, orbitControlsActivation, envMapColor } = useControls("Controls", {
         debug: false,
         orbitControlsActivation: false,
@@ -59,13 +60,14 @@ export default function Experience({ joystickAngle }) {
 
             <Island />
 
+            <FireFlies />
+
             <ProjectsPortals />
 
             <Physics timeStep="vary" debug={debug} gravity={[0, -50, 0]}>
                 <IslandColliders />
                 <Player
                     orbitControls={orbitControlsActivation}
-                    joystickAngle={joystickAngle}
                 />
             </Physics>
         </>

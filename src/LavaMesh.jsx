@@ -12,10 +12,10 @@ const LavaMesh = ({lavaMesh}) => {
 
     const controls = useControls("Oven Lava", {
 
-        uSmallWavesElevation: 0.1,
-        uSmallWavesFrequency: 4,
-        uSmallWavesSpeed: 0.2,
-        uSmallWavesIterations: 1,
+        uWavesElevation: 0.1,
+        uWavesFrequency: 4,
+        uWavesSpeed: 0.2,
+        uWavesIterations: 1,
         uDepthColor: "#ffa172",
         uSurfaceColor: "#ff0000",
         uColorMultiplier: {value: 5, min: 0, max: 20},
@@ -29,10 +29,10 @@ const LavaMesh = ({lavaMesh}) => {
         uniforms: {
             uTime: {value: 0},
     
-            uSmallWavesElevation: {value: controls.uSmallWavesElevation},
-            uSmallWavesFrequency: {value: controls.uSmallWavesFrequency},
-            uSmallWavesSpeed: {value: controls.uSmallWavesSpeed},
-            uSmallWavesIterations: {value: controls.uSmallWavesIterations},
+            uWavesElevation: {value: controls.uWavesElevation},
+            uWavesFrequency: {value: controls.uWavesFrequency},
+            uWavesSpeed: {value: controls.uWavesSpeed},
+            uWavesIterations: {value: controls.uWavesIterations},
     
             uDepthColor : {value: new Color(controls.uDepthColor)},
             uSurfaceColor : {value: new Color(controls.uSurfaceColor)},

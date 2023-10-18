@@ -4,7 +4,10 @@ import { subscribeWithSelector } from 'zustand/middleware'
 
 export const useStore = create(subscribeWithSelector((set) => ({
 
-    isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
+    isMobile: false,
+
+    joystickAngle: 0,
+    joysticActivated: false,
 
     runExperience: false,
 
