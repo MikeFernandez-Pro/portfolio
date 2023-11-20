@@ -15,7 +15,7 @@ const MagicBooks = ({ magicBooks, texture }) => {
     const magicCircleActivationRef = useRef(useStore.getState().magicCircleActivation)
 
     const magicBooksMaterial = new THREE.MeshStandardMaterial({
-        map: texture,
+        map: magicBooks.material.map
     })
 
     const controls = useControls("magicBooks", {

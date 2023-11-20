@@ -6,8 +6,10 @@ export const useStore = create(subscribeWithSelector((set) => ({
 
     isMobile: false,
 
-    joystickAngle: 0,
+    joystickAngle: null,
     joysticActivated: false,
+
+    revealScene: false,
 
     runExperience: false,
 

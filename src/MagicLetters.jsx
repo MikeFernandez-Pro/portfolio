@@ -6,16 +6,17 @@ import gsap from "gsap";
 
 import floatingTextVertexShader from "/shaders/floatingText/vertex.glsl"
 import floatingTextFragmentShader from "/shaders/floatingText/fragment.glsl"
+import { useMemo } from "react";
+import { useControls } from "leva";
 
-const MagicLetters = ({ magicLetters, texture}) => {
+const MagicLetters = ({ magicLetters, island}) => {
 
-
-    const material = new THREE.ShaderMaterial({
+    const magicLettersShaderMaterial = useMemo(() => new THREE.ShaderMaterial({
         uniforms: {
             uTime: { value: 0 },
             uOpacity: {value: 0},
-            uTexture: {value: texture},
-         },
+            uTexture: {value: island.material.map}
+            },
         vertexShader: `
         uniform float uTime;
 
@@ -50,7 +51,7 @@ const MagicLetters = ({ magicLetters, texture}) => {
         void main()
 {
     vec4 textureColor = texture2D(uTexture, vUv);
-    textureColor.rgb = mix(textureColor.rgb, vec3(0.93, 0.5, 0.2), 1.0);
+    textureColor.rgb = mix(textureColor.rgb, vec3(0.93, 0.5, 0.5), 1.0);
     textureColor.a *= uOpacity;
     gl_FragColor = textureColor * 2.0;
 }
@@ -58,21 +59,19 @@ const MagicLetters = ({ magicLetters, texture}) => {
         side: THREE.DoubleSide,
         transparent: true,
         toneMapped: false,
-    })
+    }), [])
 
-    magicLetters.material = material;
+    magicLetters.material = magicLettersShaderMaterial;
 
     const magicCircleActivation = useStore(state => state.magicCircleActivation)
 
     if (magicCircleActivation) {
-      gsap.to(magicLetters.material.uniforms.uOpacity, { duration: 1, delay: 1.5, value: 1 })
+      gsap.to(magicLetters.material.uniforms.uOpacity, { duration: 1, delay: 1.2, value: 1 })
     }
 
     useFrame(state => {
         magicLetters.material.uniforms.uTime.value = state.clock.elapsedTime;
     })
 };
-
-// useGLTF.preload("/models/magicLetters.glb")
 
 export default MagicLetters;

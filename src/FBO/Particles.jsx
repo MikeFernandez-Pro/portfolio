@@ -106,7 +106,6 @@ const Particles = () => {
     });
 
     const textureFBO = useLoader(THREE.TextureLoader, "textures/TestVector.jpg")
-    console.log(textureFBO)
 
     useEffect(() => {
         const generateFBOTexture = async () => {

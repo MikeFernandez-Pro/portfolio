@@ -3,8 +3,6 @@ import { Uniform } from "three";
 
 const fragmentShader = /*glsl*/ ` 
     uniform float progress;
-    uniform float thickness;
-    uniform float offset;
     uniform float size;
     uniform float aspectRatio;
 
@@ -103,12 +101,10 @@ float cnoise(vec3 P)
     `;
 
 export default class sceneRevealerEffect extends Effect {
-    constructor(progress, thickness, offset, size, aspectRatio) {
+    constructor(progress, size, aspectRatio) {
         super("sceneRevealerEffect", fragmentShader, {
             uniforms: new Map([
                 ["progress", new Uniform(progress)],
-                ["thickness", new Uniform(thickness)],
-                ["offset", new Uniform(offset)],
                 ["size", new Uniform(size)],
                 ["aspectRatio", new Uniform(aspectRatio)],
             ]),

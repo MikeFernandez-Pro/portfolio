@@ -33,7 +33,7 @@ const directionOffset = ({ forward, backward, leftward, rightward }, knightBody,
     return -Math.PI / 2;
 };
 
-const updateCharacterLinvel = (knightBody, direction, joystickAngle, x = null, y = null, z = null) => {
+const updateCharacterLinvel = (knightBody, direction, isMobile, joystickAngle = null, x = null, y = null, z = null) => {
     knightBody.current.setLinvel({
         x: x || SPEED * Math.cos( joystickAngle || direction) * -1 /* * delta */,
         y: y || knightBody.current.linvel().y,
@@ -73,14 +73,15 @@ const Player = ({ orbitControls }) => {
     const knightAnimation = useRef(IDLE);
 
     // Character Model and animations loaders
-    const knightModel = useGLTF("/models/character/character.glb");
+    const knightModel = useGLTF("/models/character/shapeKeysKnightCharacter.glb");
     const knightAnimations = useAnimations(knightModel.animations, knightModel.scene);
     const knightSleeping = useRef(false);
+ 
 
     // Shadows initialization
     knightModel.scene.traverse((child) => {
         // Check if the child object is a Mesh
-        if (child.isMesh && child.material.isMeshStandardMaterial) {
+        if (child.isMesh && child.material.name === "texture") {
             child.castShadow = true;
         }
     });
@@ -94,6 +95,7 @@ const Player = ({ orbitControls }) => {
                 //   backgroundMusic.play();
             } else {
                 pageVisibiliy.current = false;
+                
                 knightBody.current.sleep();
                 //   backgroundMusic.pause();
             }
@@ -102,16 +104,26 @@ const Player = ({ orbitControls }) => {
 
     const [subscribeKeys, getKeys] = useKeyboardControls();
 
+    useEffect(() => {
+        console.log(getKeys())
+    }, [getKeys])
+
     // current character direction
     let direction;
     let knightPosition;
 
     useFrame((state, delta) => {
 
+        
         /**
          * Camera Controller
          */
         direction = directionOffset(getKeys(), knightBody, activateCameraTracking);
+
+        
+        if (isMobile && joystickAngle !== null && knightBody.current.isSleeping()) {
+            knightBody.current.wakeUp();
+        }
 
         if (orbitControls || (knightSleeping && knightSleeping.current)) return;
 
@@ -134,48 +146,51 @@ const Player = ({ orbitControls }) => {
                 state.camera.position.copy(LERP_CAMERA_POSITION); // A REACTIVER PÖUR SUIVRE PERSO
             }
             
-
             /**
              * Model Controller
              */
             // Update character velocity and orientation
-            if (direction === null || !pageVisibiliy.current) {
+            if ((direction === null && !isMobile) 
+            || (isMobile && joystickAngle === null)
+            || !pageVisibiliy.current) {
                 if (knightAnimation.current !== IDLE) {
                     knightAnimations.actions[knightAnimation.current].fadeOut(0.2);
                     knightAnimation.current = (IDLE);
                     knightAnimations.actions[knightAnimation.current].reset().fadeIn(0.2).play();
                 }
 
-                // knightBody.current.setLinvel({
-                //     x: 0,
-                //     y: knightBody.current.linvel().y,
-                //     z: 0,
-                // });
-                updateCharacterLinvel(knightBody, direction, isMobile ? joystickAngle : null, 0, 0, 0);
+                knightBody.current.setLinvel({
+                    x: 0,
+                    y: knightBody.current.linvel().y,
+                    z: 0,
+                });
                 
                 return;
             }
+
 
            if (knightAnimation.current !== RUN) {
                 knightAnimations.actions[knightAnimation.current].fadeOut(0.2);
                 knightAnimation.current = RUN;
                 knightAnimations.actions[knightAnimation.current].reset().fadeIn(0.2).play();
             }
-            // knightBody.current.setLinvel({
-            //     x: SPEED * Math.cos(isMobile? joystickAngle : direction) * -1 /* * delta */,
-            //     y: knightBody.current.linvel().y,
-            //     z: SPEED * Math.sin(isMobile? joystickAngle : direction) /* * delta */,
-            // });
+            
+            knightBody.current.setLinvel({
+                x: SPEED * Math.cos(isMobile ? joystickAngle : direction) * (isMobile ? 1 : -1)/* * delta */,
+                y: knightBody.current.linvel().y,
+                z: SPEED * Math.sin(isMobile ? joystickAngle : direction) * (isMobile ? -1 : 1)/* * delta */,
+            });
 
-            updateCharacterLinvel(knightBody, direction, isMobile ? joystickAngle : null);
+            // updateCharacterLinvel(knightBody, direction, isMobile ? joystickAngle : null);
 
-            ROTATION_QUATERNION.setFromAxisAngle(ROTATION_EULER, direction - Math.PI / 2);
+            ROTATION_QUATERNION.setFromAxisAngle(ROTATION_EULER, (isMobile ? joystickAngle + Math.PI / 2: direction - Math.PI / 2) );
             knightMesh.current.quaternion.rotateTowards(ROTATION_QUATERNION, 0.3); //017 avant
         }
     });
 
     useEffect(() => {
         knightAnimations.actions[IDLE].fadeIn(0.2).play();
+        knightAnimations.actions["KeyAction"].fadeIn(0.2).play()
     }, []);
 
     return (

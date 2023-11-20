@@ -19,7 +19,7 @@ const FireFlies = (props) => {
         scalesArray[i] = Math.random();
     }
 
-    const {gl} = useThree();
+    const gl = useThree(state => state.gl);
 
     const ref = useRef();
 

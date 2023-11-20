@@ -46,7 +46,7 @@ export function createDataTexture(pixels, size, aspectRatio) {
 
 export async function getPixelDataFromImage(url, size, aspectRatio) {
     let img = await loadImage(url);
-    console.log(img)
+
     let width = 200;
     let canvas = document.createElement("canvas");
     canvas.width = width;

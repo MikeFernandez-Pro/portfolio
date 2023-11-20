@@ -45,11 +45,11 @@ const LavaMesh = ({lavaMesh}) => {
     
     gsap.fromTo(
         lavaMesh.material.uniforms.uIntensity,
-        {value: 2 },
+        {value: 2.5 },
         {
             value: 3,
-            delay: 1,
-            duration: 1.75,
+            delay:2.1,
+            duration: 1.7,
             repeat: -1,
             ease: "back",
             yoyo:true

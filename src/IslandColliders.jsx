@@ -51,7 +51,6 @@ const IslandColliders = (props) => {
 
 
     const activatePlate = (data) => {
-        console.log("activated " + data.id)
         if (data.id === activePlateRef.current)
             return;
 
@@ -133,7 +132,7 @@ const IslandColliders = (props) => {
                 textPosition: [-9.77, 8, -58.80],
                 textRotationY: 0,
                 textScale: 0.9,
-                href: "https://www.google.fr/",
+                href: "/CV_Portfolio_Mike.pdf",
                 enterFunction: activateLink,
                 exitFunction: deactivateLink,
             },
@@ -265,7 +264,7 @@ const IslandColliders = (props) => {
 
             <Image
                 ref={imgRef}
-                url="/svg/Component 2.png"
+                url="/textures/Enter.webp"
                 position={[imageLink.position.x, imageLink.position.y, imageLink.position.z]}
                 rotation-y={imageLink.rotationY}
                 scale={0.01}

@@ -1,16 +1,17 @@
-import { forwardRef } from "react";
+import { forwardRef, useMemo } from "react";
 import sceneRevealerEffect from "./sceneRevealerEffect";
-import { useControls } from "leva";
 import { useThree } from "@react-three/fiber";
 
-const SceneRevealer = ({progress, thickness, offset, size}, ref) => {
-    const {viewport} = useThree();
+const SceneRevealer = forwardRef(({ progress, size }, ref) => {
+    const  viewport  = useThree(state => state.viewport);
 
-    const effect = new sceneRevealerEffect(progress, thickness, offset, size, viewport.aspect);
-    
-    return (    
-        <primitive ref={ref} object={effect} />    
+    const effect = useMemo(() => 
+        new sceneRevealerEffect(progress, size, viewport.aspect)
+    , [viewport.aspect]);
+
+    return (
+        <primitive ref={ref} object={effect} />
     );
-};
+});
 
-export default forwardRef(SceneRevealer);
+export default SceneRevealer;
