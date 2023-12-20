@@ -46,6 +46,7 @@ uniform float yBorderAlpha;
 uniform vec3 uColor; 
 uniform float newPositionY;
 
+varying float positionY;
 varying vec2 vUv;
 
 void main() {
@@ -58,8 +59,12 @@ void main() {
     
     float perlin = perlin2d(uv);
     perlin *= borderAlpha;
-    perlin = clamp(perlin, 0.0, 1.0);
+    // perlin = clamp(perlin, 0.0, 1.0);
+    
+    vec3 color = uColor;
+    // color /= borderAlpha;
+    // color = clamp(color, 0.0, 1.0);
 
-    gl_FragColor = vec4(uColor, perlin / newPositionY);
-    // gl_FragColor = vec4(uColor, 1.0);
+    gl_FragColor = vec4(color, min(1.0, (1.0 / positionY) * borderAlpha) / 2.0 );
+    // gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
 }

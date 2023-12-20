@@ -6,8 +6,8 @@ import fragmentShader from "../shaders/fbo/simulation/fragment.glsl";
 
 const SimulationMaterial = shaderMaterial(
   {
-    uPosition: null,
-    uOriginalPosition: null,
+    uPosition: undefined,
+    uOriginalPosition: undefined,
     uMouse: new THREE.Vector3(-10,-10,10),
     uTime: 0,
   },

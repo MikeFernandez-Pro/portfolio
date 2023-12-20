@@ -2,21 +2,15 @@ import { useGLTF, useKeyboardControls, useAnimations, ContactShadows } from "@re
 import { useFrame, useThree } from "@react-three/fiber";
 import { CapsuleCollider, RigidBody, useRapier } from "@react-three/rapier";
 import { useControls } from "leva";
-import { useRef, useState, useEffect, useMemo } from "react";
+import { useRef, useState, useEffect, useMemo, useCallback, useLayoutEffect } from "react";
 import * as THREE from "three";
 import { useStore } from "./ZustandStorage.jsx";
 
 import MobileController from "./Controllers/MobileController.jsx";
 
-const directionOffset = ({ forward, backward, leftward, rightward }, knightBody, activateCameraTracking) => {
+const directionOffset = ({ forward, backward, leftward, rightward }, knightBody) => {
 
-    // if (enter) 
-    //     window.open("https://www.google.fr/", "_blank")
-
-    if (!forward && !backward && !leftward && !rightward) return null;
-
-    if (!activateCameraTracking.current)
-        activateCameraTracking.current = true
+    if (!forward && !backward && !leftward && !rightward) return undefined;
 
     if (knightBody.current.isSleeping()) {
         knightBody.current.wakeUp();
@@ -33,36 +27,27 @@ const directionOffset = ({ forward, backward, leftward, rightward }, knightBody,
     return -Math.PI / 2;
 };
 
-const updateCharacterLinvel = (knightBody, direction, isMobile, joystickAngle = null, x = null, y = null, z = null) => {
-    knightBody.current.setLinvel({
-        x: x || SPEED * Math.cos( joystickAngle || direction) * -1 /* * delta */,
-        y: y || knightBody.current.linvel().y,
-        z: z || SPEED * Math.sin( joystickAngle || direction) /* * delta */,
-    });
-}
-
 // Character Settings
-const SPEED = 4.5;
+const SPEED = 4 // 4.5
 const ROTATION_EULER = new THREE.Vector3(0, 1, 0);
 const ROTATION_QUATERNION = new THREE.Quaternion();
 const IDLE = "Idle";
 const RUN = "Run";
+const DYNAMIC = 0;
+const FIXED = 1;
 
 // Camera Settings
 const CAMERA_POSITION = new THREE.Vector3(0, 0, 0);
 const CAMERA_OFFSET = new THREE.Vector3(0, 4, 5.5);
 const LERP_CAMERA_POSITION = new THREE.Vector3(0, 0, 0);
 
+const runningSound = new Audio("/sounds/running Sound Effect by Pixabay.mp3");
+runningSound.loop = true;
+
 const Player = ({ orbitControls }) => {
 
     const isMobile = useStore(state => state.isMobile);
     const joystickAngle = useStore(state => state.joystickAngle);
-
-    /**
-     * Default Controller Settings
-     */
-
-    const activateCameraTracking = useRef(false)
 
     /**
      * Character Initialization
@@ -73,10 +58,9 @@ const Player = ({ orbitControls }) => {
     const knightAnimation = useRef(IDLE);
 
     // Character Model and animations loaders
-    const knightModel = useGLTF("/models/character/shapeKeysKnightCharacter.glb");
-    const knightAnimations = useAnimations(knightModel.animations, knightModel.scene);
-    const knightSleeping = useRef(false);
- 
+    const knightModel = useMemo(() => useGLTF("/models/character/shapeKeysKnightCharacter.glb"), [])
+    const knightAnimations = useAnimations(knightModel.animations, knightModel.scene)
+
 
     // Shadows initialization
     knightModel.scene.traverse((child) => {
@@ -86,27 +70,42 @@ const Player = ({ orbitControls }) => {
         }
     });
 
-    const pageVisibiliy = useRef(true)
+    const keyEventsRef = useRef({
+        "forward": false,
+        "backward": false,
+        "leftward": false,
+        "rightward": false,
+        "enter": false,
+    })
 
-    useEffect(() => {
-        document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === "visible") {
-                pageVisibiliy.current = true;
-                //   backgroundMusic.play();
-            } else {
-                pageVisibiliy.current = false;
-                
-                knightBody.current.sleep();
-                //   backgroundMusic.pause();
-            }
-        });
+    const keyboardEventHandler = useCallback((event) => {
+        if (event.code === "ArrowUp" || event.code === "KeyW")
+            keyEventsRef.current.forward = event.type === "keydown" ? true : false;
+        if (event.code === "ArrowDown" || event.code === "KeyS")
+            keyEventsRef.current.backward = event.type === "keydown" ? true : false;
+        if (event.code === "ArrowLeft" || event.code === "KeyA")
+            keyEventsRef.current.leftward = event.type === "keydown" ? true : false;
+        if (event.code === "ArrowRight" || event.code === "KeyD")
+            keyEventsRef.current.rightward = event.type === "keydown" ? true : false;
     }, []);
 
-    const [subscribeKeys, getKeys] = useKeyboardControls();
+    const pauseCharacter = useCallback(() => {
+        for (const key in keyEventsRef.current)
+            keyEventsRef.current[key] = false;
+        knightBody.current.setBodyType(FIXED)
+    }, [])
 
     useEffect(() => {
-        console.log(getKeys())
-    }, [getKeys])
+        window.addEventListener("blur", pauseCharacter);
+        document.addEventListener('keydown', keyboardEventHandler)
+        document.addEventListener('keyup', keyboardEventHandler)
+
+        return () => {
+            window.removeEventListener("blur", pauseCharacter);
+            document.removeEventListener('keydown', keyboardEventHandler)
+            document.removeEventListener('keyup', keyboardEventHandler)
+        }
+    }, []);
 
     // current character direction
     let direction;
@@ -114,81 +113,75 @@ const Player = ({ orbitControls }) => {
 
     useFrame((state, delta) => {
 
-        
         /**
          * Camera Controller
          */
-        direction = directionOffset(getKeys(), knightBody, activateCameraTracking);
+        direction = directionOffset(keyEventsRef.current, knightBody)
 
-        
-        if (isMobile && joystickAngle !== null && knightBody.current.isSleeping()) {
-            knightBody.current.wakeUp();
+        knightPosition = knightBody.current.translation();
+
+        if (knightPosition.y < 0) {
+            knightBody.current.setTranslation({
+                x: 0,
+                y: 1.5,
+                z: 0
+            })
         }
+        /*
+        * Camera Controller
+        */
+        useStore.setState({ characterPosition: knightPosition });
+        CAMERA_POSITION.addVectors(knightPosition, CAMERA_OFFSET);
+        LERP_CAMERA_POSITION.lerp(CAMERA_POSITION, 5 * delta);
 
-        if (orbitControls || (knightSleeping && knightSleeping.current)) return;
+        state.camera.position.copy(LERP_CAMERA_POSITION); // A REACTIVER PÖUR SUIVRE PERSO
 
-        if (knightBody.current) {
-            knightPosition = knightBody.current.translation();
-
-            if (knightPosition.y < 0) {
-                knightBody.current.setTranslation({
-                    x: 0,
-                    y: 1.5,
-                    z: 0
-                })
-            }
-
-            useStore.setState({ characterPosition: knightPosition });
-            CAMERA_POSITION.addVectors(knightPosition, CAMERA_OFFSET);
-            LERP_CAMERA_POSITION.lerp(CAMERA_POSITION, 5 * delta);
-
-            if (activateCameraTracking.current) {
-                state.camera.position.copy(LERP_CAMERA_POSITION); // A REACTIVER PÖUR SUIVRE PERSO
-            }
-            
-            /**
-             * Model Controller
-             */
-            // Update character velocity and orientation
-            if ((direction === null && !isMobile) 
-            || (isMobile && joystickAngle === null)
-            || !pageVisibiliy.current) {
-                if (knightAnimation.current !== IDLE) {
-                    knightAnimations.actions[knightAnimation.current].fadeOut(0.2);
-                    knightAnimation.current = (IDLE);
-                    knightAnimations.actions[knightAnimation.current].reset().fadeIn(0.2).play();
-                }
-
-                knightBody.current.setLinvel({
-                    x: 0,
-                    y: knightBody.current.linvel().y,
-                    z: 0,
-                });
-                
-                return;
-            }
-
-
-           if (knightAnimation.current !== RUN) {
+        /**
+         * Character Controller
+         */
+        // Update character velocity and orientation
+        if ((direction === undefined && !isMobile)
+            || (isMobile && joystickAngle === undefined)) {
+            if (knightAnimation.current !== IDLE) {
                 knightAnimations.actions[knightAnimation.current].fadeOut(0.2);
-                knightAnimation.current = RUN;
+                knightAnimation.current = (IDLE);
                 knightAnimations.actions[knightAnimation.current].reset().fadeIn(0.2).play();
+                runningSound.pause();
+                runningSound.currentTime = 0;
             }
-            
-            knightBody.current.setLinvel({
-                x: SPEED * Math.cos(isMobile ? joystickAngle : direction) * (isMobile ? 1 : -1)/* * delta */,
-                y: knightBody.current.linvel().y,
-                z: SPEED * Math.sin(isMobile ? joystickAngle : direction) * (isMobile ? -1 : 1)/* * delta */,
-            });
 
-            // updateCharacterLinvel(knightBody, direction, isMobile ? joystickAngle : null);
-
-            ROTATION_QUATERNION.setFromAxisAngle(ROTATION_EULER, (isMobile ? joystickAngle + Math.PI / 2: direction - Math.PI / 2) );
-            knightMesh.current.quaternion.rotateTowards(ROTATION_QUATERNION, 0.3); //017 avant
+            // knightBody.current.setLinvel({
+            //     x: 0,
+            //     y: knightBody.current.linvel().y,
+            //     z: 0,
+            // }, false);
+            knightBody.current.sleep();
+            return;
         }
+
+        if (knightBody.current.bodyType() === FIXED)
+            knightBody.current.setBodyType(DYNAMIC)
+
+        if (knightAnimation.current !== RUN) {
+            knightAnimations.actions[knightAnimation.current].fadeOut(0.2);
+            knightAnimation.current = RUN;
+            knightAnimations.actions[knightAnimation.current].reset().fadeIn(0.2).play();
+            runningSound.volume = 0.5;
+            runningSound.play();            
+        }
+
+        knightBody.current.setLinvel({
+            x: SPEED * Math.cos(isMobile ? joystickAngle : direction) * (isMobile ? 1 : -1)/* * delta */,
+            y: knightBody.current.linvel().y,
+            z: SPEED * Math.sin(isMobile ? joystickAngle : direction) * (isMobile ? -1 : 1)/* * delta */,
+        }, true);
+
+        ROTATION_QUATERNION.setFromAxisAngle(ROTATION_EULER, (isMobile ? joystickAngle + Math.PI / 2 : direction - Math.PI / 2));
+        knightMesh.current.quaternion.rotateTowards(ROTATION_QUATERNION, 15 *  delta); //017 avant
+
     });
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         knightAnimations.actions[IDLE].fadeIn(0.2).play();
         knightAnimations.actions["KeyAction"].fadeIn(0.2).play()
     }, []);
@@ -196,14 +189,13 @@ const Player = ({ orbitControls }) => {
     return (
         <>
             <RigidBody
-                type={"dynamic"}
+                type={"fixed"}
                 lockRotations
                 ref={knightBody}
                 colliders={false}
-                position={[0, 1.5, 0]}
-                // position={[-16, 5, -33]}
-                onSleep={() => knightSleeping.current = true}
-                onWake={() => knightSleeping.current = false}
+                // position-y={0.7}
+                position={[-5, 7, -45]}
+                
                 restitution={-10}
                 friction={0.4}
             >
@@ -215,7 +207,6 @@ const Player = ({ orbitControls }) => {
                 />
                 <CapsuleCollider args={[0.3, 0.25]} position={[0, 0.55, 0]} />
             </RigidBody>
-            {/* <MobileController joystickAngle={joystickAngle} knightBody={knightBody} SPEED={SPEED} setKnightAnimation={setKnightAnimation}/> */}
         </>
     );
 };

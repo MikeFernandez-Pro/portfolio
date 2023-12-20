@@ -46,6 +46,8 @@ uniform float vertexNoiseMultiplier;
         uniform float displacementStrength2;
         uniform float newPositionY;
 
+
+varying float positionY;
 varying vec2 vUv;
 
 void main() {
@@ -59,9 +61,13 @@ void main() {
     float perlin = perlin2d(uv * vertexNoiseMultiplier) * displacementStrength;
 
     newPosition.z += perlin * newPositionY;
+    
+    vec3 testPosition = position;
+    testPosition.x += sin(testPosition.y * uDisplacementUv - uTime) * pow(testPosition.y, uDisplacementUvY) * 0.1;
 
-    vec4 modelPosition = modelMatrix * vec4(position, 1.0);
-    modelPosition.x += sin(modelPosition.y * uDisplacementUv + uTime) * vertexNoiseMultiplier;
+    vec4 modelPosition = modelMatrix * vec4(testPosition, 1.0);
+    // modelPosition.x += sin(modelPosition.y * uDisplacementUv + uTime) * vertexNoiseMultiplier;
+
 
     vec4 viewPosition = viewMatrix * modelPosition;
     vec4 projectedPosition = projectionMatrix * viewPosition;
@@ -69,4 +75,5 @@ void main() {
     gl_Position = projectedPosition;
 
     vUv = uv;
+    positionY = testPosition.y;
 }

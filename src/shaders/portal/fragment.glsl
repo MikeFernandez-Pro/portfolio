@@ -83,8 +83,8 @@ float cnoise(vec3 P)
 
 void main()
 {
-    vec2 centeredUv = vUv - 0.5;
-    float distanceToCenter = length(centeredUv);
+
+    float distanceToCenter = length(vUv - 0.5);
 
     // Initial Noise 
     float noise = cnoise(vec3(vUv * 10.0, uTime * 0.5));
@@ -94,27 +94,25 @@ void main()
 
     // Outer noise
      if (distanceToCenter - noise * 0.1 > uSize) {
-            discard;
+         gl_FragColor = vec4(0.1, 0.05, 0.05, 0.0);
+         return ;
      }
      
     // Perlin noise
     float strength = cnoise(vec3(displacedUv * 2.0, uTime ));
 
     // Outer glow
-    float outerGlow = distance(vUv, vec2(0.5)) * 5.0 - 1.6;
-    strength += outerGlow;
+    // float outerGlow = distance(vUv, vec2(0.5)) * 5.0 - 1.6;
+    // strength += outerGlow;
 
     // Apply cool step
-    strength += step(- 0.3, strength) * 0.1;
+    // strength += step(- 0.3, strength) * 0.1;
 
     // Clamp the value from 0 to 1
     strength = clamp(strength, 0.0, 1.0);
 
     // Texture
-    // vec4 texColor = texture2D(uTextureMap, vUv); // Texture noise desactivated
     vec4 texColor = texture2D(uTextureMap, vUv + noise * ( 1.0 - (uSize * 2.0)));
 
-    vec4 finalMix = mix(texColor * 1.5, texColor * 2.0, strength);
-
-    gl_FragColor = finalMix;
+    gl_FragColor =  mix(texColor, texColor * 0.85, strength);
 }

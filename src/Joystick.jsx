@@ -30,7 +30,7 @@ const Joystick = () => {
                         useStore.setState({ joystickAngle: data.angle.radian })
                     }}
                     onEnd={() => {
-                        useStore.setState({ joystickAngle: null })
+                        useStore.setState({ joystickAngle: undefined })
                     }}             
                 />
     );

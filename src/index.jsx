@@ -1,3 +1,5 @@
+"use strict";
+
 import App from './App';
 import './style.css'
 import ReactDOM from 'react-dom/client'

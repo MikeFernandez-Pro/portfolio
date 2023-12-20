@@ -7,12 +7,12 @@ import * as THREE from "three";
 import smokeVertexShader from "/shaders/smoke/vertex.glsl";
 import smokeFragmentShader from "/shaders/smoke/fragment.glsl";
 
-const Smoke = (props) => {
+const Smoke = () => {
 
     const smokeRef = useRef()
 
     const controls = useControls("Smoke", {
-        position: { value: [-1.1, 8.2, -55.8], step: 0.1 },
+        position: { value: [-1.55, 6.8, -55.89], step: 0.001 },
         rotation: { value: [0, 0, -0.30], step: 0.01 },
         timeMultiplier: { value: 1, min: 0, max: 1, step: 0.001 },
         xMultiplier: { value: 1, min: 0, max: 5, step: 0.1 },
@@ -21,17 +21,11 @@ const Smoke = (props) => {
         yBorderAlpha: { value: 30, min: 0, max: 50, step: 0.1 },
         uColor: "#313131",
         vertexNoiseMultiplier: { value: 0.1, min: 0, max: 5, step: 0.1 },
-        uDisplacementUv: { value: 3.5, min: 0, max: 50, step: 0.1 },
-        uDisplacementUvY: { value: 30, min: 0, max: 50, step: 0.1 },
+        uDisplacementUv: { value: 2.8, min: 0, max: 50, step: 0.1 },
+        uDisplacementUvY: { value: 1.6, min: 0, max: 50, step: 0.1 },
         udisplacementStrength1: { value: 30, min: 0, max: 50, step: 0.1 },
         displacementStrength2: { value: 30, min: 0, max: 50, step: 0.1 },
         newPositionY: { value: 1.69, min: 0, max: 30, step: 0.001 },
-    })
-    
-    const {chemineyPos, chemineyRot, chemineyScale} = useControls("Cheminey", {
-        chemineyPos: {value: [-7.72, 7.17, -14.25], step: 0.01},
-        chemineyRot: {value: [0, 0.8, 0], step: 0.1},
-        chemineyScale: {value: [0.4, 1, 1], step: 0.1},
     })
 
     const SmokeShaderMaterial = shaderMaterial({
@@ -72,16 +66,10 @@ const Smoke = (props) => {
     })
 
     return (
-        <>
             <mesh position={controls.position} rotation={controls.rotation}>
-                <planeGeometry attach="geometry" args={[0.4, 5, 16, 128]} />
+                <planeGeometry attach="geometry" args={[0.3, 10, 16, 128]} />
                 <smokeShaderMaterial ref={smokeRef} transparent depthWrite={false} />
             </mesh>
-            {/* <mesh position={chemineyPos} scale={chemineyScale} rotation={chemineyRot}>
-                <planeGeometry attach="geometry" args={[0.4, 5, 16, 128]} />
-                <smokeShaderMaterial ref={smokeRef} transparent depthWrite={false} />
-            </mesh> */}
-        </>
     );
 };
 

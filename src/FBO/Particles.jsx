@@ -13,8 +13,8 @@ import t1 from "/textures/TestVector.jpg";
 
 const Particles = () => {
     // Define particles default positon depending on dataTexture
-    const textureRef = useRef(null);
-    const [originalPosition, setOriginalPosition] = useState(null);
+    const textureRef = useRef(undefined);
+    const [originalPosition, setOriginalPosition] = useState(undefined);
 
     // Create simulation and render materials refs
     const simMat = useRef();
@@ -85,7 +85,7 @@ const Particles = () => {
     useFrame(({ gl }) => {
         gl.setRenderTarget(target0);
         gl.render(scene, camera);
-        gl.setRenderTarget(null);
+        gl.setRenderTarget(undefined);
         renderMat.current.uniforms.uPosition.value = target1.texture;
         simMat.current.uniforms.uPosition.value = target0.texture;
         let temp = target0;

@@ -1,77 +1,58 @@
-import { Float, useGLTF } from "@react-three/drei";
+import { useEffect, useLayoutEffect, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
-import * as THREE from "three"
 import { useStore } from "./ZustandStorage";
+import * as THREE from "three"
 import gsap from "gsap";
+import { useControls } from "leva";
 
 import floatingTextVertexShader from "/shaders/floatingText/vertex.glsl"
 import floatingTextFragmentShader from "/shaders/floatingText/fragment.glsl"
-import { useMemo } from "react";
-import { useControls } from "leva";
 
-const MagicLetters = ({ magicLetters, island}) => {
+const MagicLetters = ({ magicLetters, island }) => {
+
+    const controls = useControls("Magic Letters", {
+        uColor: "#e1754b",
+        uIntensity: { value: 6.8, min: 0, max: 10 },
+    })
 
     const magicLettersShaderMaterial = useMemo(() => new THREE.ShaderMaterial({
         uniforms: {
             uTime: { value: 0 },
-            uOpacity: {value: 0},
-            uTexture: {value: island.material.map}
-            },
-        vertexShader: `
-        uniform float uTime;
-
-        varying vec2 vUv;
-
-        void main()
-        {
-            vec4 modelPosition = modelMatrix * vec4(position, 1.0);
-            
-
-            modelPosition.y += sin(modelPosition.x * 10.0 + uTime) * 0.02;
-
-             modelPosition.y += sin(modelPosition.y * 0.5 + uTime) * 0.01;
-
-
-            vec4 viewPosition = viewMatrix * modelPosition;
-
-           
-            vec4 projectionPosition = projectionMatrix * viewPosition;
-        
-            gl_Position = projectionPosition;
-        
-            vUv = uv;
-        }
-        `,
-        fragmentShader: `
-        uniform sampler2D uTexture;
-        uniform float uOpacity;
-
-        varying vec2 vUv;
-
-        void main()
-{
-    vec4 textureColor = texture2D(uTexture, vUv);
-    textureColor.rgb = mix(textureColor.rgb, vec3(0.93, 0.5, 0.5), 1.0);
-    textureColor.a *= uOpacity;
-    gl_FragColor = textureColor * 2.0;
-}
-        `,
+            uOpacity: { value: 0 },
+            uTexture: { value: island.material.map },
+            uColor: { value: new THREE.Color(controls.uColor) },
+            uIntensity: { value: controls.uIntensity },
+        },
+        vertexShader: floatingTextVertexShader,
+        fragmentShader: floatingTextFragmentShader,
         side: THREE.DoubleSide,
         transparent: true,
         toneMapped: false,
     }), [])
 
-    magicLetters.material = magicLettersShaderMaterial;
 
-    const magicCircleActivation = useStore(state => state.magicCircleActivation)
+    useLayoutEffect(() => {
+        // Replace magicLetters default material with shader material
+        magicLetters.material = magicLettersShaderMaterial;
 
-    if (magicCircleActivation) {
-      gsap.to(magicLetters.material.uniforms.uOpacity, { duration: 1, delay: 1.2, value: 1 })
-    }
+        // Subscribe to magicGlyphActivation zustand store state
+        const unsubMagicGlyphActivation = useStore.subscribe(
+            (state) => state.magicGlyphActivation,
+            (magicGlyphActivation) => {
+                    gsap.to(magicLetters.material.uniforms.uOpacity,  { duration: 1, delay: 1.2, value: 1, ease:"expo.in" });
+            }
+        )
 
-    useFrame(state => {
-        magicLetters.material.uniforms.uTime.value = state.clock.elapsedTime;
-    })
+        // Clear subscriptions on unmount
+        return () => {
+            unsubMagicGlyphActivation();
+        }
+    }, [])
+
+    // Update shader material uTime uniforms value over time
+    useFrame(state => 
+        magicLetters.material.uniforms.uTime.value = state.clock.elapsedTime
+    )
 };
 
 export default MagicLetters;

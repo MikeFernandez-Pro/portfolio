@@ -3,13 +3,14 @@ import { extend, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import sparksVertexShader from "../../shaders/sparks/vertex.glsl";
 import sparksFragmentShader from "../../shaders/sparks/fragment.glsl";
+import { useMemo } from "react";
 
 const SPEED = 6;
 const COLOR = "#f85f3d";
 
 const SparksMaterial = ({size, pixelRatio} ) => {
 
-    const SparksShaderMaterial = shaderMaterial(
+    const SparksShaderMaterial = useMemo(() => shaderMaterial(
         {
             uTime: 0,
             uSize: size * pixelRatio,
@@ -18,7 +19,7 @@ const SparksMaterial = ({size, pixelRatio} ) => {
         },
         sparksVertexShader,
         sparksFragmentShader
-    )
+    ), [size, pixelRatio]);
 
     extend({ SparksShaderMaterial })
 

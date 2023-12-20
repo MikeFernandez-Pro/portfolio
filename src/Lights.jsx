@@ -1,51 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import * as THREE from "three";
-import { useControls, button } from "leva";
+import { useEffect, useLayoutEffect, useMemo, useRef} from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useHelper } from "@react-three/drei";
 import { useStore } from "./ZustandStorage";
-import { Vector3 } from "three";
+import * as THREE from "three";
+import { useControls } from "leva";
 
 export default function Lights() {
-    const fillLightRef = useRef();
-    const backLightRef = useRef();
-    const characterLightRef = useRef();
-
-    const characterLightHelper = useHelper(characterLightRef, THREE.DirectionalLightHelper, 0)
-    const fillLighHelper = useHelper(fillLightRef, THREE.DirectionalLightHelper, 0)
-    const backLightHelper = useHelper(backLightRef, THREE.DirectionalLightHelper, 0)
-
-
-    const scene = useThree(state => state.scene);
-    const targetObject = new THREE.Object3D();
-
-    useEffect(() => {
-        characterLightHelper.current.targetLine.geometry.drawRange.count = 0;
-        fillLighHelper.current.targetLine.geometry.drawRange.count = 0;
-        backLightHelper.current.targetLine.geometry.drawRange.count = 0;
-
-        scene.add(targetObject)
-
-        return () => scene.remove(targetObject);
-    }, [])
-
-    // A CHANGER EN USEEFFECT
-    let characterPosition = null;
-
-    const subCharacterPosition = useStore.subscribe(
-        state => state.characterPosition,
-        (characterPosition) => {
-            if (characterPosition && characterLightRef.current) {
-                targetObject.position.set(characterPosition.x, characterPosition.y, characterPosition.z)
-                characterLightRef.current.position.set(characterPosition.x - 3, characterPosition.y + 4, characterPosition.z + 3)
-                characterLightRef.current.target = targetObject
-                characterLightRef.current.shadow.camera.target = targetObject
-            }
-        }
-    )
 
     const fillLightControls = useControls("FillLight", {
-        intensity: { value: 3.7, min: 0, max: 50, step: 0.1 },
+        intensity: { value: 10, min: 0, max: 50, step: 0.1 },
         color: "#2f4b90",
         position: { value: [20, 15, -22], step: 1 },
     });
@@ -67,6 +30,51 @@ export default function Lights() {
         intensity: { value: 1.2, min: 0, max: 50, step: 0.1 },
         color: "#526cad",
     });
+
+    const pointLightControls = useControls("PointLight", {
+        intensity: { value: 45.0, min: 0, max: 50, step: 0.1 },
+        color: "#ad7351",
+    });
+
+    
+    const fillLightRef = useRef();
+    const backLightRef = useRef();
+    const characterLightRef = useRef();
+    const pointLightRef = useRef();
+
+    const characterLightHelper = useHelper(characterLightRef, THREE.DirectionalLightHelper, 0)
+    const fillLighHelper = useHelper(fillLightRef, THREE.DirectionalLightHelper, 0)
+    const backLightHelper = useHelper(backLightRef, THREE.DirectionalLightHelper, 0)
+
+    const scene = useThree(state => state.scene);
+    const targetObject = useMemo(() => new THREE.Object3D(), []);
+
+    const unsubCharacterPosition = useStore.subscribe(
+        state => state.characterPosition,
+        (characterPosition) => {
+            if (characterPosition && characterLightRef.current) {
+                targetObject.position.set(characterPosition.x, characterPosition.y, characterPosition.z)
+                characterLightRef.current.position.set(characterPosition.x - 3, characterPosition.y + 4, characterPosition.z + 3)
+                characterLightRef.current.target = targetObject
+                characterLightRef.current.shadow.camera.target = targetObject
+            }
+        }
+    )
+
+    useLayoutEffect(() => {
+        characterLightHelper.current.targetLine.geometry.drawRange.count = 0;
+        fillLighHelper.current.targetLine.geometry.drawRange.count = 0;
+        backLightHelper.current.targetLine.geometry.drawRange.count = 0;
+
+        scene.add(targetObject)
+
+        return () => {
+            scene.remove(targetObject)
+            
+            unsubCharacterPosition();
+        }
+    }, [])
+
 
     return (
         <>
@@ -103,6 +111,13 @@ export default function Lights() {
                 intensity={backLightControls.intensity}
                 color={backLightControls.color}
                 target-position={[-9.7, 8, -59]}
+            />
+
+<pointLight
+                ref={pointLightRef}
+                position={[-9.7, 12, -59.5]}
+                intensity={pointLightControls.intensity}
+                color={pointLightControls.color}
             />
 
         </>

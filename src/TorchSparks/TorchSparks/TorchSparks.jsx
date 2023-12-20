@@ -6,7 +6,7 @@ const TorchSparks = ({ particlesCount, config, pixelRatio }) => {
 
     const sparksRef = useRef()
 
-    const count = particlesCount * config.offsets.length;
+    const count = useMemo(() => particlesCount * config.offsets.length, []);
 
     const bufferAttributes = useMemo(() => {
         const positions = new Float32Array(count * 3)

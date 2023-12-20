@@ -1,8 +1,14 @@
-uniform float uOpacity;
+uniform sampler2D uTexture;
+        uniform float uOpacity;
+        uniform vec3 uColor;
+        uniform float uIntensity;
 
-varying vec2 vUv;
+        varying vec2 vUv;
 
-void main()
+        void main()
 {
-    gl_FragColor = vec4(0.97, 0.37, 0.24, uOpacity) * 2.5;
+    vec4 textureColor = texture2D(uTexture, vUv);
+    textureColor.rgb = mix(textureColor.rgb, vec3(uColor), 1.0) * uIntensity;
+    textureColor.a *= uOpacity;
+    gl_FragColor = textureColor;
 }

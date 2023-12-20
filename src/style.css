@@ -22,7 +22,7 @@ body {
     display: grid;
     place-content: center;
     height: 100vh;
-    height: 100dvh;
+    height: 100svh;
     width: 100vw;
 }
 

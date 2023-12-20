@@ -56,7 +56,7 @@ const MobileController = ({ joystickAngle, knightBody, speed, knightAnimation, o
       smoothCameraPosition.lerp(cameraPosition, 5 * delta);
 
       // Reset Character Velocity
-      if (direction === null || !pageVisibiliy.current) {
+      if (direction === undefined || !pageVisibiliy.current) {
         animationUpdate(knightAnimations.actions, knightAnimation.current)
 
         resetLinearVelocity(knightBody.current)

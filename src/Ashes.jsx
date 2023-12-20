@@ -32,14 +32,12 @@ let currentAshes = totalNumber / number;
 for (let i = 0; i < totalNumber; i++) {
     if (i >= currentAshes * (cpt + 1)) {
         cpt++;
-        console.log(ashes.offsets[cpt])
     }
     test[i * 3 + 0] = ashes.offsets[cpt][0];
     test[i * 3 + 1] = ashes.offsets[cpt][1];
     test[i * 3 + 2] = ashes.offsets[cpt][2];
 }
 
-console.log(test)
 
 
 /* 
@@ -107,7 +105,6 @@ const Ashes = () => {
         if (i > (COUNT / ashes.offsets.length) * cpt) {
             cpt++;
         }
-        console.log(i, (COUNT / 3) * cpt, cpt)
         
         offsets[i * 3 + 0] = ashes.offsets[cpt - 1][0]
         offsets[i * 3 + 1] = ashes.offsets[cpt - 1][1]
@@ -219,7 +216,7 @@ const Ashes = () => {
 
 
     return (
-        <points ref={ashesRef} scale={controls.scale} frustumCulled={false}>
+        <points ref={ashesRef} position-y={2} scale={controls.scale} frustumCulled={false}>
             <bufferGeometry>
                 <bufferAttribute
                     attach="attributes-position"

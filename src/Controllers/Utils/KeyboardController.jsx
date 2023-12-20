@@ -25,7 +25,7 @@ const RUN = "Run"
 
 const directionOffset = ({ forward, backward, leftward, rightward }, characterBody, activateCameraTracking) => {
 
-    if (!forward && !backward && !leftward && !rightward) return null;
+    if (!forward && !backward && !leftward && !rightward) return undefined;
 
     if (!activateCameraTracking.current)
         activateCameraTracking.current = true
@@ -130,7 +130,7 @@ const Player = ({ joystickAngle, orbitControls }) => {
 
 
             // Reset character velocity and animation when leaving the page OR if no keys are pressed 
-            if (direction === null || !pageVisibiliy.current) {
+            if (direction === undefined || !pageVisibiliy.current) {
                 animationUpdate(actions, characterAnimation.current)
                 resetLinearVelocity(characterBody.current);
                 return;

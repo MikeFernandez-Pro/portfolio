@@ -5,7 +5,7 @@ import fragmentShader from "../shaders/fbo/render/fragment.glsl";
 
 const RenderMaterial = shaderMaterial(
   {
-    uPosition: null,
+    uPosition: undefined,
     uSize: 20,
     uTime: 0,
     uScaleRatio: 1,

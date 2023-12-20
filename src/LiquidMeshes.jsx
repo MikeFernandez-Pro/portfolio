@@ -4,19 +4,21 @@ import { useControls } from "leva";
 
 import liquidVertexShader from "./shaders/liquid/vertex.glsl";
 import liquidFragmentShader from "./shaders/liquid/fragment.glsl";
+import { useEffect, useLayoutEffect, useMemo } from "react";
 
 const LiquidMeshes = ({ well, cauldron }) => {
     const wellControls = useControls("Well", {
-        uColorStart: "#94c9e8",
-        uColorEnd: "#68bcf8",
+        uColorStart: "#3f8ac0",
+        uColorEnd: "#106fb3",
+        
     });
 
     const cauldronControls = useControls("Cauldron", {
-        uColorStart: "#a2d16b",
-        uColorEnd: "#75ad6d",
+        uColorStart: "#89b359",
+        uColorEnd: "#4b6647",
     });
-    
-    const wellShaderMaterial = new ShaderMaterial({
+
+    const wellShaderMaterial = useMemo( () => new ShaderMaterial({
         vertexShader: liquidVertexShader,
         fragmentShader: liquidFragmentShader,
         uniforms: {
@@ -24,20 +26,25 @@ const LiquidMeshes = ({ well, cauldron }) => {
             uColorStart: { value: new Color(wellControls.uColorStart) },
             uColorEnd: { value: new Color(wellControls.uColorEnd) },
         },
-    });
+        transparent: true,
+    }), []);
 
-    const cauldronShaderMaterial = new ShaderMaterial({
+    const cauldronShaderMaterial = useMemo( () => new ShaderMaterial({
         vertexShader: liquidVertexShader,
         fragmentShader: liquidFragmentShader,
         uniforms: {
             uTime: { value: 0 },
-            uColorStart: { value: new Color(wellControls.uColorStart) },
-            uColorEnd: { value: new Color(wellControls.uColorEnd) },
+            uColorStart: { value: new Color(cauldronControls.uColorStart) },
+            uColorEnd: { value: new Color(cauldronControls.uColorEnd) },
         },
-    });
+        transparent: true,
+    }), []);
 
-    well.material = wellShaderMaterial;
-    cauldron.material = cauldronShaderMaterial;
+    useLayoutEffect(() => {
+        well.position.y += 0.1;
+        well.material = wellShaderMaterial;
+        cauldron.material = cauldronShaderMaterial;
+    }, [])
 
     useFrame((state, delta) => {
         well.material.uniforms.uTime.value = state.clock.elapsedTime;

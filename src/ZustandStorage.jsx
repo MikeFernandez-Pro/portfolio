@@ -6,7 +6,7 @@ export const useStore = create(subscribeWithSelector((set) => ({
 
     isMobile: false,
 
-    joystickAngle: null,
+    joystickAngle: undefined,
     joysticActivated: false,
 
     revealScene: false,
@@ -16,20 +16,18 @@ export const useStore = create(subscribeWithSelector((set) => ({
     /**
      * Magic Circle activation handler
      */
-    magicCircleActivation: false,
-
+    magicGlyphActivation: false,
 
     /**
      * Projects Portals activation handlers
      */
 
-    activePlate: null,
-    prevPlate: null,
+    activePlate: undefined,
 
-    portalPlateMaterial: null,
-    seaPlateMaterial: null,
-    galaxyPlateMaterial: null,
+    portalPlateMaterial: undefined,
+    seaPlateMaterial: undefined,
+    halloweenPlateMaterial: undefined,
 
-    characterPosition: null,
+    characterPosition: undefined,
 })))
 
