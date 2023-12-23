@@ -13,7 +13,7 @@ const GrassField = ({mesh}) => {
     bladeCount: {
       value: 50000,
       min: 0,
-      max: 250000,
+      max: 500000,
       step: 100,
     },
     bladeHeight: {

@@ -4,15 +4,19 @@ import { MeshSurfaceSampler } from 'three/addons/math/MeshSurfaceSampler.js';
 import { useGLTF } from '@react-three/drei';
 import { useControls } from 'leva';
 import { useStore } from '../ZustandStorage';
-import grass_vs from './shader/vertex.glsl';
-import grass_fs from './shader/fragment.glsl';
+import grassVertexShader from './shader/vertex.glsl';
+import grassFragmentShader from './shader/fragment.glsl';
 import { useFrame } from '@react-three/fiber';
+
+let intersects;
 
 const Scene = () => {
   const grassRef = useRef(null);
 
-  const { nodes } = useGLTF('/models/finalIsland/grassGroundv2.glb')
+  // Load grass ground model for sampling
+  const { nodes } = useMemo(() => useGLTF('/models/finalIsland/grassGroundv2.glb'), [])
 
+  // Define grass blade count and shape
   const { bladeCount, bladeHeight, bladeWidth } = useControls('grass', {
     bladeCount: {
       value: 50000,
@@ -34,84 +38,89 @@ const Scene = () => {
     },
   });
 
-  // const bladeCount = 50000;
   // const bladeHeight = 0.31;
   // const bladeWidth = 0.14;
 
-  const sampler = new MeshSurfaceSampler(nodes.grassGround).build()
+  // Create a sampler based on the grass ground model
+  const sampler = useMemo(() => new MeshSurfaceSampler(nodes.grassGround).build(), []);
 
-  const defaultPosition = new THREE.Vector3();
+  const defaultPosition = useMemo(() => new THREE.Vector3(), []);
 
+  // Create blades vertex shape and floor positions buffers
   const bufferAttributes = useMemo(() => {
-    const bladeVertices = new Float32Array([
+    const bladesShape = new Float32Array([
       bladeWidth / 2, 0, 0,
       -bladeWidth / 2, 0, 0,
       0, bladeHeight, 0
     ])
-    const terrainPositions = new Float32Array(bladeCount * 3);
+    const floorPosition = new Float32Array(bladeCount * 3);
 
     for (let i = 0; i < bladeCount; i += 3) {
-      // Create a random point on the surface of the sampled mesh 
+      // Create a random point on the surface of the sampled floor 
       sampler.sample(defaultPosition);
-      terrainPositions[i + 0] = defaultPosition.x;
-      terrainPositions[i + 1] = defaultPosition.y;
-      terrainPositions[i + 2] = defaultPosition.z;
+      floorPosition[i + 0] = defaultPosition.x;
+      floorPosition[i + 1] = defaultPosition.y;
+      floorPosition[i + 2] = defaultPosition.z;
     }
 
     return {
-      terrainPositions,
-      bladeVertices,
+      floorPosition,
+      bladesShape,
     }
   }, [])
 
-
-  const material = new THREE.ShaderMaterial({
+  // Grass Shader Material Configuration
+  const material = useMemo(() => new THREE.ShaderMaterial({
     uniforms: {
       uTime: { value: 0 },
-      uMouse: { value: new THREE.Vector3(0, 0, 0) }
+      uCharacter: { value: new THREE.Vector3(0, 0, 0) }
     },
-    vertexShader: grass_vs,
-    fragmentShader: grass_fs,
+    vertexShader: grassVertexShader,
+    fragmentShader: grassFragmentShader,
     side: THREE.DoubleSide
-  });
+  }), []);
 
 
+  // Create a Raycaster to interact with the grass floor
+  let raycaster = useMemo(() => new THREE.Raycaster(), []);
+  const rayDirection = useMemo(() => new THREE.Vector3(0, -1, 0), []);
 
-  let raycaster = new THREE.Raycaster();
-  const rayDirection = new THREE.Vector3(0, -1, 0);
-  rayDirection.normalize();
 
-  const rayOrigin = useRef(useStore.getState(state => state.characterPosition))
-  const grassSoundEffect = new Audio("/sounds/runningInGrassSound.mp3");
-  grassSoundEffect.loop = true;
-  grassSoundEffect.volume = 1;
-  const grassSoundEffectActivationRef = useRef(false)
-
-  let intersects;
+  // Grass sound effect Configuration
+  const grassSoundEffect = useMemo(() => {
+    const audio = new Audio("/sounds/runningInGrassSoundEffect.mp3");
+    audio.loop = true;
+    audio.volume = 0.2;
+    return audio;
+  }, []);
 
   useLayoutEffect(() => {
 
     // Subscribe to characterPosition zustand store state
     const unsubCharacterPosition = useStore.subscribe(
-      (state) => state.characterPosition,
-      (characterPosition) => {
+      (state) => [state.characterPosition, state.isCharacterMoving],
+      ([characterPosition, isCharacterMoving]) => {
         if (characterPosition) {
+          // Set the raycaster to the character position with de default rayDirection
           characterPosition.y += 0.5;
           raycaster.set(characterPosition, rayDirection);
 
-          // Test intersection with grass floor
+          // Test intersection with grass floor, update blades verteces position
+          // depending on the intersection point and play / pause sound effect
           intersects = raycaster.intersectObjects([nodes.grassGround]);
           if (intersects.length > 0 && grassRef.current) {
-            if (grassSoundEffectActivationRef.current === false) {
+            grassRef.current.material.uniforms.uCharacter.value = intersects[0].point;
+            if (isCharacterMoving) {
               grassSoundEffect.play();
-              grassSoundEffectActivationRef.current = true;
             }
-            grassRef.current.material.uniforms.uMouse.value = intersects[0].point;
+            else {
+              grassSoundEffect.pause();
+              grassSoundEffect.currentTime = 0;
+            }
           }
           else {
             grassSoundEffect.pause();
             grassSoundEffect.currentTime = 0;
-            grassSoundEffectActivationRef.current = false;
           }
         }
       }
@@ -123,28 +132,26 @@ const Scene = () => {
     }
   }, [bladeCount, bladeHeight, bladeWidth])
 
+  // Update grass shader material uniform that handle blades movement
   useFrame(({ clock }) => {
-
     if (grassRef.current)
       grassRef.current.material.uniforms.uTime.value = clock.elapsedTime;
   })
 
-
   return (
     <>
-      {/* <primitive object={nodes.grassGround} /> */}
       <mesh ref={grassRef} frustumCulled={false} material={material}>
         <instancedBufferGeometry instanceCount={bladeCount}>
           <float32BufferAttribute
             attach={"attributes-position"}
-            count={bufferAttributes.bladeVertices.length / 3}
-            array={bufferAttributes.bladeVertices}
+            count={bufferAttributes.bladesShape.length / 3}
+            array={bufferAttributes.bladesShape}
             itemSize={3}
           />
           <instancedBufferAttribute
-            attach={"attributes-terrainPosition"}
-            count={bufferAttributes.terrainPositions.length / 3}
-            array={bufferAttributes.terrainPositions}
+            attach={"attributes-floorPosition"}
+            count={bufferAttributes.floorPosition.length / 3}
+            array={bufferAttributes.floorPosition}
             itemSize={3}
           />
         </instancedBufferGeometry>

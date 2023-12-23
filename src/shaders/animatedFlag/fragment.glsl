@@ -1,7 +1,10 @@
+uniform sampler2D uMap;
+
 varying vec2 vUv;
+varying vec3 vPosition;
 
 void main() { 
 
-
-  csm_DiffuseColor = vec4(vUv.x, vUv.y, 1.0, 1.0);
+      vec3 multiplier = vec3(0.3, 0.4, 0.7); // Adjust the values as needed
+  csm_FragColor.rgb *= multiplier;
 }

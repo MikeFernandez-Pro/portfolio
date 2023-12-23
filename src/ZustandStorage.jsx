@@ -29,5 +29,6 @@ export const useStore = create(subscribeWithSelector((set) => ({
     halloweenPlateMaterial: undefined,
 
     characterPosition: undefined,
+    isCharacterMoving: false,
 })))
 

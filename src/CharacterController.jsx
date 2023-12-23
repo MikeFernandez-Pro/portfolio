@@ -67,6 +67,7 @@ const Player = ({ orbitControls }) => {
         // Check if the child object is a Mesh
         if (child.isMesh && child.material.name === "texture") {
             child.castShadow = true;
+            child.material.envMapIntensity = 0.5;
         }
     });
 
@@ -145,9 +146,11 @@ const Player = ({ orbitControls }) => {
             if (knightAnimation.current !== IDLE) {
                 knightAnimations.actions[knightAnimation.current].fadeOut(0.2);
                 knightAnimation.current = (IDLE);
+                useStore.setState({ isCharacterMoving: false });
                 knightAnimations.actions[knightAnimation.current].reset().fadeIn(0.2).play();
                 runningSound.pause();
                 runningSound.currentTime = 0;
+                
             }
 
             // knightBody.current.setLinvel({
@@ -166,7 +169,8 @@ const Player = ({ orbitControls }) => {
             knightAnimations.actions[knightAnimation.current].fadeOut(0.2);
             knightAnimation.current = RUN;
             knightAnimations.actions[knightAnimation.current].reset().fadeIn(0.2).play();
-            runningSound.volume = 0.5;
+            useStore.setState({ isCharacterMoving: true });
+            runningSound.volume = 0.6;
             runningSound.play();            
         }
 
@@ -205,7 +209,7 @@ const Player = ({ orbitControls }) => {
                     scale={0.18}
                     rotation-y={Math.PI}
                 />
-                <CapsuleCollider args={[0.3, 0.25]} position={[0, 0.55, 0]} />
+                <CapsuleCollider args={[0.3, 0.25]} position={[0, 0.58, 0]} />
             </RigidBody>
         </>
     );

@@ -112,7 +112,8 @@ void main()
     strength = clamp(strength, 0.0, 1.0);
 
     // Texture
-    vec4 texColor = texture2D(uTextureMap, vUv + noise * ( 1.0 - (uSize * 2.0)));
+    vec4 texColor = texture2D(uTextureMap, vUv + (noise * 0.02));
+    texColor.rgb = (texColor.rgb - 0.5) * 1.2 + 0.5;
 
     gl_FragColor =  mix(texColor, texColor * 0.85, strength);
 }

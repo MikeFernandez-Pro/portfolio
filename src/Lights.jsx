@@ -90,7 +90,7 @@ export default function Lights() {
                 castShadow
                 shadow-mapSize={[256, 256]}
                 shadow-camera-near={1}
-                shadow-camera-far={7}
+                shadow-camera-far={10}
                 shadow-camera-top={1.5}
                 shadow-camera-right={1}
                 shadow-camera-bottom={-1}

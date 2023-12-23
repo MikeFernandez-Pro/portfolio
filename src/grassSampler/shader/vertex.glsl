@@ -4,9 +4,9 @@
 #define PI 3.14159265359
 
 uniform float uTime;
-uniform vec3 uMouse;
+uniform vec3 uCharacter;
 
-attribute vec3 terrainPosition;
+attribute vec3 floorPosition;
 
 varying float vPosY;
 
@@ -15,40 +15,33 @@ float random(vec2 st) {
         43758.5453123);
 }
 
-mat2 rotate2d(float _angle) {
-    return mat2(cos(_angle), -sin(_angle), sin(_angle), cos(_angle));
-}
-
 void main() {
 
-    // Determine the center of the blade using the terrain position
-    vec3 bladeCenter = vec3(terrainPosition.x, terrainPosition.y, terrainPosition.z);
+    // Determine the placement of the blade based on it's floorPosition
+    vec3 bladeDefaultPosition = vec3(floorPosition.x, floorPosition.y, floorPosition.z);
 
-    // Offset the rotated position by the blade's center in the world
-    vec3 finalPosition = position + bladeCenter;
+    // Offset the blades position to it's world position
+    vec3 finalPosition = position + bladeDefaultPosition;
 
-    // Mouse repel force
-
-    float mouseDistance = distance(finalPosition, uMouse); // cursor size
+    // Character repel force settings
+    float characterDistance = distance(finalPosition, uCharacter); // cursor size
     float maxDistance = 0.5;
 
-    if(mouseDistance < maxDistance && position.y > 0.2) {
-        vec3 direction = normalize(finalPosition - uMouse);
-        finalPosition.xz += direction.xz * (1.0 - mouseDistance / maxDistance) * 0.3;
+    // Update blades tip position based on character distance
+    if(characterDistance < maxDistance && position.y > 0.2) {
+        vec3 direction = normalize(finalPosition - uCharacter);
+        finalPosition.xz += direction.xz * (1.0 - characterDistance / maxDistance) * 0.3;
     }
-
-    // WIND LOGIC
 
     // Add a small amount of random movement to every blade of grass, especially to the tip
-    float randomSeed = random(terrainPosition.xz);
-    float randomMovement = sin(uTime + randomSeed * 10.0) * 0.1; // Adjust 0.05 for intensity
+    float randomSeed = random(floorPosition.xz);
+    float randomMovement = sin(uTime + randomSeed * 10.0) * 0.1;
 
     if(position.y > 0.2) {
-        finalPosition.x += randomMovement * position.y; // Amplify the randomness at the tip
-        finalPosition.z += randomMovement * position.y; // Amplify the randomness at the tip
+        finalPosition.x += randomMovement * position.y; 
+        finalPosition.z += randomMovement * position.y;
     }
 
-    // FINAL RENDER
     gl_Position = projectionMatrix * modelViewMatrix * vec4(finalPosition, 1.0);
 
     vPosY = position.y;

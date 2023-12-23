@@ -8,9 +8,9 @@ import gsap from "gsap";
 import portalVertexShader from './shaders/portal/vertex.glsl'
 import portalFragmentShader from './shaders/portal/fragment.glsl'
 
-const PORTAL_PLATE_URL = "/textures/seaPortalTexture.png";
-const SEA_PLATE_URL = "/textures/seaPortalTexture.jpg";
-const HALLOWEEN_PLATE_URL = "/textures/halloweenPortalTexture2.png";
+const PORTAL_PLATE_URL = "/textures/portalPortalTexture.webp";
+const SEA_PLATE_URL = "/textures/seaPortalTexture.webp";
+const HALLOWEEN_PLATE_URL = "/textures/halloweenPortalTexture.webp";
 
 const ProjectsPortals = () => {
 
@@ -61,7 +61,7 @@ const ProjectsPortals = () => {
             <Circle
                 args={[0.8, 32]}
                 material={portalShaderMaterial}
-                position={[-16.12, 7, -37.7]}
+                position={[-16.12, 6.95, -37.7]}
             />
     );
 };

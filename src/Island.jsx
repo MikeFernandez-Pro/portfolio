@@ -1,5 +1,5 @@
 import { useGLTF, useAnimations } from "@react-three/drei";
-import React, { useEffect, useLayoutEffect, useMemo } from "react";
+import React, {  useLayoutEffect, useMemo } from "react";
 import * as THREE from "three";
 import { useControls } from "leva";"use strict";
 import LiquidMeshes from "./LiquidMeshes";
@@ -8,12 +8,12 @@ import gsap from "gsap";
 import { useStore } from "./ZustandStorage";
 import MagicLetters from "./MagicLetters"
 import SleepText from "./SleepText";
-import { act, useFrame, useLoader, useThree } from "@react-three/fiber";
 import AnimatedFlag from "./AnimatedFlag";
 
 const ANVIL_POSITION = new THREE.Vector3(-5.8, 1.8, -10.8)
 
 const Island = () => {
+  "use strict";
 
   const forgeHammerSound = useMemo(() => new Audio("/sounds/forgeHammer.mp3"), [])
   forgeHammerSound.volume = 0;
@@ -66,6 +66,7 @@ const Island = () => {
   });
 
 
+
   //   /**
   //    * Island initialization
   //    */
@@ -76,6 +77,7 @@ const Island = () => {
       child.material.name === "islandTexture" ?
         child.receiveShadow = true :
         child.material.toneMapped = false;
+        child.material.envMapIntensity = 0.5;
     }
   });
 
