@@ -47,7 +47,7 @@ const MagicBooks = ({ magicBooks, texture }) => {
         const unsubMagicPlateActivation = useStore.subscribe(
             (state) => state.magicGlyphActivation,
             (magicGlyphActivation) => {
-                    gsap.to(magicBooks.material.uniforms.uProgress,{ duration: 8, delay: 0.5, value: 1 });
+                    gsap.to(magicBooks.material.uniforms.uProgress,{ duration: 8, delay: 0.4, value: 1 });
             }
         )
 

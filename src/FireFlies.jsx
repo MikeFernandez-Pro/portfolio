@@ -26,10 +26,10 @@ const FireFlies = () => {
 
     const controls = useControls("FireFlies", {
         count: { value: 30, min: 0, max: 100, step: 1 },
-        uSize: { value: 17, min: 0, max: 1000, step: 1 },
+        uSize: { value: 30, min: 0, max: 1000, step: 1 },
         velocity: { value: 0.17, min: 0, max: 1, step: 0.01 },
         color: "#ffcaaf",
-        intensity: { value: 4.40, min: 0, max: 50, step: 0.01 },
+        intensity: { value: 8, min: 0, max: 50, step: 0.01 },
     });
 
 

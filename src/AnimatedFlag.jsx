@@ -7,7 +7,10 @@ import animatedFlagFragmentShader from "./shaders/animatedFlag/fragment.glsl";
 import { useFrame } from "@react-three/fiber";
 import {useControls} from "leva";
 
+
 const AnimatedFlag = ({ flag, offset }) => {
+
+    const FLAGS_POSITION = new THREE.Vector3(-6.4, 8.4, -49.5)
 
     const {uOffset} = useControls("flag", {
         uOffset: {value: 0.0, min: -50.0, max: 50.0, step: 0.01}

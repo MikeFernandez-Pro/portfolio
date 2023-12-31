@@ -1,6 +1,8 @@
 uniform float uTime;
 uniform float uSize;
 uniform sampler2D uTextureMap; // The texture uniform
+uniform float uContrast;
+uniform float uLightIntensity;
 
 varying vec2 vUv;
 
@@ -93,13 +95,14 @@ void main()
     vec2 displacedUv = vUv + noise;
 
     // Outer noise
-     if (distanceToCenter - noise * 0.1 > uSize) {
+     if (distanceToCenter - noise * 0.3 > uSize) {
          gl_FragColor = vec4(0.1, 0.05, 0.05, 0.0);
          return ;
      }
      
     // Perlin noise
-    float strength = cnoise(vec3(displacedUv * 2.0, uTime ));
+    float strength = cnoise(vec3(displacedUv * 1.5, uTime * 0.001));
+
 
     // Outer glow
     // float outerGlow = distance(vUv, vec2(0.5)) * 5.0 - 1.6;
@@ -112,8 +115,10 @@ void main()
     strength = clamp(strength, 0.0, 1.0);
 
     // Texture
+    // vec4 texColor = texture2D(uTextureMap,vUv);
     vec4 texColor = texture2D(uTextureMap, vUv + (noise * 0.02));
-    texColor.rgb = (texColor.rgb - 0.5) * 1.2 + 0.5;
+    texColor.rgb = (texColor.rgb - 0.5) * uContrast + uLightIntensity;
 
-    gl_FragColor =  mix(texColor, texColor * 0.85, strength);
+    gl_FragColor =  mix(texColor, texColor * 0.85, strength * 25.);
+    // gl_FragColor =  vec4(texColor.rgb, 1.0) * 1.0;
 }

@@ -39,7 +39,7 @@ const MagicLetters = ({ magicLetters, island }) => {
         const unsubMagicGlyphActivation = useStore.subscribe(
             (state) => state.magicGlyphActivation,
             (magicGlyphActivation) => {
-                    gsap.to(magicLetters.material.uniforms.uOpacity,  { duration: 1, delay: 1.2, value: 1, ease:"expo.in" });
+                    gsap.to(magicLetters.material.uniforms.uOpacity,  { duration: 1, delay: 1, value: 1, ease:"expo.in" });
             }
         )
 

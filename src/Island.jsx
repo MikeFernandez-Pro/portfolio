@@ -1,7 +1,7 @@
 import { useGLTF, useAnimations } from "@react-three/drei";
-import React, {  useLayoutEffect, useMemo } from "react";
+import React, { useLayoutEffect, useMemo } from "react";
 import * as THREE from "three";
-import { useControls } from "leva";"use strict";
+import { useControls } from "leva"; "use strict";
 import LiquidMeshes from "./LiquidMeshes";
 import MagicBooks from "./MagicBooks";
 import gsap from "gsap";
@@ -13,10 +13,15 @@ import AnimatedFlag from "./AnimatedFlag";
 const ANVIL_POSITION = new THREE.Vector3(-5.8, 1.8, -10.8)
 
 const Island = () => {
-  "use strict";
+
 
   const forgeHammerSound = useMemo(() => new Audio("/sounds/forgeHammer.mp3"), [])
   forgeHammerSound.volume = 0;
+
+  const pressurePlatesSoundEffect = useMemo(() => new Audio("/sounds/magicPortalSoundEffect3.mp3"), []);
+  pressurePlatesSoundEffect.volume = 0.1;
+
+  const magicGlyphSoundEffect = useMemo(() => new Audio("/sounds/magicGlyphSoundEffect.mp3"), []);
 
   const shadowsIntensity = useControls("shadowsIntensity", {
     shadowsIntensity: { value: 2.73, min: 0, max: 20, step: 0.001 }
@@ -66,26 +71,47 @@ const Island = () => {
   });
 
 
+  const envMap = useControls("envMap", {
+    intensity: { value: 0.5, min: 0, max: 1, step: 0.001 },
+  });
 
+
+  const filters = useControls("filters", {
+    filters: {
+      options: [
+        THREE.NearestFilter,
+        THREE.NearestMipmapNearestFilter,
+        THREE.NearestMipmapLinearFilter,
+        THREE.LinearFilter,
+        THREE.LinearMipmapNearestFilter,
+        // THREE.LinearMipmapLinearFilter
+      ]
+    },
+  })
   //   /**
   //    * Island initialization
   //    */
-  const island = useMemo(() => useGLTF("/models/finalIsland/island.glb"), []);
+  const island = useMemo(() => useGLTF("/models/finalIsland/islandCopy40.glb"), []);
 
   island.scene.traverse((child) => {
     if (child.isMesh && child.material.isMeshStandardMaterial) {
       child.material.name === "islandTexture" ?
         child.receiveShadow = true :
         child.material.toneMapped = false;
-        child.material.envMapIntensity = 0.5;
+
+      child.material.envMapIntensity = envMap.intensity;
     }
   });
 
- 
+  for (const [index, value] of island.scene.children[0].children[0].children.entries()) {
+
+    console.log(`${index} => ${value.material.name}`)
+    // console.log(index)
+  }
 
   const islandAnimations = useAnimations(island.animations, island.scene)
 
-  const islandPosition = useMemo(() => [-1.35, 2.3, -15], []);
+  const islandPosition = useMemo(() => [-1.35, 2.25, -15], []);
 
   // useLayoutEffect(() => {
   island.materials.islandTexture.aoMapIntensity = shadowsIntensity.shadowsIntensity;
@@ -139,6 +165,11 @@ const Island = () => {
     islandAnimations.actions["anvilAnimation"].clampWhenFinished = true;
     islandAnimations.actions["magicPotAnimation"].play();
     islandAnimations.actions["details"].play();
+    islandAnimations.actions["magicPortalAnimation"].timeScale = 0.05;
+    islandAnimations.actions["magicPortalAnimation"].play();
+    islandAnimations.actions["magicGlyphAnimation"].timeScale = 0;
+    islandAnimations.actions["magicGlyphAnimation"].play()
+
 
     // Play forge hammer sound and anvil animation each 2s
     const forgeHammerInterval = setInterval(() => {
@@ -146,11 +177,14 @@ const Island = () => {
       islandAnimations.actions["anvilAnimation"].reset().play()
     }, 2000)
 
+
     // Subscribe to activePlate zustand store state
     const unSubActivePlate = useStore.subscribe((state) => state.activePlate,
       (activePlate, prevPlate) => {
         gsap.to(island.materials[activePlate], { duration: 0.2, emissiveIntensity: 3 })
         gsap.to(island.materials[prevPlate], { duration: 0, emissiveIntensity: 0 })
+        pressurePlatesSoundEffect.currentTime = 0;
+        pressurePlatesSoundEffect.play();
       }
     )
 
@@ -158,9 +192,17 @@ const Island = () => {
     const unsubMagicGlyphActivation = useStore.subscribe(
       (state) => state.magicGlyphActivation,
       (magicGlyphActivation) => {
+        gsap.to(islandAnimations.actions["magicGlyphAnimation"],
+        {timeScale: 0.5, duration: 5});
+        // islandAnimations.actions["magicGlyphAnimation"].fadeIn(0.5).play();
+        
+        magicGlyphSoundEffect.play()
+        gsap.fromTo(magicGlyphSoundEffect, { volume: 0 }, {delay: 0.1, duration: 0.5, volume: 0.2 });
+
+
         gsap.fromTo(island.materials.magicPortal,
           { emissiveIntensity: 0 },
-          { duration: 1.5, emissiveIntensity: 4.7, ease: "power4.out" }
+          { duration: 1, emissiveIntensity: 4.7 }
         )
       }
     )
@@ -180,6 +222,8 @@ const Island = () => {
     return () => {
       islandAnimations.actions["anvilAnimation"].stop();
       islandAnimations.actions["magicPotAnimation"].stop();
+      islandAnimations.actions["magicPotAnimation"].getMixer().uncacheAction(islandAnimations.actions["magicPotAnimation"]);
+
       // islandAnimations.actions["details"].stop();
 
       clearInterval(forgeHammerInterval);
@@ -194,17 +238,17 @@ const Island = () => {
     <>
       <primitive object={island.scene} scale={0.45} position={islandPosition} />
       <LiquidMeshes
-        well={island.scene.children[0].children[0].children[1]}
-        cauldron={island.scene.children[0].children[0].children[2]}
+        well={island.scene.children[0].children[0].children[6]}
+        cauldron={island.scene.children[0].children[0].children[7]}
       />
       <MagicBooks magicBooks={island.scene.children[0].children[0].children[9]} />
       <MagicLetters
         magicLetters={island.scene.children[0].children[0].children[10]}
         island={island.scene.children[0].children[0].children[0]}
       />
-      <AnimatedFlag flag={island.scene.children[0].children[0].children[16]} offset={0.345}/>
-      <AnimatedFlag flag={island.scene.children[0].children[0].children[17]} offset={0.265}/>
-      <AnimatedFlag flag={island.scene.children[0].children[0].children[18]} offset={0.26}/>
+      <AnimatedFlag flag={island.scene.children[0].children[0].children[16]} offset={0.345} />
+      <AnimatedFlag flag={island.scene.children[0].children[0].children[17]} offset={0.265} />
+      <AnimatedFlag flag={island.scene.children[0].children[0].children[18]} offset={0.26} />
       {/* br 16 fr 17 and sp 18 => flags */}
       <SleepText />
     </>

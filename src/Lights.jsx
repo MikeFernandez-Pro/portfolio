@@ -5,7 +5,7 @@ import { useStore } from "./ZustandStorage";
 import * as THREE from "three";
 import { useControls } from "leva";
 
-export default function Lights() {
+ const Lights = () => {
 
     const fillLightControls = useControls("FillLight", {
         intensity: { value: 10, min: 0, max: 50, step: 0.1 },
@@ -49,19 +49,21 @@ export default function Lights() {
     const scene = useThree(state => state.scene);
     const targetObject = useMemo(() => new THREE.Object3D(), []);
 
-    const unsubCharacterPosition = useStore.subscribe(
-        state => state.characterPosition,
-        (characterPosition) => {
-            if (characterPosition && characterLightRef.current) {
-                targetObject.position.set(characterPosition.x, characterPosition.y, characterPosition.z)
-                characterLightRef.current.position.set(characterPosition.x - 3, characterPosition.y + 4, characterPosition.z + 3)
-                characterLightRef.current.target = targetObject
-                characterLightRef.current.shadow.camera.target = targetObject
-            }
-        }
-    )
+   
 
     useLayoutEffect(() => {
+        const unsubCharacterPosition = useStore.subscribe(
+            state => state.characterPosition,
+            (characterPosition) => {
+                if (characterPosition && characterLightRef.current) {
+                    targetObject.position.set(characterPosition.x, characterPosition.y, characterPosition.z)
+                    characterLightRef.current.position.set(characterPosition.x - 3, characterPosition.y + 4, characterPosition.z + 3)
+                    characterLightRef.current.target = targetObject
+                    characterLightRef.current.shadow.camera.target = targetObject
+                }
+            }
+        )
+
         characterLightHelper.current.targetLine.geometry.drawRange.count = 0;
         fillLighHelper.current.targetLine.geometry.drawRange.count = 0;
         backLightHelper.current.targetLine.geometry.drawRange.count = 0;
@@ -123,3 +125,5 @@ export default function Lights() {
         </>
     );
 }
+
+export default Lights;

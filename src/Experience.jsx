@@ -19,7 +19,7 @@ import Smoke from "./Smoke.jsx";
 import SampledGrass from "./sampledGrass.jsx";
 
 
-export default function Experience() {
+const Experience = () => {
     const { debug, orbitControlsActivation, envMapColor } = useControls("Controls", {
         debug: false,
         orbitControlsActivation: false,
@@ -27,7 +27,7 @@ export default function Experience() {
     });
 
     let { position } = useControls("Cube", {
-        position: { value: [-5.8, 1.8, -10.8], step: 0.01 }
+        position: { value: [-5.8, 1.8, -10.8], step: 0.1 }
     })
 
     const scene = useThree((state) => state.scene);
@@ -53,7 +53,7 @@ export default function Experience() {
     }, []);
 
     useLayoutEffect(() => {
-        ambientSound.play();
+        // ambientSound.play();
         gsap.to(ambientSound, { volume: 0.15, duration: 3 })
     }, [])
 
@@ -77,6 +77,8 @@ export default function Experience() {
 
             <ProjectsPortals />
 
+            <Box position={position} scale={0.2}/>
+
             <Physics timeStep="vary" debug={debug} gravity={[0, -50, 0]}>
                 <IslandColliders />
                 <Player
@@ -86,3 +88,5 @@ export default function Experience() {
         </>
     );
 }
+
+export default Experience;
