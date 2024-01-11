@@ -1,5 +1,6 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+
 import SparksMaterial from "../SparksMaterial/SparksMaterial";
 
 const TorchSparks = ({ particlesCount, config, pixelRatio }) => {

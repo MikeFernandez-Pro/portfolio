@@ -1,8 +1,7 @@
-import { useGLTF, Instances, Instance, Image, Box, useKeyboardControls, Float } from "@react-three/drei";
+import { useGLTF, Image } from "@react-three/drei";
 import { InstancedRigidBodies, RigidBody } from "@react-three/rapier";
 import { useStore } from "./ZustandStorage";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { useControls } from "leva";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import gsap from "gsap";
 
 const INTERACTION_PROMPT_URL = "/textures/Enter.webp"

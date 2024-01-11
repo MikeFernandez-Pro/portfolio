@@ -1,6 +1,6 @@
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import TorchSparks from "./TorchSparks/TorchSparks";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useThree } from "@react-three/fiber";
 import { Vector3 } from "three";
 import { useStore } from "../ZustandStorage";
 
@@ -40,47 +40,59 @@ const LARGE_TORCHES_SPARKS = {
     ]
 }
 
-const torchesSoundsEffects = [
-    { position: new Vector3(-5.8, 1.7, -16.6) },
-    { position: new Vector3(- 18.5, 5.9, -31) },
-    { position: new Vector3(- 18.3, 5.9, -35.7) },
-    { position: new Vector3(- 13.8, 5.9, -35.6) },
-    { position: new Vector3(- 10.9, 8.0, -46.9) },
-    { position: new Vector3(- 15.3, 7.8, -52.9) },
-    { position: new Vector3(- 4.7, 7.9, -53.0) },
-    { position: new Vector3(-6.3, 8.5, -58.0) },
-    { position: new Vector3(-13.2, 8.5, -58.0) },
-    { position: new Vector3(-1.5, 7.1, -55.8) },
+const TORCHES_POSITIONS = [
+    [-5.8, 1.7, -16.6],
+    [-18.5, 5.9, -31],
+    [-18.3, 5.9, -35.7],
+    [-13.8, 5.9, -35.6],
+    [-10.9, 8.0, -46.9],
+    [-15.3, 7.8, -52.9],
+    [-4.7, 7.9, -53.0],
+    [-6.3, 8.5, -58.0],
+    [-13.2, 8.5, -58.0],
+    [-1.5, 7.1, -55.8]
 ]
 
 const TorchesSparks = () => {
 
     const pixelRatio = useThree(state => state.gl).getPixelRatio();
+    const isMobile = useStore(state => state.isMobile);
 
     useEffect(() => {
 
-        for (const torchSoundEffect of torchesSoundsEffects) {
+        const torchesConfig = new Array(TORCHES_POSITIONS.length)
+
+        for (const [index,] of TORCHES_POSITIONS.entries()) {
             // Sound Effect by Julius H.
             // https://pixabay.com/fr/users/juliush-3921568/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=8012
-            torchSoundEffect.soundEffect = new Audio("/sounds/torchesSoundEffect.mp3")
-            torchSoundEffect.soundEffect.loop = true;
-            torchSoundEffect.soundEffect.volume = 0;
-            // Speed up sound effect
-            torchSoundEffect.soundEffect.playbackRate = 1.5;
-            // Offset sound effect playback
-            torchSoundEffect.soundEffect.currentTime = Math.random() * 50;
-            torchSoundEffect.soundEffect.play();
+            const soundEffect = isMobile ? undefined :
+                (() => {
+                    const soundEffect = new Audio("/sounds/torchesSoundEffect.mp3");
+                    soundEffect.loop = true;
+                    soundEffect.volume = 0;
+                    // Speed up sound effect
+                    soundEffect.playbackRate = 1.5;
+                    // Offset sound effect playback
+                    soundEffect.currentTime = Math.random() * 50;
+                    soundEffect.play();
+                    return soundEffect;
+                })();
+
+            torchesConfig[index] = {
+                position: new Vector3(...TORCHES_POSITIONS[index]),
+                soundEffect
+            }
         }
 
-        const unsubCharacterPosition = useStore.subscribe(
+        const unsubCharacterPosition = isMobile ? undefined : useStore.subscribe(
             state => state.characterPosition,
             (characterPosition) => {
                 if (characterPosition) {
-                    for (const torchSoundEffect of torchesSoundsEffects) {
-                        torchSoundEffect.distanceToCharacter = torchSoundEffect.position.distanceTo(characterPosition);
-                        torchSoundEffect.soundEffect.volume = torchSoundEffect.distanceToCharacter < 13 ?
-                            Math.min(((1 / torchSoundEffect.position.distanceTo(characterPosition)) ), 0.3) 
-                            : 0;    
+                    for (const torchConfig of torchesConfig) {
+                        torchConfig.distanceToCharacter = torchConfig.position.distanceTo(characterPosition);
+                        torchConfig.soundEffect.volume = torchConfig.distanceToCharacter < 13 ?
+                            Math.min(((1 / torchConfig.distanceToCharacter)), 0.3)
+                            : 0;
                     }
                 }
             }
@@ -88,9 +100,11 @@ const TorchesSparks = () => {
 
         // Clear animations, interval and subscriptions on unmount
         return () => {
-            for (const torchSoundEffect of torchesSoundsEffects) {
-                torchSoundEffect.soundEffect.pause();
-                torchSoundEffect.soundEffect.currentTime = 0;
+            if (isMobile) return;
+            
+            for (const torchConfig of torchesConfig) {
+                torchConfig.soundEffect.pause();
+                torchConfig.soundEffect.currentTime = 0;
             }
 
             unsubCharacterPosition();

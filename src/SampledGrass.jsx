@@ -13,13 +13,15 @@ let intersects;
 const SampledGrass = () => {
   const grassRef = useRef(null);
 
+  const isMobile = useStore(state => state.isMobile);
+
   // Load grass ground model for sampling
-  const { nodes } = useMemo(() => useGLTF('/models/finalIsland/grassGroundv2.glb'), [])
+  const { nodes } = useMemo(() => useGLTF('/models/island/grassFloor.glb'), [])
 
   // Define grass blade count and shape
   const { bladeCount, bladeHeight, bladeWidth } = useControls('grass', {
     bladeCount: {
-      value: 50000,
+      value: 27000,
       min: 0,
       max: 50000,
       step: 100,
@@ -55,7 +57,7 @@ const SampledGrass = () => {
     ])
     const floorPosition = new Float32Array(bladeCount * 3);
 
-    for (let i = 0; i < bladeCount; i += 3) {
+    for (let i = 0; i < floorPosition.length; i += 3) {
       // Create a random point on the surface of the sampled floor 
       sampler.sample(defaultPosition);
       floorPosition[i + 0] = defaultPosition.x;
@@ -87,12 +89,13 @@ const SampledGrass = () => {
 
 
   // Grass sound effect Configuration
-  const grassSoundEffect = useMemo(() => {
-    const audio = new Audio("/sounds/runningInGrassSoundEffect.mp3");
-    audio.loop = true;
-    audio.volume = 0.2;
-    return audio;
-  }, []);
+  const grassSoundEffect = useMemo(() =>
+    isMobile ? undefined : (() => {
+      const audio = new Audio("/sounds/runningInGrassSoundEffect.mp3");
+      audio.loop = true;
+      audio.volume = 0.2;
+      return audio;
+    })(), []);
 
   useLayoutEffect(() => {
 
@@ -110,15 +113,15 @@ const SampledGrass = () => {
           intersects = raycaster.intersectObjects([nodes.grassGround]);
           if (intersects.length > 0 && grassRef.current) {
             grassRef.current.material.uniforms.uCharacter.value = intersects[0].point;
-            if (isCharacterMoving) {
+            if (isCharacterMoving && !isMobile) {
               grassSoundEffect.play();
             }
-            else {
+            else if (!isMobile) {
               grassSoundEffect.pause();
               grassSoundEffect.currentTime = 0;
             }
           }
-          else {
+          else if (!isMobile) {
             grassSoundEffect.pause();
             grassSoundEffect.currentTime = 0;
           }

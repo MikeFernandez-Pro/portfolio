@@ -1,11 +1,9 @@
 "use strict";
 
-import { Box, Instance, Instances, Text } from "@react-three/drei";
+import { Instance, Instances, Text } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import gsap from "gsap";
-import { useControls } from "leva";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import * as THREE from "three"
+import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 
 const LETTERS_COUNT = 3;
 let currentCount = 0;

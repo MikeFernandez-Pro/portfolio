@@ -63,11 +63,11 @@ const fragmentShader = /*glsl*/ `
     `;
 
 export default class sceneRevealerEffect extends Effect {
-    constructor(progress, size, aspectRatio) {
+    constructor(aspectRatio) {
         super("sceneRevealerEffect", fragmentShader, {
             uniforms: new Map([
-                ["progress", new Uniform(progress)],
-                ["size", new Uniform(size)],
+                ["progress", new Uniform(0)],
+                ["size", new Uniform(15)],
                 ["aspectRatio", new Uniform(aspectRatio)],
             ]),
         });

@@ -38,33 +38,23 @@ float perlin2d(vec2 P){
 }
 
 uniform float uTime;
-uniform float timeMultiplier;
-uniform float xMultiplier;
-uniform float yMultiplier;
-uniform float xBorderAlpha;
-uniform float yBorderAlpha;
 uniform vec3 uColor; 
-uniform float newPositionY;
 
 varying float positionY;
 varying vec2 vUv;
 
 void main() {
 
-    vec2 uv = vec2(vUv.x * xMultiplier, vUv.y * yMultiplier);
-    uv.y -= uTime * timeMultiplier;
+    vec2 uv = vec2(vUv.x, vUv.y);
+    uv.y -= uTime;
 
-    float borderAlpha = min(vUv.x * xBorderAlpha, (1.0 - vUv.x) * yBorderAlpha);
+    float borderAlpha = min(vUv.x * 30.0, (1.0 - vUv.x) * 30.0);
     borderAlpha *= 1.0 - vUv.y;
     
     float perlin = perlin2d(uv);
     perlin *= borderAlpha;
-    // perlin = clamp(perlin, 0.0, 1.0);
     
     vec3 color = uColor;
-    // color /= borderAlpha;
-    // color = clamp(color, 0.0, 1.0);
 
     gl_FragColor = vec4(color, min(1.0, (1.0 / positionY) * borderAlpha) / 2.0 );
-    // gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
 }

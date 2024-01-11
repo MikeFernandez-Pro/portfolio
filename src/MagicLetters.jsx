@@ -1,27 +1,21 @@
-import { useEffect, useLayoutEffect, useMemo } from "react";
+import { useLayoutEffect, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useStore } from "./ZustandStorage";
 import * as THREE from "three"
 import gsap from "gsap";
-import { useControls } from "leva";
 
 import floatingTextVertexShader from "/shaders/floatingText/vertex.glsl"
 import floatingTextFragmentShader from "/shaders/floatingText/fragment.glsl"
 
 const MagicLetters = ({ magicLetters, island }) => {
 
-    const controls = useControls("Magic Letters", {
-        uColor: "#e1754b",
-        uIntensity: { value: 6.8, min: 0, max: 10 },
-    })
-
     const magicLettersShaderMaterial = useMemo(() => new THREE.ShaderMaterial({
         uniforms: {
             uTime: { value: 0 },
             uOpacity: { value: 0 },
             uTexture: { value: island.material.map },
-            uColor: { value: new THREE.Color(controls.uColor) },
-            uIntensity: { value: controls.uIntensity },
+            uColor: { value: new THREE.Color("#e1754b") },
+            uIntensity: { value: 6.8 },
         },
         vertexShader: floatingTextVertexShader,
         fragmentShader: floatingTextFragmentShader,
@@ -32,14 +26,14 @@ const MagicLetters = ({ magicLetters, island }) => {
 
 
     useLayoutEffect(() => {
-        // Replace magicLetters default material with shader material
+        // Replace magicLetters default material with new shader material
         magicLetters.material = magicLettersShaderMaterial;
 
-        // Subscribe to magicGlyphActivation zustand store state
+        // Subscribe to the magic glyph zustand store state
         const unsubMagicGlyphActivation = useStore.subscribe(
             (state) => state.magicGlyphActivation,
             (magicGlyphActivation) => {
-                    gsap.to(magicLetters.material.uniforms.uOpacity,  { duration: 1, delay: 1, value: 1, ease:"expo.in" });
+                gsap.to(magicLetters.material.uniforms.uOpacity, { duration: 1, delay: 1, value: 1, ease: "expo.in" });
             }
         )
 
@@ -50,7 +44,7 @@ const MagicLetters = ({ magicLetters, island }) => {
     }, [])
 
     // Update shader material uTime uniforms value over time
-    useFrame(state => 
+    useFrame(state =>
         magicLetters.material.uniforms.uTime.value = state.clock.elapsedTime
     )
 };

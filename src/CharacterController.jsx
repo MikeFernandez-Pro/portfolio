@@ -1,8 +1,7 @@
-import { useGLTF, useKeyboardControls, useAnimations, ContactShadows } from "@react-three/drei";
-import { useFrame, useThree } from "@react-three/fiber";
-import { CapsuleCollider, RigidBody, useRapier } from "@react-three/rapier";
-import { useControls } from "leva";
-import { useRef, useState, useEffect, useMemo, useCallback, useLayoutEffect } from "react";
+import { useGLTF, useAnimations } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { CapsuleCollider, RigidBody } from "@react-three/rapier";
+import { useRef, useMemo, useCallback, useLayoutEffect } from "react";
 import * as THREE from "three";
 import { useStore } from "./ZustandStorage.jsx";
 
@@ -36,7 +35,7 @@ const FIXED = 1;
 
 // Camera Settings
 const CAMERA_POSITION = new THREE.Vector3(0, 0, 0);
-const CAMERA_OFFSET = new THREE.Vector3(0, 4, 5.5);
+
 const LERP_CAMERA_POSITION = new THREE.Vector3(0, 0, 0);
 
 
@@ -46,6 +45,12 @@ const Player = ({ orbitControls }) => {
     // Mobile Controller settings
     const isMobile = useStore(state => state.isMobile);
     const joystickAngle = useStore(state => state.joystickAngle);
+    const CAMERA_OFFSET = useMemo(() =>
+        isMobile ?
+            new THREE.Vector3(0, 4, 7.5) :
+            new THREE.Vector3(0, 4, 5.5)
+        , [])
+
 
     /**
      * Character Initialization
@@ -56,24 +61,27 @@ const Player = ({ orbitControls }) => {
     const characterAnimation = useRef(IDLE);
 
     // Character Model and animations loaders
-    const characterModel = useMemo(() => useGLTF("/models/character/shapeKeysKnightCharacter.glb"), [])
+    const characterModel = useMemo(() => useGLTF("/models/character/character.glb"), [])
     const characterAnimations = useAnimations(characterModel.animations, characterModel.scene)
 
     // Shadows initialization
-    characterModel.scene.traverse((child) => {
-        // Check if the child object is a Mesh
-        if (child.isMesh && child.material.name === "texture") {
-            child.castShadow = true;
-            child.material.envMapIntensity = 0.5;
-        }
-    });
+    if (!isMobile) {
+        characterModel.scene.traverse((child) => {
+            // Check if the child object is a Mesh
+            if (child.isMesh && child.material.name === "texture") {
+                child.castShadow = true;
+                child.material.envMapIntensity = 0.5;
+            }
+        })
+    }
 
     // Character sound Effect initialization
-    const runningSoundEffect = useMemo(() => {
-        const soundEffect = new Audio("/sounds/running Sound Effect by Pixabay.mp3");
-        soundEffect.loop = true;
-        return soundEffect;
-    }, []);
+    const runningSoundEffect = useMemo(() =>
+        isMobile ? undefined : (() => {
+            const soundEffect = new Audio("/sounds/runningSoundEffect.mp3");
+            soundEffect.loop = true;
+            return soundEffect;
+        })(), []);
 
     const keyEventsRef = useRef({
         "forward": false,
@@ -145,8 +153,10 @@ const Player = ({ orbitControls }) => {
 
                 characterAnimations.actions[characterAnimation.current].reset().fadeIn(0.2).play();
 
-                runningSoundEffect.pause();
-                runningSoundEffect.currentTime = 0;
+                if (!isMobile) {
+                    runningSoundEffect.pause();
+                    runningSoundEffect.currentTime = 0;
+                }
 
             }
 
@@ -162,8 +172,10 @@ const Player = ({ orbitControls }) => {
             characterAnimation.current = RUN;
             characterAnimations.actions[characterAnimation.current].reset().fadeIn(0.2).play();
             useStore.setState({ isCharacterMoving: true });
-            runningSoundEffect.volume = 0.6;
-            runningSoundEffect.play();
+            if (!isMobile) {
+                runningSoundEffect.volume = 0.6;
+                runningSoundEffect.play();
+            }
         }
 
         characterBody.current.setLinvel({
@@ -183,7 +195,7 @@ const Player = ({ orbitControls }) => {
         // Set character default animation
         characterAnimations.actions[IDLE].fadeIn(0.2).play();
         characterAnimations.actions["KeyAction"].fadeIn(0.2).play()
-        
+
         // Listen to window blur and keyboards events
         window.addEventListener("blur", pauseCharacter);
         document.addEventListener('keydown', keyboardEventHandler)
@@ -204,7 +216,7 @@ const Player = ({ orbitControls }) => {
                 lockRotations
                 ref={characterBody}
                 colliders={false}
-                // position-y={0.7}
+                // position-y={0.7} // ile 1
                 // position={[-5, 7, -45]} // ile 4
                 // position={[-16, 5, -35]} // ile 3
                 position={[6, 3, -30]} // ile 2

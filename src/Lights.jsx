@@ -7,6 +7,8 @@ import { useControls } from "leva";
 
  const Lights = () => {
 
+    const isMobile = useStore(state => state.isMobile);
+
     const fillLightControls = useControls("FillLight", {
         intensity: { value: 10, min: 0, max: 50, step: 0.1 },
         color: "#2f4b90",
@@ -52,7 +54,7 @@ import { useControls } from "leva";
    
 
     useLayoutEffect(() => {
-        const unsubCharacterPosition = useStore.subscribe(
+        const unsubCharacterPosition = isMobile ? undefined : useStore.subscribe(
             state => state.characterPosition,
             (characterPosition) => {
                 if (characterPosition && characterLightRef.current) {
@@ -73,6 +75,8 @@ import { useControls } from "leva";
         return () => {
             scene.remove(targetObject)
             
+            if (isMobile) return;
+            
             unsubCharacterPosition();
         }
     }, [])
@@ -89,7 +93,7 @@ import { useControls } from "leva";
                 position={characterLightControls.position}
                 intensity={characterLightControls.intensity}
                 color={characterLightControls.color}
-                castShadow
+                castShadow={!isMobile}
                 shadow-mapSize={[256, 256]}
                 shadow-camera-near={1}
                 shadow-camera-far={10}

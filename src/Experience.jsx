@@ -1,38 +1,30 @@
-import { OrbitControls, useProgress, Box } from "@react-three/drei";
+import { Box, OrbitControls, useDetectGPU } from "@react-three/drei";
 import { Perf } from "r3f-perf";
-import { Physics, useRapier } from "@react-three/rapier";
+import { Physics } from "@react-three/rapier";
 import Lights from "./Lights.jsx";
 import { useControls } from "leva";
-import { useEffect, useLayoutEffect, useRef, useMemo } from "react";
+import {useLayoutEffect, useRef, useMemo } from "react";
 import Player from "./CharacterController.jsx";
 import Island from "./Island.jsx";
-import { useFrame, useLoader, useThree } from "@react-three/fiber";
+import { useLoader, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import IslandColliders from "./IslandColliders.jsx";
 import ProjectsPortals from "./ProjectsPortals.jsx";
 import FireFlies from "./FireFlies.jsx";
 import gsap from "gsap";
-import { useStore } from "./ZustandStorage.jsx";
-import Ashes from "./Ashes.jsx";
 import TorchesSparks from "./TorchSparks/TorchesSparks.jsx";
 import Smoke from "./Smoke.jsx";
 import SampledGrass from "./sampledGrass.jsx";
-
-
+    
 const Experience = () => {
-    const { debug, orbitControlsActivation, envMapColor } = useControls("Controls", {
-        debug: false,
-        orbitControlsActivation: false,
-        envMapColor: "blue"
+    const { orbitControlsActivation } = useControls("Controls", {
+        orbitControlsActivation: false
     });
-
-    let { position } = useControls("Cube", {
-        position: { value: [-5.8, 1.8, -10.8], step: 0.1 }
-    })
-
+    
     const scene = useThree((state) => state.scene);
     const camera = useThree((state) => state.camera);
 
+    const gpuTier = useDetectGPU();
 
     const envMap = useLoader(THREE.TextureLoader, '/environmentMaps/envMap.webp')
     envMap.mapping = THREE.EquirectangularReflectionMapping;
@@ -52,9 +44,13 @@ const Experience = () => {
         return audio;
     }, []);
 
+
+    const planeRef = useRef();
     useLayoutEffect(() => {
         // ambientSound.play();
         gsap.to(ambientSound, { volume: 0.15, duration: 3 })
+
+
     }, [])
 
 
@@ -72,14 +68,12 @@ const Experience = () => {
             <FireFlies />
 
             <Smoke />
-            {/* <Ashes /> */}
+
             <TorchesSparks />
 
             <ProjectsPortals />
 
-            <Box position={position} scale={0.2}/>
-
-            <Physics timeStep="vary" debug={debug} gravity={[0, -50, 0]}>
+            <Physics timeStep="vary" gravity={[0, -50, 0]}>
                 <IslandColliders />
                 <Player
                     orbitControls={orbitControlsActivation}
