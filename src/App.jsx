@@ -13,31 +13,46 @@ import { BlendFunction } from "postprocessing";
 
 const App = () => {
     const sceneRevealerRef = useRef()
-    const perfMonitorRef = useRef()
+    const mainHeadingRef = useRef()
+    const secondHeadingRef = useRef()
+    const callToActionRef = useRef()
 
     const [dpr, setDpr] = useState(1.5)
 
+    const startExperience = (isMobileDevice) => {
+        mainHeadingRef.current.style.visibility = "hidden"
+        secondHeadingRef.current.style.visibility = "hidden"
+        callToActionRef.current.style.visibility = "hidden"
+        
+        gsap.to(sceneRevealerRef.current?.uniforms.get("progress"),
+            { value: 1.5, duration: 10, ease: "expo.isOut" })
+
+        if (isMobileDevice) {
+            useStore.setState({ isMobile: true })
+            useStore.setState({ disableSounds: true })
+        } else {
+            useStore.setState({ disableSounds: false })
+        }
+    }  
+
     return (
         <>
-            {/* <Joystick /> */}
+            <Joystick />
             <div className="grid">
-                <h1 className="hero__main-heading">Mike Fernandez</h1>
-                <h2 className="hero__secondary-heading">Front-end Developer</h2>
+                <h1 ref={mainHeadingRef}  className="hero__main-heading">Mike Fernandez</h1>
+                <h2 ref={secondHeadingRef}  className="hero__secondary-heading">Front-end Developer</h2>
 
                 <Suspense fallback={<div className="container"><div className="loader" /></div>}>
                     <p
+                        ref={callToActionRef} 
                         className="cta"
-                        onClick={() =>
-                            gsap.to(sceneRevealerRef.current?.uniforms.get("progress"),
-                                { value: 1, duration: 7, ease: "expo.out" })
-                        }
-                        onTouchStart={() => {
-                            useStore.setState({ isMobile: true })
-
-                            gsap.to(sceneRevealerRef.current?.uniforms.get("progress"),
-                                { value: 1, duration: 7, ease: "expo.out" })
+                        onClick={() => {
+                            startExperience(false)
                         }}
-                    >discover</p>
+                        onTouchStart={() => {
+                            startExperience(true)
+                        }}
+                    >Discover</p>
                     <Leva collapsed={true} theme={{
                         sizes: { rootWidth: 'auto' },
                     }} />

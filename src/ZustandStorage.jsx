@@ -5,6 +5,7 @@ import { subscribeWithSelector } from 'zustand/middleware'
 export const useStore = create(subscribeWithSelector((set) => ({
 
     isMobile: false,
+    disableSounds: undefined,
 
     joystickAngle: undefined,
     joysticActivated: false,

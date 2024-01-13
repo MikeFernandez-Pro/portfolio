@@ -66,7 +66,7 @@ export default class sceneRevealerEffect extends Effect {
     constructor(aspectRatio) {
         super("sceneRevealerEffect", fragmentShader, {
             uniforms: new Map([
-                ["progress", new Uniform(0)],
+                ["progress", new Uniform(-0.1)],
                 ["size", new Uniform(15)],
                 ["aspectRatio", new Uniform(aspectRatio)],
             ]),

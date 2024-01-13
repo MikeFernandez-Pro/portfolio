@@ -20,25 +20,7 @@ const Island = () => {
   const magicGlyphActivationRef = useRef(false);
 
   const isMobile = useStore(state => state.isMobile);
-
-  const hammerSoundEffect = useMemo(() =>
-    isMobile ? undefined : (() => {
-      const hammerSoundEffect = new Audio("/sounds/hammerSoundEffect.mp3")
-      hammerSoundEffect.volume = 0;
-      return hammerSoundEffect;
-    })(), [])
-
-  const pressurePlatesSoundEffect = useMemo(() =>
-    isMobile ? undefined : (() => {
-      const pressurePlatesSoundEffect = new Audio("/sounds/pressurePlatesSoundEffect.mp3")
-      pressurePlatesSoundEffect.volume = 0.1;
-      return isMobile ? undefined : pressurePlatesSoundEffect
-    })(), [])
-
-  const magicGlyphSoundEffect = useMemo(() =>
-    isMobile ? undefined : new Audio("/sounds/magicGlyphSoundEffect.mp3")
-    , []);
-
+  const disableSounds = useStore(state => state.disableSounds);
 
   const shadowsIntensity = useControls("shadowsIntensity", {
     shadowsIntensity: { value: 2.73, min: 0, max: 20, step: 0.001 }
@@ -85,7 +67,7 @@ const Island = () => {
   })
 
   const islandAnimations = useAnimations(island.animations, island.scene)
-  
+
   // useLayoutEffect(() => {
   island.materials.islandTexture.aoMapIntensity = shadowsIntensity.shadowsIntensity;
   island.materials.magicPortal.emissive = new THREE.Color("#E1754B");
@@ -109,20 +91,37 @@ const Island = () => {
    */
   useLayoutEffect(() => {
     // Configure and play islands animations
-    isMobile
-      ? islandAnimations.actions["anvilAnimation"].play()
-      : ((islandAnimations.actions["anvilAnimation"].loop = THREE.LoopOnce),
-        (islandAnimations.actions["anvilAnimation"].clampWhenFinished = true));
-
+    islandAnimations.actions["anvilAnimation"].loop = THREE.LoopOnce
+    islandAnimations.actions["anvilAnimation"].clampWhenFinished = true
     islandAnimations.actions["details"].play();
 
 
+    // Configure audio sound effects
+    const pressurePlatesSoundEffect = (() => {
+      if (disableSounds !== false) return undefined;
+      const pressurePlatesSoundEffect = new Audio("/sounds/pressurePlatesSoundEffect.mp3")
+      pressurePlatesSoundEffect.volume = 0.1;
+      return pressurePlatesSoundEffect;
+      
+    })()
+
+    const magicGlyphSoundEffect =
+      disableSounds !== false ?
+        undefined :
+        new Audio("/sounds/magicGlyphSoundEffect.mp3")
+
+    const hammerSoundEffect = (() => {
+      if (disableSounds !== false) return undefined;
+      const hammerSoundEffect = new Audio("/sounds/hammerSoundEffect.mp3")
+      hammerSoundEffect.volume = 0;
+      return hammerSoundEffect  
+    })()
+
     // Play forge hammer sound and anvil animation each 2s
-    const forgeHammerInterval = isMobile ? undefined : setInterval(() => {
-      hammerSoundEffect.play();
+    const forgeHammerInterval = setInterval(() => {
+      disableSounds !== false ? undefined : hammerSoundEffect.play();
       islandAnimations.actions["anvilAnimation"].reset().play()
     }, 2000)
-
 
     // Subscribe to activePlate zustand store state
     const unSubActivePlate = useStore.subscribe((state) => state.activePlate,
@@ -130,7 +129,7 @@ const Island = () => {
         gsap.to(island.materials[activePlate], { duration: 0.2, emissiveIntensity: 3 })
         if (prevPlate)
           gsap.to(island.materials[prevPlate], { duration: 0, emissiveIntensity: 0 })
-        if (!isMobile) {
+        if (disableSounds === false) {
           pressurePlatesSoundEffect.currentTime = 0;
           pressurePlatesSoundEffect.play();
         }
@@ -145,7 +144,7 @@ const Island = () => {
         magicGlyphActivationRef.current = true;
 
         // Play Magic Glyphs Sound Effect
-        if (!isMobile) {
+        if (disableSounds === false) {
           magicGlyphSoundEffect.play()
           gsap.fromTo(magicGlyphSoundEffect, { volume: 0 }, { delay: 0.1, duration: 0.5, volume: 0.2 });
         }
@@ -158,7 +157,8 @@ const Island = () => {
       }
     )
 
-    const unsubCharacterPosition = isMobile ? undefined : useStore.subscribe(
+
+    const unsubCharacterPosition = disableSounds !== false ? undefined : useStore.subscribe(
       state => state.characterPosition,
       (characterPosition) => {
         if (characterPosition) {
@@ -174,16 +174,15 @@ const Island = () => {
       islandAnimations.actions["anvilAnimation"].stop();
       // islandAnimations.actions["magicPotAnimation"].getMixer().uncacheAction(islandAnimations.actions["magicPotAnimation"]);
 
-
-
       unSubActivePlate();
       unsubMagicGlyphActivation();
-      if (!isMobile) {
-        clearInterval(forgeHammerInterval);
+
+      clearInterval(forgeHammerInterval);
+      if (disableSounds === false) {
         unsubCharacterPosition();
       }
     }
-  }, []);
+  }, [disableSounds]);
 
   return (
     <>

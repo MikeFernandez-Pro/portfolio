@@ -1,7 +1,7 @@
 import { useGLTF, useAnimations } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { CapsuleCollider, RigidBody } from "@react-three/rapier";
-import { useRef, useMemo, useCallback, useLayoutEffect } from "react";
+import { useRef, useMemo, useCallback, useLayoutEffect, useEffect } from "react";
 import * as THREE from "three";
 import { useStore } from "./ZustandStorage.jsx";
 
@@ -44,12 +44,13 @@ const Player = ({ orbitControls }) => {
 
     // Mobile Controller settings
     const isMobile = useStore(state => state.isMobile);
+    const disableSounds = useStore(state => state.disableSounds);
     const joystickAngle = useStore(state => state.joystickAngle);
     const CAMERA_OFFSET = useMemo(() =>
         isMobile ?
             new THREE.Vector3(0, 4, 7.5) :
             new THREE.Vector3(0, 4, 5.5)
-        , [])
+        , [isMobile])
 
 
     /**
@@ -59,6 +60,7 @@ const Player = ({ orbitControls }) => {
     const characterBody = useRef();
     const characterMesh = useRef();
     const characterAnimation = useRef(IDLE);
+    const runningSoundEffect = useRef(undefined);
 
     // Character Model and animations loaders
     const characterModel = useMemo(() => useGLTF("/models/character/character.glb"), [])
@@ -75,13 +77,8 @@ const Player = ({ orbitControls }) => {
         })
     }
 
-    // Character sound Effect initialization
-    const runningSoundEffect = useMemo(() =>
-        isMobile ? undefined : (() => {
-            const soundEffect = new Audio("/sounds/runningSoundEffect.mp3");
-            soundEffect.loop = true;
-            return soundEffect;
-        })(), []);
+
+
 
     const keyEventsRef = useRef({
         "forward": false,
@@ -153,9 +150,9 @@ const Player = ({ orbitControls }) => {
 
                 characterAnimations.actions[characterAnimation.current].reset().fadeIn(0.2).play();
 
-                if (!isMobile) {
-                    runningSoundEffect.pause();
-                    runningSoundEffect.currentTime = 0;
+                if (disableSounds === false) {
+                    runningSoundEffect.current.pause();
+                    runningSoundEffect.current.currentTime = 0;
                 }
 
             }
@@ -172,9 +169,10 @@ const Player = ({ orbitControls }) => {
             characterAnimation.current = RUN;
             characterAnimations.actions[characterAnimation.current].reset().fadeIn(0.2).play();
             useStore.setState({ isCharacterMoving: true });
-            if (!isMobile) {
-                runningSoundEffect.volume = 0.6;
-                runningSoundEffect.play();
+            if (disableSounds === false) {
+                console.log(`stop runningEffect : ${runningSoundEffect.current}`)
+                runningSoundEffect.current.volume = 0.6;
+                runningSoundEffect.current.play();
             }
         }
 
@@ -201,12 +199,25 @@ const Player = ({ orbitControls }) => {
         document.addEventListener('keydown', keyboardEventHandler)
         document.addEventListener('keyup', keyboardEventHandler)
 
+
         return () => {
             window.removeEventListener("blur", pauseCharacter);
             document.removeEventListener('keydown', keyboardEventHandler)
             document.removeEventListener('keyup', keyboardEventHandler)
         }
     }, []);
+
+    useEffect(() => {
+        // Character sound Effect initialization
+        runningSoundEffect.current =
+            (() => {
+                if (disableSounds !== false) return undefined;
+                const soundEffect = new Audio("/sounds/runningSoundEffect.mp3");
+                soundEffect.loop = true;
+                console.log(soundEffect)
+                return soundEffect;
+            })()
+    }, [disableSounds])
 
 
     return (
@@ -217,9 +228,9 @@ const Player = ({ orbitControls }) => {
                 ref={characterBody}
                 colliders={false}
                 // position-y={0.7} // ile 1
+                // position={[6, 3, -30]} // ile 2
+                position={[-16, 5, -35]} // ile 3
                 // position={[-5, 7, -45]} // ile 4
-                // position={[-16, 5, -35]} // ile 3
-                position={[6, 3, -30]} // ile 2
 
                 restitution={-10}
                 friction={0.4}

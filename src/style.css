@@ -20,7 +20,7 @@ body {
 
 .grid {
     display: grid;
-    gap: 2rem;
+    gap: clamp(1.5rem, 0.9806rem + 2.2161vw, 4rem);
     place-content: center;
     height: 100vh;
     height: 100svh;
@@ -32,10 +32,11 @@ body {
     text-align: center;
     color: transparent;
     -webkit-text-stroke: 1px #dfdfdf;
+    line-height: clamp(3.5rem, 10vw, 10rem);
 }
 
 .hero__secondary-heading {
-    font-size: clamp(1.75rem, 5vw, 5rem);
+    font-size: clamp(1.5rem, 4vw, 4rem);
     text-align: center;
     color: #dfdfdf;
 }
@@ -45,14 +46,23 @@ body {
     bottom: calc(50% - clamp(10rem, 15vw, 15rem)); */
     justify-self: center;
     width: fit-content;
-    padding: 0.8rem;
-    border-radius: 1rem;
-    font-size: clamp(1.5rem, 3vw, 3rem);
+    padding: 0.8rem 2rem;
+    border: 1px solid #dfdfdf;
+    border-radius: 2rem;
+    font-size: clamp(1rem, 2.5vw, 2.5rem);
     font-weight: 700;
-    background-color: white;
-    color: rgb(9, 14, 23);
+    color: #dfdfdf;
     cursor: pointer;
     z-index: 2;
+    transition: transform 0.2s ease-in-out;
+}
+
+.cta:is(:hover, :focus, :active) {
+    background: #dfdfdf;
+    color: rgb(9, 14, 23);
+    transform: scale(1.2);
+    transform: rotate(5deg);
+
 }
 
 canvas {

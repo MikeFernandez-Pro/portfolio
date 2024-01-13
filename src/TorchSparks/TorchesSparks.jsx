@@ -1,9 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import TorchSparks from "./TorchSparks/TorchSparks";
 import { useThree } from "@react-three/fiber";
 import { Vector3 } from "three";
 import { useStore } from "../ZustandStorage";
-
 /*
 *   Config
 */
@@ -56,38 +55,33 @@ const TORCHES_POSITIONS = [
 const TorchesSparks = () => {
 
     const pixelRatio = useThree(state => state.gl).getPixelRatio();
-    const isMobile = useStore(state => state.isMobile);
+
+    const disableSounds = useStore(state => state.disableSounds);
+
+    const torchesConfig = useMemo(() =>
+        new Array(TORCHES_POSITIONS.length).fill(undefined).map((_, index) => {
+            if (disableSounds !== false) return undefined;
+            // Sound Effect by Julius H.
+            // https://pixabay.com/fr/users/juliush-3921568/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=8012
+            const soundEffect = new Audio("/sounds/torchesSoundEffect.mp3");
+            soundEffect.loop = true;
+            soundEffect.volume = 0;
+            // Speed up sound effect
+            soundEffect.playbackRate = 1.5;
+            // Offset sound effect playback
+            soundEffect.currentTime = Math.random() * 50;
+            soundEffect.play();
+            return { soundEffect, position: new Vector3(...TORCHES_POSITIONS[index]) };
+        }), [disableSounds]);
+
 
     useEffect(() => {
 
-        const torchesConfig = new Array(TORCHES_POSITIONS.length)
-
-        for (const [index,] of TORCHES_POSITIONS.entries()) {
-            // Sound Effect by Julius H.
-            // https://pixabay.com/fr/users/juliush-3921568/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=8012
-            const soundEffect = isMobile ? undefined :
-                (() => {
-                    const soundEffect = new Audio("/sounds/torchesSoundEffect.mp3");
-                    soundEffect.loop = true;
-                    soundEffect.volume = 0;
-                    // Speed up sound effect
-                    soundEffect.playbackRate = 1.5;
-                    // Offset sound effect playback
-                    soundEffect.currentTime = Math.random() * 50;
-                    soundEffect.play();
-                    return soundEffect;
-                })();
-
-            torchesConfig[index] = {
-                position: new Vector3(...TORCHES_POSITIONS[index]),
-                soundEffect
-            }
-        }
-
-        const unsubCharacterPosition = isMobile ? undefined : useStore.subscribe(
+        const unsubCharacterPosition = disableSounds !== false ? undefined : useStore.subscribe(
             state => state.characterPosition,
             (characterPosition) => {
                 if (characterPosition) {
+
                     for (const torchConfig of torchesConfig) {
                         torchConfig.distanceToCharacter = torchConfig.position.distanceTo(characterPosition);
                         torchConfig.soundEffect.volume = torchConfig.distanceToCharacter < 13 ?
@@ -100,8 +94,8 @@ const TorchesSparks = () => {
 
         // Clear animations, interval and subscriptions on unmount
         return () => {
-            if (isMobile) return;
-            
+            if (disableSounds !== false) return;
+
             for (const torchConfig of torchesConfig) {
                 torchConfig.soundEffect.pause();
                 torchConfig.soundEffect.currentTime = 0;
@@ -109,7 +103,7 @@ const TorchesSparks = () => {
 
             unsubCharacterPosition();
         }
-    }, []);
+    }, [disableSounds]);
 
     return (
         <>

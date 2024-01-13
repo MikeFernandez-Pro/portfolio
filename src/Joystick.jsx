@@ -13,7 +13,6 @@ const OPTIONS = {
     follow: false,
     restOpacity: 1,
     maxNumberOfNipples: 1,
-
 }
 
 
@@ -23,7 +22,27 @@ const Joystick = () => {
     const isMobile = useStore(state => state.isMobile);
     const joystickRef = useRef(false)
 
-    var manager = nipplejs.create(OPTIONS);
+    useEffect(() => {
+        const unsubIsMobile = useStore.subscribe(state => state.isMobile,
+            (isMobile) => {
+                let manager = nipplejs.create(OPTIONS);
+
+                manager.on('move', function (evt, data) {
+                    useStore.setState({ joystickAngle: data.angle.radian })
+                })
+
+                manager.on('end', function (evt, data) {
+
+                    useStore.setState({ joystickAngle: undefined })
+                })
+            })
+
+        return () =>  {
+            manager.destroy()
+            unsubIsMobile();
+        }
+    }, [])
+
 
     // window.addEventListener('resize', () => {
     //     if (managerRef.current) {
@@ -44,14 +63,7 @@ const Joystick = () => {
     //     }
     // })
 
-    manager.on('move', function (evt, data) {
-        useStore.setState({ joystickAngle: data.angle.radian })
-    })
 
-    manager.on('end', function (evt, data) {
-
-        useStore.setState({ joystickAngle: undefined })
-    })
 
 
     return (

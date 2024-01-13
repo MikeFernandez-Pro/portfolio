@@ -15,6 +15,7 @@ import gsap from "gsap";
 import TorchesSparks from "./TorchSparks/TorchesSparks.jsx";
 import Smoke from "./Smoke.jsx";
 import SampledGrass from "./sampledGrass.jsx";
+import { useStore } from "./ZustandStorage.jsx";
     
 const Experience = () => {
     const { orbitControlsActivation } = useControls("Controls", {
@@ -33,6 +34,7 @@ const Experience = () => {
     scene.environment = envMap;
 
     const orbitControlsRef = useRef();
+    const isMobile = useStore(state => state.isMobile);
 
 
     // Music by Aleksey Chistilin

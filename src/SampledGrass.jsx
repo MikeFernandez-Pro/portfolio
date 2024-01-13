@@ -14,6 +14,7 @@ const SampledGrass = () => {
   const grassRef = useRef(null);
 
   const isMobile = useStore(state => state.isMobile);
+  const disableSounds = useStore(state => state.disableSounds);
 
   // Load grass ground model for sampling
   const { nodes } = useMemo(() => useGLTF('/models/island/grassFloor.glb'), [])
@@ -88,16 +89,18 @@ const SampledGrass = () => {
   const rayDirection = useMemo(() => new THREE.Vector3(0, -1, 0), []);
 
 
-  // Grass sound effect Configuration
-  const grassSoundEffect = useMemo(() =>
-    isMobile ? undefined : (() => {
+
+
+  useLayoutEffect(() => {
+
+    // Grass sound effect Configuration
+    const grassSoundEffect = (() => {
+      if (disableSounds !== false) return undefined;
       const audio = new Audio("/sounds/runningInGrassSoundEffect.mp3");
       audio.loop = true;
       audio.volume = 0.2;
       return audio;
-    })(), []);
-
-  useLayoutEffect(() => {
+    })();
 
     // Subscribe to characterPosition zustand store state
     const unsubCharacterPosition = useStore.subscribe(
@@ -113,15 +116,15 @@ const SampledGrass = () => {
           intersects = raycaster.intersectObjects([nodes.grassGround]);
           if (intersects.length > 0 && grassRef.current) {
             grassRef.current.material.uniforms.uCharacter.value = intersects[0].point;
-            if (isCharacterMoving && !isMobile) {
+            if (isCharacterMoving && disableSounds === false) {
               grassSoundEffect.play();
             }
-            else if (!isMobile) {
+            else if (disableSounds === false) {
               grassSoundEffect.pause();
               grassSoundEffect.currentTime = 0;
             }
           }
-          else if (!isMobile) {
+          else if (disableSounds === false) {
             grassSoundEffect.pause();
             grassSoundEffect.currentTime = 0;
           }
@@ -133,7 +136,7 @@ const SampledGrass = () => {
     return () => {
       unsubCharacterPosition()
     }
-  }, [bladeCount, bladeHeight, bladeWidth])
+  }, [bladeCount, bladeHeight, bladeWidth, disableSounds])
 
   // Update grass shader material uniform that handle blades movement
   useFrame(({ clock }) => {
