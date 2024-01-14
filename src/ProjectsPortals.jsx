@@ -90,7 +90,7 @@ const ProjectsPortals = () => {
             unsubActivaPlate()
             typeof (unsubCharacterPosition) === "function" ? unsubCharacterPosition() : null;
         }
-    }, [])
+    }, [disableSounds])
 
     useFrame(({ clock }) => {
         portalShaderMaterial.uniforms.uTime.value = clock.elapsedTime

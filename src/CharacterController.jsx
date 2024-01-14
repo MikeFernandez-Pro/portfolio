@@ -45,7 +45,8 @@ const Player = ({ orbitControls }) => {
     // Mobile Controller settings
     const isMobile = useStore(state => state.isMobile);
     const disableSounds = useStore(state => state.disableSounds);
-    const joystickAngle = useStore(state => state.joystickAngle);
+    const joystickAngleRef = useRef(useStore.getState().joystickAngle);
+    
     const CAMERA_OFFSET = useMemo(() =>
         isMobile ?
             new THREE.Vector3(0, 4, 7.5) :
@@ -76,9 +77,6 @@ const Player = ({ orbitControls }) => {
             }
         })
     }
-
-
-
 
     const keyEventsRef = useRef({
         "forward": false,
@@ -141,7 +139,7 @@ const Player = ({ orbitControls }) => {
          */
         // Update character velocity and orientation
         if ((direction === undefined && !isMobile)
-            || (isMobile && joystickAngle === undefined)) {
+            || (isMobile && joystickAngleRef.current === undefined)) {
             if (characterAnimation.current !== IDLE) {
                 characterAnimations.actions[characterAnimation.current].fadeOut(0.2);
                 characterAnimation.current = IDLE;
@@ -177,18 +175,22 @@ const Player = ({ orbitControls }) => {
         }
 
         characterBody.current.setLinvel({
-            x: SPEED * Math.cos(isMobile ? joystickAngle : direction) * (isMobile ? 1 : -1)/* * delta */,
+            x: SPEED * Math.cos(isMobile ? joystickAngleRef.current : direction) * (isMobile ? 1 : -1)/* * delta */,
             y: characterBody.current.linvel().y,
-            z: SPEED * Math.sin(isMobile ? joystickAngle : direction) * (isMobile ? -1 : 1)/* * delta */,
+            z: SPEED * Math.sin(isMobile ? joystickAngleRef.current : direction) * (isMobile ? -1 : 1)/* * delta */,
         }, true);
 
-        ROTATION_QUATERNION.setFromAxisAngle(ROTATION_EULER, (isMobile ? joystickAngle + Math.PI / 2 : direction - Math.PI / 2));
+        ROTATION_QUATERNION.setFromAxisAngle(ROTATION_EULER, (isMobile ? joystickAngleRef.current + Math.PI / 2 : direction - Math.PI / 2));
         characterMesh.current.quaternion.rotateTowards(ROTATION_QUATERNION, 15 * delta); //017 avant
 
     });
 
 
     useLayoutEffect(() => {
+
+        const unsubJoystickAngle = useStore.subscribe(state => state.joystickAngle,
+        joystickAngle => joystickAngleRef.current = joystickAngle)
+        
 
         // Set character default animation
         characterAnimations.actions[IDLE].fadeIn(0.2).play();
@@ -204,6 +206,7 @@ const Player = ({ orbitControls }) => {
             window.removeEventListener("blur", pauseCharacter);
             document.removeEventListener('keydown', keyboardEventHandler)
             document.removeEventListener('keyup', keyboardEventHandler)
+            unsubJoystickAngle();
         }
     }, []);
 

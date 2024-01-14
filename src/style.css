@@ -11,8 +11,8 @@
 }
 
 body {
-    background: rgb(9, 14, 23);
-    color: #dfdfdf;
+    background: rgb(13, 20, 33);
+    color: #dfdfdf; 
     line-height: 1.5;
     font-family: Metamorphous, serif;
     -webkit-font-smoothing: antialiased;
@@ -42,8 +42,6 @@ body {
 }
 
 .cta {
-    /* position: absolute;
-    bottom: calc(50% - clamp(10rem, 15vw, 15rem)); */
     justify-self: center;
     width: fit-content;
     padding: 0.8rem 2rem;
@@ -59,11 +57,24 @@ body {
 
 .cta:is(:hover, :focus, :active) {
     background: #dfdfdf;
-    color: rgb(9, 14, 23);
-    transform: scale(1.2);
+    color: rgb(13, 20, 33);
     transform: rotate(5deg);
-
 }
+
+.cta-soundless {
+    justify-self: center;
+    font-size: clamp(0.5rem, 1.3vw, 1.3rem);
+    font-style: italic;
+    color: #dfdfdfd4;
+    text-decoration: underline#dfdfdfad;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.cta-soundless:is(:hover, :focus, :active) {
+    color: #dfdfdf;
+}
+
 
 canvas {
     display: block;

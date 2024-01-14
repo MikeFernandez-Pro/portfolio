@@ -16,23 +16,23 @@ const App = () => {
     const mainHeadingRef = useRef()
     const secondHeadingRef = useRef()
     const callToActionRef = useRef()
+    const noSoundCallToActionRef = useRef()
 
     const [dpr, setDpr] = useState(1.5)
 
-    const startExperience = (isMobileDevice) => {
+    const startExperience = (isMobileDevice, activateSounds) => {
         mainHeadingRef.current.style.visibility = "hidden"
         secondHeadingRef.current.style.visibility = "hidden"
         callToActionRef.current.style.visibility = "hidden"
+        noSoundCallToActionRef.current.style.visibility = "hidden"
         
         gsap.to(sceneRevealerRef.current?.uniforms.get("progress"),
-            { value: 1.5, duration: 10, ease: "expo.isOut" })
+            { value: 1.5, duration: 7, ease: "expo.isOut" })
 
-        if (isMobileDevice) {
+        if (activateSounds)
+            useStore.setState({ disableSounds: isMobileDevice ? true : false })
+        if (isMobileDevice)
             useStore.setState({ isMobile: true })
-            useStore.setState({ disableSounds: true })
-        } else {
-            useStore.setState({ disableSounds: false })
-        }
     }  
 
     return (
@@ -47,12 +47,22 @@ const App = () => {
                         ref={callToActionRef} 
                         className="cta"
                         onClick={() => {
-                            startExperience(false)
+                            startExperience(false, true)
+                        }}
+                        onTouchStart={() => {
+                            startExperience(true, true)
+                        }}
+                    >Discover</p>
+                     <p
+                        ref={noSoundCallToActionRef} 
+                        className="cta-soundless"
+                        onClick={() => {
+                            startExperience(false, false)
                         }}
                         onTouchStart={() => {
                             startExperience(true)
                         }}
-                    >Discover</p>
+                    >Discover soundless</p>
                     <Leva collapsed={true} theme={{
                         sizes: { rootWidth: 'auto' },
                     }} />
