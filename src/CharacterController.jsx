@@ -76,7 +76,7 @@ const Player = ({ orbitControls }) => {
                 child.material.envMapIntensity = 0.5;
             }
         })
-    }
+   }
 
     const keyEventsRef = useRef({
         "forward": false,
@@ -230,9 +230,9 @@ const Player = ({ orbitControls }) => {
                 lockRotations
                 ref={characterBody}
                 colliders={false}
-                // position-y={0.7} // ile 1
+                position-y={0.7} // ile 1
                 // position={[6, 3, -30]} // ile 2
-                position={[-16, 5, -35]} // ile 3
+                // position={[-16, 5, -35]} // ile 3
                 // position={[-5, 7, -45]} // ile 4
 
                 restitution={-10}
