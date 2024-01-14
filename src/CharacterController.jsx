@@ -1,22 +1,16 @@
-import { useGLTF, useKeyboardControls, useAnimations, ContactShadows } from "@react-three/drei";
-import { useFrame, useThree } from "@react-three/fiber";
-import { CapsuleCollider, RigidBody, useRapier } from "@react-three/rapier";
-import { useControls } from "leva";
-import { useRef, useState, useEffect, useMemo } from "react";
+import { useGLTF, useAnimations } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { CapsuleCollider, RigidBody } from "@react-three/rapier";
+import { useRef, useMemo, useCallback, useLayoutEffect, useEffect } from "react";
 import * as THREE from "three";
 import { useStore } from "./ZustandStorage.jsx";
 
-import MobileController from "./Controllers/MobileController.jsx";
+const directionOffset = ({ forward, backward, leftward, rightward }, characterBody) => {
 
-const directionOffset = ({ forward, backward, leftward, rightward }, knightBody) => {
+    if (!forward && !backward && !leftward && !rightward) return undefined;
 
-    // if (enter) 
-    //     window.open("https://www.google.fr/", "_blank")
-
-    if (!forward && !backward && !leftward && !rightward) return null;
-
-    if (knightBody.current.isSleeping()) {
-        knightBody.current.wakeUp();
+    if (characterBody.current.isSleeping()) {
+        characterBody.current.wakeUp();
     }
 
     if (forward && leftward) return (7 * Math.PI) / 4;
@@ -30,167 +24,225 @@ const directionOffset = ({ forward, backward, leftward, rightward }, knightBody)
     return -Math.PI / 2;
 };
 
-const Player = ({ joystickAngle, orbitControls }) => {
-    /**
-     * Default Controller Settings
-     */
-    const rotationAngle = useMemo(() => new THREE.Vector3(0, 1, 0), []);
-    const rotateQuaternion = useMemo(() => new THREE.Quaternion(), []);
-    const cameraPosition = useMemo(() => new THREE.Vector3(0, 0, 0), []);
-    const cameraOffset = useMemo(() => new THREE.Vector3(0, 4, 5.5), []);
-    const smoothCameraPosition = useMemo(() => new THREE.Vector3(0, 0, 0), []);
+// Character Settings
+const SPEED = 4 // 4.5
+const ROTATION_EULER = new THREE.Vector3(0, 1, 0);
+const ROTATION_QUATERNION = new THREE.Quaternion();
+const IDLE = "Idle";
+const RUN = "Run";
+const DYNAMIC = 0;
+const FIXED = 1;
 
-    // Character movement speed Controller
-    const { speed } = useControls("Character", {
-        speed: { value: 4.5, min: 0, max: 500, step: 10 },
-    });
+// Camera Settings
+const CAMERA_POSITION = new THREE.Vector3(0, 0, 0);
+
+const LERP_CAMERA_POSITION = new THREE.Vector3(0, 0, 0);
+
+
+
+const Player = ({ orbitControls }) => {
+
+    // Mobile Controller settings
+    const isMobile = useStore(state => state.isMobile);
+    const disableSounds = useStore(state => state.disableSounds);
+    const joystickAngle = useStore(state => state.joystickAngle);
+    const CAMERA_OFFSET = useMemo(() =>
+        isMobile ?
+            new THREE.Vector3(0, 4, 7.5) :
+            new THREE.Vector3(0, 4, 5.5)
+        , [isMobile])
+
 
     /**
      * Character Initialization
      */
 
-    const knightBody = useRef();
-    const knightMesh = useRef();
-    const knightAnimation = useRef("Idle");
+    const characterBody = useRef();
+    const characterMesh = useRef();
+    const characterAnimation = useRef(IDLE);
+    const runningSoundEffect = useRef(undefined);
 
     // Character Model and animations loaders
-    const knightModel = useGLTF("/models/character/character.glb");
-    const knightAnimations = useAnimations(knightModel.animations, knightModel.scene);
+    const characterModel = useMemo(() => useGLTF("/models/character/character.glb"), [])
+    const characterAnimations = useAnimations(characterModel.animations, characterModel.scene)
 
-    // Animation Handler
-    // const [knightAnimation, setKnightAnimation] = useState("Idle");
-    // Rigid Body current state 
-    const knightSleeping = useRef(false);
-    // console.log(knightModel.materials)
-
-        // Shadows initialization
-    knightModel.scene.traverse((child) => {
-        // Check if the child object is a Mesh
-        if (child.isMesh && child.material.isMeshStandardMaterial) {
-            // Set the sha<<w<<dowSide property to THREE.DoubleSide
-            child.castShadow = true;
-              child.receiveShadow = true;
-        }
-    }); 
-
-
-    // CLAMP DELTA TO AVOID FRAMES BUG WHEN GO BACK TO WEBSITE TAB
-    // const clampedDelta = Math.min(delta, 1/30) 
-
-
-    const pageVisibiliy = useRef(true)
-
-    useEffect(() => {
-        document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === "visible") {
-                pageVisibiliy.current = true;
-                //   backgroundMusic.play();
-            } else {
-                pageVisibiliy.current = false;
-                knightBody.current.sleep();
-                //   backgroundMusic.pause();
+    // Shadows initialization
+    if (!isMobile) {
+        characterModel.scene.traverse((child) => {
+            // Check if the child object is a Mesh
+            if (child.isMesh && child.material.name === "texture") {
+                child.castShadow = true;
+                child.material.envMapIntensity = 0.5;
             }
-        });
+        })
+    }
+
+
+
+
+    const keyEventsRef = useRef({
+        "forward": false,
+        "backward": false,
+        "leftward": false,
+        "rightward": false,
+        "enter": false,
+    })
+
+    // Keyboard Controller configuration
+    const keyboardEventHandler = useCallback((event) => {
+        if (event.code === "ArrowUp" || event.code === "KeyW")
+            keyEventsRef.current.forward = event.type === "keydown" ? true : false;
+        if (event.code === "ArrowDown" || event.code === "KeyS")
+            keyEventsRef.current.backward = event.type === "keydown" ? true : false;
+        if (event.code === "ArrowLeft" || event.code === "KeyA")
+            keyEventsRef.current.leftward = event.type === "keydown" ? true : false;
+        if (event.code === "ArrowRight" || event.code === "KeyD")
+            keyEventsRef.current.rightward = event.type === "keydown" ? true : false;
     }, []);
 
-    const { camera } = useThree();
+    // Pause character physics and keystroke handling
+    const pauseCharacter = useCallback(() => {
+        for (const key in keyEventsRef.current)
+            keyEventsRef.current[key] = false;
+        characterBody.current.setBodyType(FIXED)
+    }, [])
 
-    const [subscribeKeys, getKeys] = useKeyboardControls();
-
-    // current character direction
+    // Current character direction and position
     let direction;
-    let knightPosition;
-
+    let characterPosition;
 
     useFrame((state, delta) => {
 
         /**
          * Camera Controller
          */
-        direction = directionOffset(getKeys(), knightBody);
+        direction = directionOffset(keyEventsRef.current, characterBody)
 
-        if (orbitControls || (knightSleeping && knightSleeping.current)) return;
+        characterPosition = characterBody.current.translation();
 
-        if (knightBody.current) {
-            knightPosition = knightBody.current.translation();
+        if (characterPosition.y < 0) {
+            characterBody.current.setTranslation({
+                x: 0,
+                y: 1.5,
+                z: 0
+            })
+        }
+        /*
+        * Camera Controller
+        */
+        useStore.setState({ characterPosition: characterPosition });
+        CAMERA_POSITION.addVectors(characterPosition, CAMERA_OFFSET);
+        LERP_CAMERA_POSITION.lerp(CAMERA_POSITION, 5 * delta);
 
-            if (knightPosition.y < 0) {
-                knightBody.current.setTranslation({
-                    x: 0,
-                    y: 1.5,
-                    z: 0
-                })
-            }
+        state.camera.position.copy(LERP_CAMERA_POSITION); // A REACTIVER PÖUR SUIVRE PERSO
 
-            useStore.setState({ characterPosition: knightPosition });
-            cameraPosition.addVectors(knightPosition, cameraOffset);
-            smoothCameraPosition.lerp(cameraPosition, 5 * delta);
+        /**
+         * Character Controller
+         */
+        // Update character velocity and orientation
+        if ((direction === undefined && !isMobile)
+            || (isMobile && joystickAngle === undefined)) {
+            if (characterAnimation.current !== IDLE) {
+                characterAnimations.actions[characterAnimation.current].fadeOut(0.2);
+                characterAnimation.current = IDLE;
 
-            state.camera.position.copy(smoothCameraPosition); // A REACTIVER PÖUR SUIVRE PERSO
+                useStore.setState({ isCharacterMoving: false });
 
-            /**
-             * Model Controller
-             */
-            // Update character velocity and orientation
-            if (direction === null || !pageVisibiliy.current) {
-                if (knightAnimation.current !== "Idle") {
-                    knightAnimations.actions[knightAnimation.current].fadeOut(0.2);
-                    knightAnimation.current = ("Idle");
-                    knightAnimations.actions[knightAnimation.current].reset().fadeIn(0.2).play();
+                characterAnimations.actions[characterAnimation.current].reset().fadeIn(0.2).play();
+
+                if (disableSounds === false) {
+                    runningSoundEffect.current.pause();
+                    runningSoundEffect.current.currentTime = 0;
                 }
 
-                knightBody.current.setLinvel({
-                    x: 0,
-                    y: knightBody.current.linvel().y,
-                    z: 0,
-                });
-                return;
             }
 
-            if (knightAnimation.current !== "Run") {
-                knightAnimations.actions[knightAnimation.current].fadeOut(0.2);
-                knightAnimation.current = "Run";
-                knightAnimations.actions[knightAnimation.current].reset().fadeIn(0.2).play();
-            }
-
-            knightBody.current.setLinvel({
-                x: speed * Math.cos(direction) * -1 /* * delta */,
-                y: knightBody.current.linvel().y,
-                z: speed * Math.sin(direction) /* * delta */,
-            });
-
-            rotateQuaternion.setFromAxisAngle(rotationAngle, direction - Math.PI / 2);
-            knightMesh.current.quaternion.rotateTowards(rotateQuaternion, 0.3); //017 avant
+            characterBody.current.sleep();
+            return;
         }
+
+        if (characterBody.current.bodyType() === FIXED)
+            characterBody.current.setBodyType(DYNAMIC)
+
+        if (characterAnimation.current !== RUN) {
+            characterAnimations.actions[characterAnimation.current].fadeOut(0.2);
+            characterAnimation.current = RUN;
+            characterAnimations.actions[characterAnimation.current].reset().fadeIn(0.2).play();
+            useStore.setState({ isCharacterMoving: true });
+            if (disableSounds === false) {
+                console.log(`stop runningEffect : ${runningSoundEffect.current}`)
+                runningSoundEffect.current.volume = 0.6;
+                runningSoundEffect.current.play();
+            }
+        }
+
+        characterBody.current.setLinvel({
+            x: SPEED * Math.cos(isMobile ? joystickAngle : direction) * (isMobile ? 1 : -1)/* * delta */,
+            y: characterBody.current.linvel().y,
+            z: SPEED * Math.sin(isMobile ? joystickAngle : direction) * (isMobile ? -1 : 1)/* * delta */,
+        }, true);
+
+        ROTATION_QUATERNION.setFromAxisAngle(ROTATION_EULER, (isMobile ? joystickAngle + Math.PI / 2 : direction - Math.PI / 2));
+        characterMesh.current.quaternion.rotateTowards(ROTATION_QUATERNION, 15 * delta); //017 avant
+
     });
 
-    useEffect(() => {
-        knightAnimations.actions["Idle"].fadeIn(0.2).play();
+
+    useLayoutEffect(() => {
+
+        // Set character default animation
+        characterAnimations.actions[IDLE].fadeIn(0.2).play();
+        characterAnimations.actions["KeyAction"].fadeIn(0.2).play()
+
+        // Listen to window blur and keyboards events
+        window.addEventListener("blur", pauseCharacter);
+        document.addEventListener('keydown', keyboardEventHandler)
+        document.addEventListener('keyup', keyboardEventHandler)
+
+
+        return () => {
+            window.removeEventListener("blur", pauseCharacter);
+            document.removeEventListener('keydown', keyboardEventHandler)
+            document.removeEventListener('keyup', keyboardEventHandler)
+        }
     }, []);
+
+    useEffect(() => {
+        // Character sound Effect initialization
+        runningSoundEffect.current =
+            (() => {
+                if (disableSounds !== false) return undefined;
+                const soundEffect = new Audio("/sounds/runningSoundEffect.mp3");
+                soundEffect.loop = true;
+                console.log(soundEffect)
+                return soundEffect;
+            })()
+    }, [disableSounds])
+
 
     return (
         <>
             <RigidBody
-                type={"dynamic"}
+                type={"fixed"}
                 lockRotations
-                ref={knightBody}
+                ref={characterBody}
                 colliders={false}
-                position={[0, 1.5, 0]}
-                // position={[-16, 5, -33]}
-                onSleep={() => knightSleeping.current = true}
-                onWake={() => knightSleeping.current = false}
+                // position-y={0.7} // ile 1
+                // position={[6, 3, -30]} // ile 2
+                position={[-16, 5, -35]} // ile 3
+                // position={[-5, 7, -45]} // ile 4
+
                 restitution={-10}
                 friction={0.4}
             >
                 <primitive
-                    ref={knightMesh}
-                    object={knightModel.scene}
+                    ref={characterMesh}
+                    object={characterModel.scene}
                     scale={0.18}
                     rotation-y={Math.PI}
                 />
-                <CapsuleCollider args={[0.3, 0.25]} position={[0, 0.55, 0]} />
+                <CapsuleCollider args={[0.3, 0.25]} position={[0, 0.58, 0]} />
             </RigidBody>
-            {/* <MobileController joystickAngle={joystickAngle} knightBody={knightBody} speed={speed} setKnightAnimation={setKnightAnimation}/> */}
         </>
     );
 };

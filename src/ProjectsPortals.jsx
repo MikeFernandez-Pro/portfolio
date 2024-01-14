@@ -1,61 +1,107 @@
-import { useMemo, useRef, useEffect } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import { useFrame, useLoader } from "@react-three/fiber";
 import { Circle } from "@react-three/drei";
-import { ShaderMaterial, TextureLoader } from "three";
 import { useStore } from "./ZustandStorage";
 import gsap from "gsap";
+import * as THREE from "three";
 
 import portalVertexShader from './shaders/portal/vertex.glsl'
 import portalFragmentShader from './shaders/portal/fragment.glsl'
 
-const ProjectsPortals = (props) => {
 
-    /*Initalization */
+const PORTAL_PLATE_URL = "/textures/portalPortalTexture.webp";
+const SEA_PLATE_URL = "/textures/seaPortalTexture.webp";
+const HALLOWEEN_PLATE_URL = "/textures/halloweenPortalTexture.webp";
 
+const PORTAL_POSITION = new THREE.Vector3(-16.12, 6.95, -37.7)
+
+
+
+
+const ProjectsPortals = () => {
+
+
+    const isMobile = useStore(state => state.isMobile);
+    const disableSounds = useStore(state => state.disableSounds);
+
+
+
+    /*Textures Initalization */
     const portalsTextures = useMemo(() => ({
-        portalPlate: useLoader(TextureLoader, "/textures/seaPortalTexture.png"),
-        seaPlate: useLoader(TextureLoader, "/textures/seaPortalTexture.jpg"),
-        galaxyPlate: useLoader(TextureLoader, "/textures/galaxyPortalTexture.jpg")
+        portalPlate: useLoader(THREE.TextureLoader, PORTAL_PLATE_URL),
+        seaPlate: useLoader(THREE.TextureLoader, SEA_PLATE_URL),
+        halloweenPlate: useLoader(THREE.TextureLoader, HALLOWEEN_PLATE_URL)
     }), []);
 
-    const activePlate = useStore(state => state.activePlate)
-
     /**
-     * Shader
+     * Shader Material Initalization
      */
-    const portalMaterial = useMemo(() => new ShaderMaterial({
+    const portalShaderMaterial = useMemo(() => new THREE.ShaderMaterial({
         vertexShader: portalVertexShader,
         fragmentShader: portalFragmentShader,
         uniforms: {
             uTime: { value: 0 },
-            uActivationTimer: { value: 0 },
-            uTextureMap: { value: null }
+            uSize: { value: -0.2 },
+            uTextureMap: { value: undefined },
+            uContrast: { value: 1.52 },
+            uLightIntensity: { value: 0.61 },
         },
+        transparent: true,
+        toneMapped: false,
     }), []);
 
-    /**
-     * Animation
-     */
-    useFrame((state) => {
-        portalMaterial.uniforms.uTime.value = state.clock.elapsedTime;
+
+    useEffect(() => {
+
+        const portalSoundEffect = (() => {
+            if (disableSounds !== false) return undefined;
+            const portalSoundEffect = new Audio("sounds/portalSoundEffect.mp3");
+            portalSoundEffect.loop = true;
+            return portalSoundEffect;
+        })()
+
+        // Retrieve current activated plate and update shader texture accordingly
+        const unsubActivaPlate = useStore.subscribe(
+            (state) => state.activePlate,
+            (activePlate) => {
+                if (activePlate) {
+                    portalShaderMaterial.uniforms.uTextureMap.value = portalsTextures[activePlate]
+                    gsap.fromTo(portalShaderMaterial.uniforms.uSize, { value: 0 }, { duration: 0.5, value: 0.5 })
+                    // Activate Portal Sound Effect Only Once
+                    portalSoundEffect?.play();
+                }
+            }
+        )
+
+        // Update portal sound effect volume based on character position
+        const unsubCharacterPosition = disableSounds !== false ? undefined : useStore.subscribe(
+            state => state.characterPosition,
+            (characterPosition) => {
+                if (characterPosition) {
+                    portalSoundEffect.volume = PORTAL_POSITION.distanceTo(characterPosition) < 13 ?
+                        Math.min(((1 / PORTAL_POSITION.distanceTo(characterPosition))) * 2, 0.8)
+                        : 0;
+                }
+            }
+        )
+
+        // Remove subscriptions on unmount
+        return () => {
+            unsubActivaPlate()
+            typeof (unsubCharacterPosition) === "function" ? unsubCharacterPosition() : null;
+        }
+    }, [])
+
+    useFrame(({ clock }) => {
+        portalShaderMaterial.uniforms.uTime.value = clock.elapsedTime
     })
 
-    
-    useEffect(() => {
-        if (activePlate) {
-            portalMaterial.uniforms.uTextureMap.value = portalsTextures[activePlate]
-            gsap.fromTo(portalMaterial.uniforms.uActivationTimer, {value: 0}, {duration: 0.8, value: 0.5})
-        }
-        }, [activePlate]);
-
     return (
-        <>
-            <Circle
-                args={[0.8, 32]}
-                material={portalMaterial}
-                position={[-16.12, 7, -37.7]}
-            />
-        </>
+        <Circle
+            args={[0.8, 32]}
+            material={portalShaderMaterial}
+            position={[-16.12, 6.95, -37.7]}
+        />
     );
 };
 

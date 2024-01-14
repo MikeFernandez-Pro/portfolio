@@ -1,6 +1,8 @@
 uniform float uTime;
-uniform float uActivationTimer;
+uniform float uSize;
 uniform sampler2D uTextureMap; // The texture uniform
+uniform float uContrast;
+uniform float uLightIntensity;
 
 varying vec2 vUv;
 
@@ -83,38 +85,40 @@ float cnoise(vec3 P)
 
 void main()
 {
-     vec2 centeredUv = vUv - 0.5;
-        float distanceToCenter = length(centeredUv);
+
+    float distanceToCenter = length(vUv - 0.5);
 
     // Initial Noise 
-    float noise = cnoise(vec3(vUv * 4.0, uTime * 0.1));
+    float noise = cnoise(vec3(vUv * 10.0, uTime * 0.5));
 
     // Displace the UV
     vec2 displacedUv = vUv + noise;
 
     // Outer noise
-     if (distanceToCenter - cnoise(vec3(vUv * 10.0, uTime )) * 0.1 > uActivationTimer) {
-            discard;
+     if (distanceToCenter - noise * 0.3 > uSize) {
+         gl_FragColor = vec4(0.1, 0.05, 0.05, 0.0);
+         return ;
      }
      
     // Perlin noise
-    float strength = cnoise(vec3(displacedUv * 6.0, uTime * 0.2));
+    float strength = cnoise(vec3(displacedUv * 1.5, uTime * 0.001));
+
 
     // Outer glow
-    float outerGlow = distance(vUv, vec2(0.5)) * 5.0 - 1.6;
-    strength += outerGlow;
+    // float outerGlow = distance(vUv, vec2(0.5)) * 5.0 - 1.6;
+    // strength += outerGlow;
 
     // Apply cool step
-    strength += step(- 0.3, strength) * 0.1;
+    // strength += step(- 0.3, strength) * 0.1;
 
     // Clamp the value from 0 to 1
     strength = clamp(strength, 0.0, 1.0);
 
     // Texture
-    // vec4 texColor = texture2D(uTextureMap, vUv); // Texture noise desactivated
-    vec4 texColor = texture2D(uTextureMap, vUv + noise * ( 1.0 - (uActivationTimer * 2.0)));
+    // vec4 texColor = texture2D(uTextureMap,vUv);
+    vec4 texColor = texture2D(uTextureMap, vUv + (noise * 0.02));
+    texColor.rgb = (texColor.rgb - 0.5) * uContrast + uLightIntensity;
 
-    vec4 finalMix = mix(texColor * 1.5, texColor * 2.0, strength);
-
-    gl_FragColor = finalMix;
+    gl_FragColor =  mix(texColor, texColor * 0.85, strength * 25.);
+    // gl_FragColor =  vec4(texColor.rgb, 1.0) * 1.0;
 }

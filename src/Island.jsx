@@ -1,190 +1,205 @@
 import { useGLTF, useAnimations } from "@react-three/drei";
-import { useEffect, useMemo, useRef } from "react";
+import React, { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { useControls } from "leva";
-import LavaMesh from "./LavaMesh";
-import LiquidMeshes from "./LiquidMeshes";
-import MagicBooks from "./MagicBooks";
+import { useControls } from "leva"; "use strict";
+import LiquidsShaders from "./LiquidsShaders";
+import MagicBooksShader from "./MagicBooksShader";
 import gsap from "gsap";
 import { useStore } from "./ZustandStorage";
-import { useLoader, useThree } from "@react-three/fiber";
 import MagicLetters from "./MagicLetters"
 import SleepText from "./SleepText";
+import AnimatedFlag from "./AnimatedFlag";
+import { useFrame } from "@react-three/fiber";
+
+const ISLAND_POSITION = [-1.35, 2.25, -15]
+const ANVIL_POSITION = new THREE.Vector3(-5.8, 1.8, -10.8)
+
 
 const Island = () => {
+
+  const magicGlyphActivationRef = useRef(false);
+
+  const isMobile = useStore(state => state.isMobile);
+  const disableSounds = useStore(state => state.disableSounds);
+
   const shadowsIntensity = useControls("shadowsIntensity", {
-    shadowsIntensity: { value: 1.39, min: 0, max: 5, step: 0.001 }
+    shadowsIntensity: { value: 2.73, min: 0, max: 20, step: 0.001 }
   })
-  
-  const signs = useControls("signs", {
-    intensity: { value: 1.6, min: 0, max: 50, step: 0.001 },
-    color: "#01ffe8",
+
+  const envMap = useControls("envMap", {
+    intensity: { value: 0.5, min: 0, max: 1, step: 0.001 },
   });
 
-  const candles = useControls("candles", {
-    intensity: { value: 13.51, min: 0, max: 50, step: 0.001 },
-    color: "#ffaf67",
-  });
-  const forgeSword = useControls("forgeSword", {
-    intensity: { value: 6.35, min: 0, max: 50, step: 0.001 },
-    color: "#ff7e66",
-  });
-  const lanternsAndHomes = useControls("lanternsAndHomes", {
-    intensity: { value: 5.67, min: 0, max: 50, step: 0.001 },
-    color: "#de5112",
+  const portalPlate = useControls("portalPlate", {
+    emissiveIntensity: { value: 0.5, min: 0, max: 100, step: 0.01 },
   });
 
-  const magicPortal = useControls("magicPortal", {
-    intensity: { value: 0, min: 0, max: 50, step: 0.01 },
-    color: "#61acd4",
-  });
-
-  const pressurePlates = useControls("pressurePlates", {
-    intensity: { value: 3, min: 0, max: 50, step: 0.01 },
-    color: "#68cff2",
-  });
-
-  const torchesAndFire = useControls("torchesAndFire", {
-    intensity: { value: 3.94, min: 0, max: 50, step: 0.01 },
-    color: "#f85f3d",
-  });
 
   //   /**
   //    * Island initialization
   //    */
-  const island = useGLTF("/models/island/island.glb");
+  const island = useMemo(() => {
+    const island = useGLTF("/models/island/islandCopy41.glb")
+    island.scene.traverse((child) => {
+      if (child.isMesh && child.material.isMeshStandardMaterial) {
+        child.material.name === "islandTexture" && !isMobile ?
+          child.receiveShadow = true :
+          child.material.toneMapped = false;
 
-  island.scene.traverse((child) => {
-    // Check if the child object is a Mesh
-    if (child.isMesh && child.material.isMeshStandardMaterial) {
-      // Set the shadowSide property to THREE.DoubleSideq
-      child.receiveShadow = true;
-      // child.castShadow = true;
-      child.material.roughness = 1;
+        child.material.envMapIntensity = envMap.intensity;
+      }
+    });
+
+    return island;
+  }, []);
+
+
+  useFrame((state, delta) => {
+    // Cauldron Bone
+    island.scene.children[0].children[3].rotation.y += delta * 0.5;
+    // Margic Portal Bone
+    island.scene.children[0].children[4].rotation.y += delta * 0.15;
+    if (magicGlyphActivationRef.current) {
+      // Magic Glyphs Bones
+      island.scene.children[0].children[5].rotation.y += delta;
+      island.scene.children[0].children[6].rotation.y -= delta;
     }
-  });
-
-
-  // const test = [MagicLetters, LavaMesh, LiquidMeshes, MagicBooks]
-
-  const islandAnimations = useAnimations(island.animations, island.scene)
-  const islandPosition = useMemo(() => [-1.35, 2.3, -15], []);
-
-  const islandTexture = useLoader(THREE.TextureLoader, "textures/islandTexture.webp")
-  const islandShadowMap = useLoader(THREE.TextureLoader, "textures/shadowMap.webp")
-
-  islandTexture.flipY = false;
-  islandTexture.colorSpace = THREE.SRGBColorSpace
-
-  islandShadowMap.flipY = false;
-  islandShadowMap.colorSpace = THREE.SRGBColorSpace
-  islandShadowMap.channel = 1
-
-  // island.materials.islandTexture.map = islandTexture;
-  // island.materials.islandTexture.map.channel = 0;
-  // island.materials.islandTexture.aoMap = islandShadowMap;
-  // island.materials.islandTexture.aoMap.channel = 1;
-  island.materials.islandTexture.aoMapIntensity = shadowsIntensity.shadowsIntensity;
-  
-  // island.materials.islandTexture.color = new THREE.Color(1, 1, 1);
-
-  // island.materials.signs.map = islandTexture;
-
-  const { envMapIntensity } = useControls('environment map', {
-    envMapIntensity: { value: 1, min: 0, max: 12 }
   })
 
-  island.scene.traverse((child) => {
-    if (child.isMesh && child.material.isMeshStandardMaterial) {
-      child.material.roughness = 1;
-      child.material.envMapIntensity = envMapIntensity
-    }
-  });
+  const islandAnimations = useAnimations(island.animations, island.scene)
 
+  // useLayoutEffect(() => {
+  island.materials.islandTexture.aoMapIntensity = shadowsIntensity.shadowsIntensity;
+  island.materials.magicPortal.emissive = new THREE.Color("#E1754B");
+  island.materials.magicPortal.emissiveIntensity = 0;
 
-  island.materials.candles.emissiveIntensity = candles.intensity;
-  island.materials.candles.emissive = new THREE.Color(candles.color);
-  island.materials.candles.toneMapped = false;
-
-  island.materials.signs.emissiveIntensity = signs.intensity;
-  island.materials.signs.emissive = new THREE.Color(signs.color);
-  island.materials.signs.toneMapped = false;
-
-
-  island.materials.forgeSword.emissiveIntensity = forgeSword.intensity;
-  island.materials.forgeSword.emissive = new THREE.Color(forgeSword.color);
-  island.materials.forgeSword.toneMapped = false;
-
-  island.materials.lanternsAndHomes.emissiveIntensity = lanternsAndHomes.intensity;
-  island.materials.lanternsAndHomes.emissive = new THREE.Color(lanternsAndHomes.color);
-  island.materials.lanternsAndHomes.toneMapped = false;
-
-  island.materials.magicPortal.emissiveIntensity = magicPortal.intensity;
-  island.materials.magicPortal.emissive = new THREE.Color(magicPortal.color);
-  island.materials.magicPortal.toneMapped = false;
-
-  island.materials.torchesAndFire.emissiveIntensity = torchesAndFire.intensity;
-  island.materials.torchesAndFire.emissive = new THREE.Color(torchesAndFire.color);
-  island.materials.torchesAndFire.toneMapped = false;
-
-
-  island.materials.galaxyPlate.emissiveIntensity = 0;
-  island.materials.galaxyPlate.emissive = new THREE.Color(pressurePlates.color);
-  island.materials.galaxyPlate.toneMapped = false;
-  // island.materials.galaxyPlate.map = islandTexture;
-
+  // island.materials.portalPlate.emissiveIntensity = portalPlate.emissiveIntensity;
+  island.materials.portalPlate.emissive = new THREE.Color("#68CFF2");
   island.materials.portalPlate.emissiveIntensity = 0;
-  island.materials.portalPlate.emissive = new THREE.Color(pressurePlates.color);
-  island.materials.portalPlate.toneMapped = false;
-  // island.materials.portalPlate.map = islandTexture;
-
+  island.materials.seaPlate.emissive = new THREE.Color("#68CFF2");
   island.materials.seaPlate.emissiveIntensity = 0;
-  island.materials.seaPlate.emissive = new THREE.Color(pressurePlates.color);
-  island.materials.seaPlate.toneMapped = false;
-  // island.materials.seaPlate.map = islandTexture;
+  island.materials.halloweenPlate.emissive = new THREE.Color("#68CFF2");
+  island.materials.halloweenPlate.emissiveIntensity = 0;
 
-  // console.log(island.scene.children[0].children[0])
-  // console.log(islandAnimations)
+  // console.log(island.materials.portalPlate.emissive, island.materials.seaPlate.emissive)
+  // }, []);
+
+
+
   /**
    * Island Animations Activation
    */
-  useEffect(() => {
-    islandAnimations.actions["anvilAnimation"].play();
-    islandAnimations.actions["magicPotAnimation"].play();
+  useLayoutEffect(() => {
+    // Configure and play islands animations
+    islandAnimations.actions["anvilAnimation"].loop = THREE.LoopOnce
+    islandAnimations.actions["anvilAnimation"].clampWhenFinished = true
     islandAnimations.actions["details"].play();
-  }, []);
 
-  /**
-   * Magic Circle 
-   */
 
-  const magicCircleActivationRef = useRef(useStore.getState().magicCircleActivation)
+    // Configure audio sound effects
+    const pressurePlatesSoundEffect = (() => {
+      if (disableSounds !== false) return undefined;
+      const pressurePlatesSoundEffect = new Audio("/sounds/pressurePlatesSoundEffect.mp3")
+      pressurePlatesSoundEffect.volume = 0.1;
+      return pressurePlatesSoundEffect;
+      
+    })()
 
-  /**
-   * Projects Activation Plates
-   */
+    const magicGlyphSoundEffect =
+      disableSounds !== false ?
+        undefined :
+        new Audio("/sounds/magicGlyphSoundEffect.mp3")
 
-  // Subscribe to activePlate and prevPlate zustand store states
-  const subPrevPlate = useStore.subscribe((state) => state.prevPlate, (state) => gsap.to(island.materials[state], { duration: 0, emissiveIntensity: 0 }))
-  const subActivePlate = useStore.subscribe((state) => state.activePlate, (state) => gsap.to(island.materials[state], { duration: 0.2, emissiveIntensity: 3 }))
+    const hammerSoundEffect = (() => {
+      if (disableSounds !== false) return undefined;
+      const hammerSoundEffect = new Audio("/sounds/hammerSoundEffect.mp3")
+      hammerSoundEffect.volume = 0;
+      return hammerSoundEffect  
+    })()
 
-  // Retrieve magicCircleActivation zustand state
-  const magicCircleActivation = useStore(state => state.magicCircleActivation)
+    // Play forge hammer sound and anvil animation each 2s
+    const forgeHammerInterval = setInterval(() => {
+      disableSounds !== false ? undefined : hammerSoundEffect.play();
+      islandAnimations.actions["anvilAnimation"].reset().play()
+    }, 2000)
 
-  if (magicCircleActivation) {
-    gsap.to(island.materials.magicPortal, { duration: 1, emissiveIntensity: 3.17 })
-  }
+    // Subscribe to activePlate zustand store state
+    const unSubActivePlate = useStore.subscribe((state) => state.activePlate,
+      (activePlate, prevPlate) => {
+        gsap.to(island.materials[activePlate], { duration: 0.2, emissiveIntensity: 3 })
+        if (prevPlate)
+          gsap.to(island.materials[prevPlate], { duration: 0, emissiveIntensity: 0 })
+        if (disableSounds === false) {
+          pressurePlatesSoundEffect.currentTime = 0;
+          pressurePlatesSoundEffect.play();
+        }
+      }
+    )
+
+    // Subscribe to magicGlyphActivation zustand store state
+    const unsubMagicGlyphActivation = useStore.subscribe(
+      (state) => state.magicGlyphActivation,
+      (magicGlyphActivation) => {
+        // Activate Magic Glyphs Animations
+        magicGlyphActivationRef.current = true;
+
+        // Play Magic Glyphs Sound Effect
+        if (disableSounds === false) {
+          magicGlyphSoundEffect.play()
+          gsap.fromTo(magicGlyphSoundEffect, { volume: 0 }, { delay: 0.1, duration: 0.5, volume: 0.2 });
+        }
+
+        // Activate Magic Glyphs Emissive Intensity Animation
+        gsap.fromTo(island.materials.magicPortal,
+          { emissiveIntensity: 0 },
+          { duration: 1, emissiveIntensity: 4.7 }
+        )
+      }
+    )
+
+
+    const unsubCharacterPosition = disableSounds !== false ? undefined : useStore.subscribe(
+      state => state.characterPosition,
+      (characterPosition) => {
+        if (characterPosition) {
+          hammerSoundEffect.volume = ANVIL_POSITION.distanceTo(characterPosition) < 17 ?
+            Math.min(((1 / ANVIL_POSITION.distanceTo(characterPosition))), 0.2)
+            : 0;
+        }
+      }
+    )
+
+    // Clear animations, interval and subscriptions on unmount
+    return () => {
+      islandAnimations.actions["anvilAnimation"].stop();
+      // islandAnimations.actions["magicPotAnimation"].getMixer().uncacheAction(islandAnimations.actions["magicPotAnimation"]);
+
+      unSubActivePlate();
+      unsubMagicGlyphActivation();
+
+      clearInterval(forgeHammerInterval);
+      if (disableSounds === false) {
+        unsubCharacterPosition();
+      }
+    }
+  }, [disableSounds]);
 
   return (
     <>
-      <primitive object={island.scene} scale={0.45} position={islandPosition} />
-      <LiquidMeshes
+      <primitive object={island.scene} scale={0.45} position={ISLAND_POSITION} />
+      <LiquidsShaders
         well={island.scene.children[0].children[0].children[6]}
         cauldron={island.scene.children[0].children[0].children[7]}
       />
-      <LavaMesh lavaMesh={island.scene.children[0].children[0].children[5]} />
-      <MagicBooks magicBooks={island.scene.children[0].children[0].children[9]} texture={islandTexture} />
-      <MagicLetters magicLetters={island.scene.children[0].children[0].children[10]} texture={islandTexture} />
+      <MagicBooksShader magicBooks={island.scene.children[0].children[0].children[9]} />
+      <MagicLetters
+        magicLetters={island.scene.children[0].children[0].children[10]}
+        island={island.scene.children[0].children[0].children[0]}
+      />
+      <AnimatedFlag flag={island.scene.children[0].children[0].children[16]} offset={0.345} />
+      <AnimatedFlag flag={island.scene.children[0].children[0].children[17]} offset={0.265} />
+      <AnimatedFlag flag={island.scene.children[0].children[0].children[18]} offset={0.26} />
+      {/* br 16 fr 17 and sp 18 => flags */}
       <SleepText />
     </>
   );

@@ -1,66 +1,88 @@
-import { SoftShadows, BakeShadows, OrbitControls, Environment, MeshPortalMaterial, Html, ContactShadows, Circle, AccumulativeShadows, RandomizedLight, useDetectGPU } from "@react-three/drei";
+import { Box, OrbitControls, useDetectGPU } from "@react-three/drei";
 import { Perf } from "r3f-perf";
-import { Physics, useRapier } from "@react-three/rapier";
+import { Physics } from "@react-three/rapier";
 import Lights from "./Lights.jsx";
 import { useControls } from "leva";
-import { useEffect, useRef } from "react";
+import {useLayoutEffect, useRef, useMemo } from "react";
 import Player from "./CharacterController.jsx";
 import Island from "./Island.jsx";
-import { Suspense } from "react";
-import Sea from "./LavaMesh.jsx";
-import { useFrame, useLoader, useThree } from "@react-three/fiber";
+import { useLoader, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import IslandColliders from "./IslandColliders.jsx";
 import ProjectsPortals from "./ProjectsPortals.jsx";
-
-export default function Experience({ joystickAngle }) {
-    const { debug, orbitControlsActivation, envMapColor } = useControls("Controls", {
-        debug: false,
-        orbitControlsActivation: false,
-        envMapColor: "blue"
+import FireFlies from "./FireFlies.jsx";
+import gsap from "gsap";
+import TorchesSparks from "./TorchSparks/TorchesSparks.jsx";
+import Smoke from "./Smoke.jsx";
+import SampledGrass from "./sampledGrass.jsx";
+import { useStore } from "./ZustandStorage.jsx";
+    
+const Experience = () => {
+    const { orbitControlsActivation } = useControls("Controls", {
+        orbitControlsActivation: false
     });
+    
+    const scene = useThree((state) => state.scene);
+    const camera = useThree((state) => state.camera);
 
-    const { scene, camera } = useThree();
+    const gpuTier = useDetectGPU();
 
-    const envMap = useLoader(THREE.TextureLoader, '/environmentMaps/envMap.jpg')
+    const envMap = useLoader(THREE.TextureLoader, '/environmentMaps/envMap.webp')
     envMap.mapping = THREE.EquirectangularReflectionMapping;
     envMap.colorSpace = THREE.SRGBColorSpace;
     scene.background = envMap;
+    scene.environment = envMap;
 
     const orbitControlsRef = useRef();
+    const isMobile = useStore(state => state.isMobile);
 
-    const softShadowsControls = useControls("SoftShadows", {
-        size: { value: 20, step: 0.1 },
-        samples: { value: 15, step: 0.1 },
-    });
-    
+
+    // Music by Aleksey Chistilin
+    // https://pixabay.com/fr/users/lexin_music-28841948/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=116199
+    const ambientSound = useMemo(() => {
+        const audio = new Audio("sounds/ambientMusic.mp3")
+        audio.loop = true;
+        audio.volume = 0;
+        return audio;
+    }, []);
+
+
+    const planeRef = useRef();
+    useLayoutEffect(() => {
+        // ambientSound.play();
+        gsap.to(ambientSound, { volume: 0.15, duration: 3 })
+
+
+    }, [])
+
+
     return (
         <>
-
-            {/* <fog attach="fog" args={['white', 50, 190]} /> */}
             <Perf position="top-left" />
 
             {orbitControlsActivation && <OrbitControls ref={orbitControlsRef} camera={camera} />}
 
-            {/* <SoftShadows size={ 10 } samples={ 10 } /> */}
-            {/* <Environment preset="sunset">
-            <color args={ [ envMapColor ] } attach="background" />
-                </Environment> */}
-            {/* <BakeShadows /> */}
-         
             <Lights />
 
+            <SampledGrass />
             <Island />
+
+            <FireFlies />
+
+            <Smoke />
+
+            <TorchesSparks />
 
             <ProjectsPortals />
 
-            <Physics timeStep="vary" debug={debug} gravity={[0, -50, 0]}>
+            <Physics timeStep="vary" gravity={[0, -50, 0]}>
                 <IslandColliders />
                 <Player
                     orbitControls={orbitControlsActivation}
-                    joystickAngle={joystickAngle}
                 />
             </Physics>
         </>
     );
 }
+
+export default Experience;
