@@ -39,7 +39,7 @@ const Island = () => {
   //    * Island initialization
   //    */
   const island = useMemo(() => {
-    const island = useGLTF("/models/island/islandCopy41.glb")
+    const island = useGLTF("/models/island/island.glb")
     island.scene.traverse((child) => {
       if (child.isMesh && child.material.isMeshStandardMaterial) {
         child.material.name === "islandTexture" && !isMobile ?
