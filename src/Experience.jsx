@@ -14,7 +14,7 @@ import FireFlies from "./FireFlies.jsx";
 import gsap from "gsap";
 import TorchesSparks from "./TorchSparks/TorchesSparks.jsx";
 import Smoke from "./Smoke.jsx";
-import SampledGrass from "./sampledGrass.jsx";
+import SampledGrass from "./SampledGrass.jsx";
 import { useStore } from "./ZustandStorage.jsx";
 
 const Experience = () => {
