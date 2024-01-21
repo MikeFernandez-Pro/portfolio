@@ -10,7 +10,7 @@ import { useControls } from "leva";
     const isMobile = useStore(state => state.isMobile);
 
     const fillLightControls = useControls("FillLight", {
-        intensity: { value: 10, min: 0, max: 50, step: 0.1 },
+        intensity: { value: 11, min: 0, max: 50, step: 0.1 },
         color: "#2f4b90",
         position: { value: [20, 15, -22], step: 1 },
     });
@@ -22,7 +22,7 @@ import { useControls } from "leva";
     });
 
     const characterLightControls = useControls("CharacterLight", {
-        intensity: { value: 9, min: 0, max: 50, step: 0.1 },
+        intensity: { value: 10, min: 0, max: 50, step: 0.1 },
         color: "#3a62c8",
         position: { value: [-3, 4, 3], step: 1 },
         bias: { value: -0.01, step: 0.001 }

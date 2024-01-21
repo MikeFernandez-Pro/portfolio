@@ -1,104 +1,89 @@
-import ReactNipple from 'react-nipple';
 import { useStore } from "./ZustandStorage.jsx";
-import { useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useRef, useState } from 'react';
-import nipplejs from 'nipplejs';
+import { useEffect } from "react";
+import nipplejs from "nipplejs";
 
+// ScreenOrientation constants
+const PORTRAIT_ORIENTATION = "portrait-primary";
 
-const OPTIONS = {
-    mode: 'dynamic',
-    position: { top: '50%', left: '50%' },
-    size: 200,
+// Joystick configuration constants
+const DEFAULT_CONFIGURATION = {
+    mode: "static",
+    position: { bottom: "8rem", left: "50%" },
     dynamicPage: true,
     follow: false,
     restOpacity: 1,
     maxNumberOfNipples: 1,
-}
+};
 
+// Joystick events constants
+const MOVE_EVENT = "move";
+const END_EVENT = "end";
 
+const createJoystick = (orientationType) => {
+    return nipplejs.create({
+        ...DEFAULT_CONFIGURATION,
+        size:
+            orientationType === PORTRAIT_ORIENTATION
+                ? screen.width * 0.2
+                : screen.height * 0.2,
+        position:
+            orientationType === PORTRAIT_ORIENTATION
+                ? { bottom: "10%", left: "50%" }
+                : { bottom: "10vw", left: "10vw" },
+    });
+};
+
+const setupJoystickEvents = (joystick) => {
+    joystick.on("move", function (evt, data) {
+        if (data.angle.radian !== Math.PI) {
+            useStore.setState({ joystickAngle: data.angle.radian });
+        }
+    });
+
+    joystick.on("end", function (evt, data) {
+        useStore.setState({ joystickAngle: undefined });
+    });
+};
+
+const resetJoystick = (joystick) => {
+    joystick.off(MOVE_EVENT);
+    joystick.off(END_EVENT);
+    joystick.destroy();
+};
+
+const handleOrientationChange = (joystick) => {
+    return function curriedFunction(event) {
+        resetJoystick(joystick);
+        joystick = createJoystick(event.target.type);
+        setupJoystickEvents(joystick);
+    }
+};
+
+let joystick = undefined;
 
 const Joystick = () => {
-
-    const isMobile = useStore(state => state.isMobile);
-    const joystickRef = useRef(false)
-
     useEffect(() => {
-        const unsubIsMobile = useStore.subscribe(state => state.isMobile,
+        const unsubIsMobile = useStore.subscribe(
+            (state) => state.isMobile,
             (isMobile) => {
-                let manager = nipplejs.create(OPTIONS);
+                // Initialize joystick
+                joystick = createJoystick(screen.orientation.type);
+                setupJoystickEvents(joystick);
 
-                manager.on('move', function (evt, data) {
-                    useStore.setState({ joystickAngle: data.angle.radian })
-                })
+                // Trigger screen rotation and update joystick size and position
 
-                manager.on('end', function (evt, data) {
 
-                    useStore.setState({ joystickAngle: undefined })
-                })
-            })
+                screen.orientation.addEventListener("change", handleOrientationChange(joystick));
+            }
+        );
 
-        return () =>  {
-            manager.destroy()
+        // Cleanup subscriber and event listener
+        return () => {
+            console.log("cleanup");
+            screen.orientation.removeEventListener("change", handleOrientationChange(joystick));
             unsubIsMobile();
-        }
-    }, [])
-
-
-    // window.addEventListener('resize', () => {
-    //     if (managerRef.current) {
-    //         managerRef.current.destroy();
-    //         managerRef.current = undefined;
-    //         console.log(managerRef.current)
-    //         managerRef.current = nipplejs.create({
-    //             mode: 'dynamic',
-    //             position: { top: '50%', left: '50%' },
-    //             size: window.innerWidth < window.innerHeight ?
-    //                 Math.min(100, window.innerWidth / 4) :
-    //                 Math.min(100, window.innerHeight / 4),
-    //             dynamicPage: true,
-    //             follow: false,
-    //             restOpacity: 1,
-    //             maxNumberOfNipples: 1,
-    //         });
-    //     }
-    // })
-
-
-
-
-    return (
-        <>
-        </>
-        // <ReactNipple
-        //     options={{
-        //         mode: 'dynamic',
-        //         position: { top: '50%', left: '50%' },
-        //         size:  window.innerWidth < window.innerHeight ?
-        //             Math.min(150, window.innerWidth / 4) :
-        //             Math.min(150, window.innerHeight / 4),
-        //         dynamicPage: true,
-        //         // follow: false,
-        //         // restOpacity: 0.5,
-        //     }}
-        //     style={{
-        //         position: 'absolute',
-        //         bottom: window.innerWidth < window.innerHeight ? "5vw" : "-5vh",
-        //         left:  window.innerWidth < window.innerHeight ? "50%" : "5vw",
-        //         transform:  window.innerWidth < window.innerHeight ? "translate(-50%, -50%)" : "",
-        //         //       outline: '1px dashed red',
-        //         width: 150,
-        //         height: 150,
-        //         zIndex: 4,
-        //         visibility:  "visible" 
-        //     }}
-        //     onMove={(evt, data) => {
-        //         useStore.setState({ joystickAngle: data.angle.radian })
-        //     }}
-        //     onEnd={() => {
-        //         useStore.setState({ joystickAngle: undefined })
-        //     }}
-        // />
-    );
+        };
+    }, []);
 };
 
 export default Joystick;

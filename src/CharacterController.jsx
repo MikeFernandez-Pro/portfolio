@@ -168,7 +168,6 @@ const Player = ({ orbitControls }) => {
             characterAnimations.actions[characterAnimation.current].reset().fadeIn(0.2).play();
             useStore.setState({ isCharacterMoving: true });
             if (disableSounds === false) {
-                console.log(`stop runningEffect : ${runningSoundEffect.current}`)
                 runningSoundEffect.current.volume = 0.6;
                 runningSoundEffect.current.play();
             }
@@ -234,6 +233,7 @@ const Player = ({ orbitControls }) => {
                 // position={[6, 3, -30]} // ile 2
                 // position={[-16, 5, -35]} // ile 3
                 // position={[-5, 7, -45]} // ile 4
+                // position={[-9.8 , 6.8, -58]} // ile 4
 
                 restitution={-10}
                 friction={0.4}

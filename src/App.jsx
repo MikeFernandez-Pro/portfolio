@@ -27,7 +27,7 @@ const App = () => {
         noSoundCallToActionRef.current.style.visibility = "hidden"
         
         gsap.to(sceneRevealerRef.current?.uniforms.get("progress"),
-            { value: 1.5, duration: 7, ease: "expo.isOut" })
+            { value: 1.5, duration: 6, ease: "expo.isOut" })
 
         if (activateSounds)
             useStore.setState({ disableSounds: isMobileDevice ? true : false })
