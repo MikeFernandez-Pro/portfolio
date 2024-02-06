@@ -1,4 +1,15 @@
 @import url("https://fonts.googleapis.com/css2?family=Metamorphous&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Almendra+SC&display=swap");
+
+* {
+    --lighter-bg-color: #164370;
+    --darker-bg-color: #09161f;
+    --text-color: #fff;
+    --filled-color: #ffffffe6;
+    --empty-color: #00000054;
+    --thumb-color: hsla(0, 0%, 100%, 0.97);
+    /* cursor: url('../public/customLoaderCursor.png'), auto; */
+}
 
 *,
 *::before,
@@ -10,113 +21,163 @@
     margin: 0;
 }
 
-body {
-    background: rgb(13, 20, 33);
-    color: #dfdfdf; 
+img,
+svg {
+    display: block;
+    max-width: 100%;
+}
+
+button {
+    -webkit-appearance: none;
+    border-radius: 0;
+    text-align: inherit;
+    background: none;
+    box-shadow: none;
+    padding: 0;
+    cursor: pointer;
+    border: none;
+    color: inherit;
+    font: inherit;
+  }
+  
+#root,
+#__next {
+    isolation: isolate;
+}
+
+html,
+body,
+#root {
+    font-family: "Metamorphous", cursive;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    min-width: 320px;
+    height: 100%;
+    /* background: rgb(31, 47, 81); */
+
+    background: var(--lighter-bg-color);
+    background: -moz-linear-gradient(
+        top,
+        var(--lighter-bg-color) 0%,
+        var(--darker-bg-color) 100%
+    );
+    background: -webkit-gradient(
+        linear,
+        left top,
+        left bottom,
+        color-stop(0%, var(--lighter-bg-color)),
+        color-stop(100%, var(--darker-bg-color))
+    );
+    background: -webkit-linear-gradient(
+        top,
+        var(--lighter-bg-color) 0%,
+        var(--darker-bg-color) 100%
+    );
+    background: -o-linear-gradient(
+        top,
+        var(--lighter-bg-color) 0%,
+        var(--darker-bg-color) 100%
+    );
+    background: -ms-linear-gradient(
+        top,
+        var(--lighter-bg-color) 0%,
+        var(--darker-bg-color) 100%
+    );
+    background: linear-gradient(
+        to bottom,
+        var(--lighter-bg-color) 0%,
+        var(--darker-bg-color) 100%
+    );
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='var(--lighter-bg-color)', endColorstr='var(--darker-bg-color)',GradientType=0 );
+}
+
+#root {
+    color: var(--text-color);
     line-height: 1.5;
-    font-family: Metamorphous, serif;
     -webkit-font-smoothing: antialiased;
 }
-
-.grid {
-    display: grid;
-    gap: clamp(1.5rem, 0.9806rem + 2.2161vw, 4rem);
-    place-content: center;
-    height: 100vh;
-    height: 100svh;
-    width: 100vw;
-}
-
-.hero__main-heading {
-    font-size: clamp(3.5rem, 10vw, 10rem);
-    text-align: center;
-    color: transparent;
-    -webkit-text-stroke: 1px #dfdfdf;
-    line-height: clamp(3.5rem, 10vw, 10rem);
-}
-
-.hero__secondary-heading {
-    font-size: clamp(1.5rem, 4vw, 4rem);
-    text-align: center;
-    color: #dfdfdf;
-}
-
-.cta {
-    justify-self: center;
-    width: fit-content;
-    padding: 0.8rem 2rem;
-    border: 1px solid #dfdfdf;
-    border-radius: 2rem;
-    font-size: clamp(1rem, 2.5vw, 2.5rem);
-    font-weight: 700;
-    color: #dfdfdf;
-    cursor: pointer;
-    z-index: 2;
-    transition: transform 0.2s ease-in-out;
-}
-
-.cta:is(:hover, :focus, :active) {
-    background: #dfdfdf;
-    color: rgb(13, 20, 33);
-    transform: rotate(5deg);
-}
-
-.cta-soundless {
-    justify-self: center;
-    font-size: clamp(0.5rem, 1.3vw, 1.3rem);
-    font-style: italic;
-    color: #dfdfdfd4;
-    text-decoration: underline#dfdfdfad;
-    cursor: pointer;
-    z-index: 2;
-}
-
-.cta-soundless:is(:hover, :focus, :active) {
-    color: #dfdfdf;
-}
-
-
-canvas {
-    display: block;
-    width: 100%;
-    height: 100vh;
-    height: 100svh;
-    position: absolute;
-    inset: 0;
-    z-index: 3;
-    pointer-events: none;
-}
-
-.experience {
-    position: absolute;
-    display: grid;
-    inset: 0;
-    width: 100%;
-    height: 100vh;
-    height: 100svh;
-}
-
 
 .container {
     display: grid;
     place-content: center;
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    padding: clamp(1rem, 10vw, 10rem);
+    overflow: hidden;
+    background-image: url("../public/loadingPortal2.svg");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;  
 }
 
 .loader {
-    filter: blur(0.05rem);
-    width: clamp(3rem, 6vw, 6rem);
-    height: clamp(3rem, 6vw, 6rem);
-    border-radius: 50%;
-    border-top: clamp(0.3rem, 0.5vw, 0.5rem) solid #fff;
-    border-right: clamp(0.3rem, 0.5vw, 0.5rem) solid transparent;
-    animation: rotation 1s linear infinite;
+    font-size: clamp(4rem, 10vw, 10rem);
+    text-align: center;
+    color: #73D8D2;
+    text-shadow: #11e0d5 3px 2px 15px;
+    font-family: "Almendra SC", serif;
+    -webkit-font-smoothing: antialiased;
 }
 
-@keyframes rotation {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(360deg);
+.start-experience {
+    font-size: clamp(2rem, 6vw, 6rem);
+ 
+    transition: transform 0.3s, text-shadow 0.3s;
+    color: #73D8D2;
+    text-shadow: #11e0d5 3px 2px 20px;
+}   
+
+.start-experience:is(:hover, :focus) {
+    transform: rotate(2deg);
+}
+
+.volume-controller {
+    position: fixed;
+    z-index: 10;
+    width: 5rem;
+    cursor: pointer;
+    user-select: none;
+    opacity: 0.9;
+    transition: opacity 0.3s;
+}
+/* ? { bottom: "10%", left: "50%" }
+: { bottom: "10vw", left: "10vw" }, */
+
+@media (orientation: portrait) {
+    .volume-controller {
+        top: 5vw;
+        right: 5vw;
     }
 }
+
+@media (orientation: landscape) {
+    .volume-controller {
+        top: 5vh;
+        right: 5vh;
+    }
+    /* .loader-portal {
+        max-width: 50vh;
+        max-width: 50dvh;
+    } */
+}
+
+@keyframes rotating {
+    from {
+      transform:  rotate(0deg);
+    }
+    to {
+      transform:  rotate(360deg);
+    }
+  }
+/* @keyframes rotating {
+    from {
+      transform: scale(2) rotate(0deg);
+    }
+    to {
+      transform: scale(2) rotate(360deg);
+    }
+  } */
+

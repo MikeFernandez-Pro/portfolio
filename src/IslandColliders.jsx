@@ -25,9 +25,11 @@ const SEA_PLATE_URL = "https://raging-sea-shader-flame.vercel.app/";
 const HALLOWEEN_PLATE_URL = "https://halloween-challenge.vercel.app/";
 const STATUE_URL = "/CV_Portfolio_Mike.pdf";
 
+const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
 const IslandColliders = () => {
 
-    const { nodes } = useMemo(() => useGLTF("/models/islandColliders/islandColliders.glb"), [])
+    const { nodes } = useMemo(() => useGLTF("/models/islandColliders/islandColliders2.glb"), [])
 
     const activePlateRef = useRef(useStore.getState().activePlate)
     const magicGlyphActivation = useStore(state => state.magicGlyphActivation)
@@ -36,7 +38,6 @@ const IslandColliders = () => {
 
     const activeLink = useRef()
 
-    const isMobile = useStore(state => state.isMobile)
 
     const activateLink = useCallback((link) => {
         if (link.id === "portal" && !activePlateRef.current)
@@ -280,6 +281,6 @@ const IslandColliders = () => {
     );
 };
 
-useGLTF.preload("/models/islandColliders/islandColliders.glb");
+useGLTF.preload("/models/islandColliders/islandColliders2.glb");
 
 export default IslandColliders;

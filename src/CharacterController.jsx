@@ -1,12 +1,13 @@
 import { useGLTF, useAnimations } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { CapsuleCollider, RigidBody } from "@react-three/rapier";
 import { useRef, useMemo, useCallback, useLayoutEffect, useEffect } from "react";
 import * as THREE from "three";
 import { useStore } from "./ZustandStorage.jsx";
+import gsap from "gsap";
+import * as utils from "./CharacterControllerUtils.js";
 
 const directionOffset = ({ forward, backward, leftward, rightward }, characterBody) => {
-
     if (!forward && !backward && !leftward && !rightward) return undefined;
 
     if (characterBody.current.isSleeping()) {
@@ -24,97 +25,178 @@ const directionOffset = ({ forward, backward, leftward, rightward }, characterBo
     return -Math.PI / 2;
 };
 
-// Character Settings
-const SPEED = 4 // 4.5
-const ROTATION_EULER = new THREE.Vector3(0, 1, 0);
-const ROTATION_QUATERNION = new THREE.Quaternion();
-const IDLE = "Idle";
-const RUN = "Run";
+/*
+ *  Character
+ */
+// body type
 const DYNAMIC = 0;
 const FIXED = 1;
 
-// Camera Settings
+// animations
+const IDLE = "Idle";
+const RUN = "Run";
+const SPRINT = "Sprint";
+const JUMP = "JumpRunning";
+
+// sound
+const RUNNING_SOUND_VOLUME = 0.6;
+
+// default configuration
+let characterSpeed = 4;
+let canJump = false;
+let currentAnimation = IDLE;
+let characterIsMoving = false;
+let characterJumping = false;
+let characterSprinting = false;
+let runningSoundEffect = new Audio("/sounds/runningSoundEffect.mp3");
+runningSoundEffect.loop = true;
+runningSoundEffect.volume = RUNNING_SOUND_VOLUME;
+runningSoundEffect.playbackRate = 1.1;
+
+/*
+ *  Controller
+ */
+const ROTATION_EULER = new THREE.Vector3(0, 1, 0);
+const ROTATION_QUATERNION = new THREE.Quaternion();
+let controllerActivated = false;
+
+/*
+ *  Mobile
+ */
+const MOBILE_DEVICE = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+/*
+ *  Camera
+ */
 const CAMERA_POSITION = new THREE.Vector3(0, 0, 0);
+const LERP_CAMERA_POSITION = new THREE.Vector3(0, 5.2, MOBILE_DEVICE ? 7.5 : 5.5);
+const CAMERA_OFFSET = new THREE.Vector3(0, 4, MOBILE_DEVICE ? 7.5 : 5.5);
 
-const LERP_CAMERA_POSITION = new THREE.Vector3(0, 0, 0);
+/*
+ *  Keystrokes
+ */
+const keysConfigList = {
+    ArrowUp: "forward",
+    ArrowDown: "backward",
+    ArrowLeft: "leftward",
+    ArrowRight: "rightward",
+    KeyW: "forward",
+    KeyS: "backward",
+    KeyA: "leftward",
+    KeyD: "rightward",
+};
 
+const eventKeys = {
+    forward: false,
+    backward: false,
+    leftward: false,
+    rightward: false,
+    enter: false,
+};
 
-
-const Player = ({ orbitControls }) => {
-
-    // Mobile Controller settings
-    const isMobile = useStore(state => state.isMobile);
-    const disableSounds = useStore(state => state.disableSounds);
+const CharacterController = () => {
+    // Mobile
     const joystickAngleRef = useRef(useStore.getState().joystickAngle);
-    
-    const CAMERA_OFFSET = useMemo(() =>
-        isMobile ?
-            new THREE.Vector3(0, 4, 7.5) :
-            new THREE.Vector3(0, 4, 5.5)
-        , [isMobile])
 
+    // Sound
+    const soundActivatedRef = useRef(useStore.getState().soundActivated);
 
     /**
-     * Character Initialization
+     * Character
      */
-
     const characterBody = useRef();
     const characterMesh = useRef();
-    const characterAnimation = useRef(IDLE);
-    const runningSoundEffect = useRef(undefined);
 
     // Character Model and animations loaders
-    const characterModel = useMemo(() => useGLTF("/models/character/character.glb"), [])
-    const characterAnimations = useAnimations(characterModel.animations, characterModel.scene)
+    const { scene, animations } = useMemo(
+        () => useGLTF("/models/character/character4.glb"),
+        []
+    );
+    const characterAnimations = useAnimations(animations, scene);
 
-    // Shadows initialization
-    if (!isMobile) {
-        characterModel.scene.traverse((child) => {
-            // Check if the child object is a Mesh
-            if (child.isMesh && child.material.name === "texture") {
-                child.castShadow = true;
-                child.material.envMapIntensity = 0.5;
-            }
-        })
-   }
-
-    const keyEventsRef = useRef({
-        "forward": false,
-        "backward": false,
-        "leftward": false,
-        "rightward": false,
-        "enter": false,
-    })
-
-    // Keyboard Controller configuration
-    const keyboardEventHandler = useCallback((event) => {
-        if (event.code === "ArrowUp" || event.code === "KeyW")
-            keyEventsRef.current.forward = event.type === "keydown" ? true : false;
-        if (event.code === "ArrowDown" || event.code === "KeyS")
-            keyEventsRef.current.backward = event.type === "keydown" ? true : false;
-        if (event.code === "ArrowLeft" || event.code === "KeyA")
-            keyEventsRef.current.leftward = event.type === "keydown" ? true : false;
-        if (event.code === "ArrowRight" || event.code === "KeyD")
-            keyEventsRef.current.rightward = event.type === "keydown" ? true : false;
+    const updateCharacterAnimation = useCallback((newAnimation) => {
+        characterAnimations.actions[currentAnimation].fadeOut(0.2);
+        currentAnimation = newAnimation;
+        characterAnimations.actions[currentAnimation].reset().fadeIn(0.2).play();
     }, []);
+
+    const characterJumpEvent = () => {
+        if (canJump) {
+            characterJumping = true;
+            characterBody.current.applyImpulse({ x: 0, y: 1.2, z: 0 });
+            updateCharacterAnimation(JUMP);
+            // utils.updateCharacterAnimation(characterAnimations, currentAnimation, JUMP);
+        }
+    };
+
+    const keyboardEventHandler = (event) => {
+        event.preventDefault();
+        if (keysConfigList[event.code]) {
+            eventKeys[keysConfigList[event.code]] = event.type === "keydown" ? true : false;
+        }
+
+        if (event.code === "Space" && event.type === "keydown") {
+            characterJumpEvent();
+        }
+        if (
+            ((event.code === "ShiftLeft" && event.type === "keydown") || event.shiftKey) &&
+            !characterIsMoving
+        )
+            return;
+        characterSpeed =
+            (event.code === "ShiftLeft" && event.type === "keydown") || event.shiftKey ? 6 : 4;
+        characterSprinting =
+            (event.code === "ShiftLeft" && event.type === "keydown") || event.shiftKey
+                ? true
+                : false;
+        if (
+            ((event.code === "ShiftLeft" && event.type === "keydown") || event.shiftKey) &&
+            currentAnimation !== SPRINT &&
+            !characterJumping
+        ) {
+            updateCharacterAnimation(SPRINT);
+            runningSoundEffect.playbackRate = 1.5;
+        }
+        if (event.code === "ShiftLeft" && event.type === "keyup") {
+            runningSoundEffect.playbackRate = 1.1;
+        }
+    };
 
     // Pause character physics and keystroke handling
     const pauseCharacter = useCallback(() => {
-        for (const key in keyEventsRef.current)
-            keyEventsRef.current[key] = false;
-        characterBody.current.setBodyType(FIXED)
-    }, [])
+        for (const key in eventKeys) eventKeys[key] = false;
+        characterBody.current.setBodyType(FIXED);
+    }, []);
+
+    const cameraOffsetOnMouseMove = useCallback((event) => {
+        CAMERA_OFFSET.x = ((event.clientX / window.innerWidth) * 2 - 1) * 0.5;
+    }, []);
 
     // Current character direction and position
     let direction;
     let characterPosition;
 
-    useFrame((state, delta) => {
+    const { nodes } = useMemo(() => useGLTF("/models/islandSensors/islandSensors2.glb"), []);
+    nodes.Sensor.material.visible = false;
 
+    useFrame((state, delta) => {
+        if (!controllerActivated) return;
         /**
          * Camera Controller
          */
-        direction = directionOffset(keyEventsRef.current, characterBody)
+        direction = directionOffset(eventKeys, characterBody);
+        characterIsMoving = direction !== undefined ? true : false;
+
+        if (
+            characterIsMoving &&
+            characterSprinting &&
+            currentAnimation !== SPRINT &&
+            !characterJumping
+        ) {
+            characterAnimations.actions[currentAnimation].fadeOut(0.2);
+            currentAnimation = SPRINT;
+            characterAnimations.actions[currentAnimation].reset().fadeIn(0.2).play();
+        }
 
         characterPosition = characterBody.current.translation();
 
@@ -122,108 +204,185 @@ const Player = ({ orbitControls }) => {
             characterBody.current.setTranslation({
                 x: 0,
                 y: 1.5,
-                z: 0
-            })
+                z: 0,
+            });
         }
         /*
-        * Camera Controller
-        */
+         * Camera Controller
+         */
         useStore.setState({ characterPosition: characterPosition });
+
         CAMERA_POSITION.addVectors(characterPosition, CAMERA_OFFSET);
         LERP_CAMERA_POSITION.lerp(CAMERA_POSITION, 5 * delta);
-
-        state.camera.position.copy(LERP_CAMERA_POSITION); // A REACTIVER PÖUR SUIVRE PERSO
+        state.camera.position.set(...LERP_CAMERA_POSITION); // A REACTIVER PÖUR SUIVRE PERSO
 
         /**
          * Character Controller
          */
         // Update character velocity and orientation
-        if ((direction === undefined && !isMobile)
-            || (isMobile && joystickAngleRef.current === undefined)) {
-            if (characterAnimation.current !== IDLE) {
-                characterAnimations.actions[characterAnimation.current].fadeOut(0.2);
-                characterAnimation.current = IDLE;
+        if (
+            (direction === undefined && !MOBILE_DEVICE) ||
+            (MOBILE_DEVICE && joystickAngleRef.current === undefined)
+        ) {
+            if (currentAnimation !== IDLE && !characterJumping) {
+                updateCharacterAnimation(IDLE);
 
                 useStore.setState({ isCharacterMoving: false });
 
-                characterAnimations.actions[characterAnimation.current].reset().fadeIn(0.2).play();
-
-                if (disableSounds === false) {
-                    runningSoundEffect.current.pause();
-                    runningSoundEffect.current.currentTime = 0;
-                }
-
+                runningSoundEffect.pause();
+                runningSoundEffect.currentTime = 0;
             }
 
-            characterBody.current.sleep();
+            characterBody.current.setLinvel(
+                {
+                    x: 0,
+                    y: characterBody.current.linvel().y,
+                    z: 0,
+                },
+                true
+            );
+            // characterBody.current.sleep();
             return;
         }
 
         if (characterBody.current.bodyType() === FIXED)
-            characterBody.current.setBodyType(DYNAMIC)
+            characterBody.current.setBodyType(DYNAMIC);
 
-        if (characterAnimation.current !== RUN) {
-            characterAnimations.actions[characterAnimation.current].fadeOut(0.2);
-            characterAnimation.current = RUN;
-            characterAnimations.actions[characterAnimation.current].reset().fadeIn(0.2).play();
+        if (currentAnimation !== RUN && !characterJumping && !characterSprinting) {
+            updateCharacterAnimation(RUN);
             useStore.setState({ isCharacterMoving: true });
-            if (disableSounds === false) {
-                runningSoundEffect.current.volume = 0.6;
-                runningSoundEffect.current.play();
-            }
+            runningSoundEffect.play();
         }
 
-        characterBody.current.setLinvel({
-            x: SPEED * Math.cos(isMobile ? joystickAngleRef.current : direction) * (isMobile ? 1 : -1)/* * delta */,
-            y: characterBody.current.linvel().y,
-            z: SPEED * Math.sin(isMobile ? joystickAngleRef.current : direction) * (isMobile ? -1 : 1)/* * delta */,
-        }, true);
+        characterBody.current.setLinvel(
+            {
+                x:
+                    characterSpeed *
+                    Math.cos(MOBILE_DEVICE ? joystickAngleRef.current : direction) *
+                    (MOBILE_DEVICE ? 1 : -1) /* * delta */,
+                y: characterBody.current.linvel().y,
+                z:
+                    characterSpeed *
+                    Math.sin(MOBILE_DEVICE ? joystickAngleRef.current : direction) *
+                    (MOBILE_DEVICE ? -1 : 1) /* * delta */,
+            },
+            true
+        );
 
-        ROTATION_QUATERNION.setFromAxisAngle(ROTATION_EULER, (isMobile ? joystickAngleRef.current + Math.PI / 2 : direction - Math.PI / 2));
+        ROTATION_QUATERNION.setFromAxisAngle(
+            ROTATION_EULER,
+            MOBILE_DEVICE ? joystickAngleRef.current + Math.PI / 2 : direction - Math.PI / 2
+        );
         characterMesh.current.quaternion.rotateTowards(ROTATION_QUATERNION, 15 * delta); //017 avant
-
     });
 
+    const camera = useThree((state) => state.camera);
 
     useLayoutEffect(() => {
-
-        const unsubJoystickAngle = useStore.subscribe(state => state.joystickAngle,
-        joystickAngle => joystickAngleRef.current = joystickAngle)
-        
+        // Shadows initialization
+        if (!MOBILE_DEVICE) {
+            const mesh = scene.getObjectByName("knight").children[0];
+            mesh.castShadow = true;
+            mesh.material.envMapIntensity = 0.5;
+        }
 
         // Set character default animation
-        characterAnimations.actions[IDLE].fadeIn(0.2).play();
-        characterAnimations.actions["KeyAction"].fadeIn(0.2).play()
+        // characterAnimations.actions[IDLE].fadeIn(0.2).play();
+        characterAnimations.actions["GetUp"].loop = THREE.LoopOnce;
+        characterAnimations.actions["GetUp"].clampWhenFinished = true;
 
-        // Listen to window blur and keyboards events
+        // Jump animation configuration
+        characterAnimations.actions[JUMP].loop = THREE.LoopOnce;
+        characterAnimations.actions[JUMP].clampWhenFinished = true;
+
+        // characterAnimations.actions[JUMP].loop = THREE.LoopOnce;
+        // characterAnimations.actions[JUMP].clampWhenFinished = true;
+
+        /**
+         * Subscribers
+         */
+
+        const unsubExperienceStarted = useStore.subscribe(
+            (state) => state.experienceStarted,
+            (experienceStarted) => {
+                if (experienceStarted) {
+                    characterAnimations.actions["GetUp"].startAt(6).play();
+                    // Set camera default position
+                    gsap.to(camera.position, {
+                        duration: 7,
+                        x: 0,
+                        y: 5.2,
+                        z: CAMERA_OFFSET.z,
+                        ease: "power3.out",
+                        onComplete: () => {
+                            controllerActivated = true;
+                            setTimeout(() => {
+                                characterAnimations.actions["GetUp"].fadeOut(0.5);
+                                characterAnimations.actions[IDLE].fadeIn(0.2).play();
+                            }, characterAnimations.actions["GetUp"].getClip.duration + 0.5);
+                        },
+                    });
+                }
+            }
+        );
+
+        // JoyStick subscriber
+        const unsubJoystickAngle = !MOBILE_DEVICE
+            ? undefined
+            : useStore.subscribe(
+                  (state) => state.joystickAngle,
+                  (joystickAngle) => (joystickAngleRef.current = joystickAngle)
+              );
+
+        // Sound subscriber
+        const unsubSoundActivated = useStore.subscribe(
+            (state) => state.soundActivated,
+            (soundActivated) => {
+                soundActivatedRef.current = soundActivated;
+                runningSoundEffect.volume = soundActivated ? RUNNING_SOUND_VOLUME : 0;
+            }
+        );
+
+        // Event Listeners
         window.addEventListener("blur", pauseCharacter);
-        document.addEventListener('keydown', keyboardEventHandler)
-        document.addEventListener('keyup', keyboardEventHandler)
-
+        if (!MOBILE_DEVICE) {
+            document.addEventListener("keydown", keyboardEventHandler);
+            document.addEventListener("keyup", keyboardEventHandler);
+            window.addEventListener("mousemove", cameraOffsetOnMouseMove);
+        }
 
         return () => {
             window.removeEventListener("blur", pauseCharacter);
-            document.removeEventListener('keydown', keyboardEventHandler)
-            document.removeEventListener('keyup', keyboardEventHandler)
-            unsubJoystickAngle();
-        }
+            unsubSoundActivated();
+            unsubExperienceStarted();
+            if (!MOBILE_DEVICE) {
+                document.removeEventListener("keydown", keyboardEventHandler);
+                document.removeEventListener("keyup", keyboardEventHandler);
+                window.removeEventListener("mousemove", cameraOffsetOnMouseMove);
+            }
+            if (MOBILE_DEVICE) unsubJoystickAngle();
+        };
     }, []);
-
-    useEffect(() => {
-        // Character sound Effect initialization
-        runningSoundEffect.current =
-            (() => {
-                if (disableSounds !== false) return undefined;
-                const soundEffect = new Audio("/sounds/runningSoundEffect.mp3");
-                soundEffect.loop = true;
-                console.log(soundEffect)
-                return soundEffect;
-            })()
-    }, [disableSounds])
-
 
     return (
         <>
+            <RigidBody
+                type={"fixed"}
+                colliders={"trimesh"}
+                sensor
+                onIntersectionEnter={(state) => {
+                    canJump = true;
+                    characterJumping = false;
+                }}
+                onIntersectionExit={(state) => (canJump = false)}
+            >
+                <mesh
+                    scale={0.45}
+                    position={[-1.35, 2.4, -15]}
+                    geometry={nodes.Sensor.geometry}
+                    material={nodes.Sensor.material}
+                />
+            </RigidBody>
             <RigidBody
                 type={"fixed"}
                 lockRotations
@@ -234,13 +393,14 @@ const Player = ({ orbitControls }) => {
                 // position={[-16, 5, -35]} // ile 3
                 // position={[-5, 7, -45]} // ile 4
                 // position={[-9.8 , 6.8, -58]} // ile 4
-
+                // onCollisionEnter={() => canJump = true}
+                // onCollisionExit={() => canJump = false}
                 restitution={-10}
-                friction={0.4}
+                friction={0}
             >
                 <primitive
                     ref={characterMesh}
-                    object={characterModel.scene}
+                    object={scene}
                     scale={0.18}
                     rotation-y={Math.PI}
                 />
@@ -250,6 +410,7 @@ const Player = ({ orbitControls }) => {
     );
 };
 
-useGLTF.preload("/models/character/character.glb");
+useGLTF.preload("/models/character/character4.glb");
+useGLTF.preload("/models/islandSensors/islandSensors2.glb");
 
-export default Player;
+export default CharacterController;

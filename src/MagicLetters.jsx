@@ -6,6 +6,7 @@ import gsap from "gsap";
 
 import floatingTextVertexShader from "/shaders/floatingText/vertex.glsl"
 import floatingTextFragmentShader from "/shaders/floatingText/fragment.glsl"
+import { useGSAP } from "@gsap/react";
 
 const MagicLetters = ({ magicLetters, island }) => {
 
@@ -25,15 +26,21 @@ const MagicLetters = ({ magicLetters, island }) => {
     }), [])
 
 
-    useLayoutEffect(() => {
+    useGSAP((context, contextSafe) => {
         // Replace magicLetters default material with new shader material
+        magicLetters.material.dispose();
         magicLetters.material = magicLettersShaderMaterial;
+
+        const magicLettersActivation = contextSafe(() => {
+            gsap.to(magicLetters.material.uniforms.uOpacity, { duration: 1, delay: 1, value: 1, ease: "expo.in" });
+
+        })
 
         // Subscribe to the magic glyph zustand store state
         const unsubMagicGlyphActivation = useStore.subscribe(
             (state) => state.magicGlyphActivation,
             (magicGlyphActivation) => {
-                gsap.to(magicLetters.material.uniforms.uOpacity, { duration: 1, delay: 1, value: 1, ease: "expo.in" });
+                magicLettersActivation()
             }
         )
 
@@ -42,6 +49,24 @@ const MagicLetters = ({ magicLetters, island }) => {
             unsubMagicGlyphActivation();
         }
     }, [])
+
+    // useLayoutEffect(() => {
+    //     // Replace magicLetters default material with new shader material
+    //     magicLetters.material = magicLettersShaderMaterial;
+
+    //     // Subscribe to the magic glyph zustand store state
+    //     const unsubMagicGlyphActivation = useStore.subscribe(
+    //         (state) => state.magicGlyphActivation,
+    //         (magicGlyphActivation) => {
+    //             gsap.to(magicLetters.material.uniforms.uOpacity, { duration: 1, delay: 1, value: 1, ease: "expo.in" });
+    //         }
+    //     )
+
+    //     // Clear subscriptions on unmount
+    //     return () => {
+    //         unsubMagicGlyphActivation();
+    //     }
+    // }, [])
 
     // Update shader material uTime uniforms value over time
     useFrame(state =>

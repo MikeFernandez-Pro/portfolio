@@ -15,16 +15,12 @@ const HALLOWEEN_PLATE_URL = "/textures/halloweenPortalTexture.webp";
 
 const PORTAL_POSITION = new THREE.Vector3(-16.12, 6.95, -37.7)
 
-
+const portalSoundEffect = new Audio("sounds/portalSoundEffect.mp3");
+portalSoundEffect.loop = true;
+portalSoundEffect.volume = 0;
 
 
 const ProjectsPortals = () => {
-
-
-    const isMobile = useStore(state => state.isMobile);
-    const disableSounds = useStore(state => state.disableSounds);
-
-
 
     /*Textures Initalization */
     const portalsTextures = useMemo(() => ({
@@ -53,12 +49,7 @@ const ProjectsPortals = () => {
 
     useEffect(() => {
 
-        const portalSoundEffect = (() => {
-            if (disableSounds !== false) return undefined;
-            const portalSoundEffect = new Audio("sounds/portalSoundEffect.mp3");
-            portalSoundEffect.loop = true;
-            return portalSoundEffect;
-        })()
+
 
         // Retrieve current activated plate and update shader texture accordingly
         const unsubActivaPlate = useStore.subscribe(
@@ -68,13 +59,13 @@ const ProjectsPortals = () => {
                     portalShaderMaterial.uniforms.uTextureMap.value = portalsTextures[activePlate]
                     gsap.fromTo(portalShaderMaterial.uniforms.uSize, { value: 0 }, { duration: 0.5, value: 0.5 })
                     // Activate Portal Sound Effect Only Once
-                    portalSoundEffect?.play();
+                    portalSoundEffect.play();
                 }
             }
         )
 
         // Update portal sound effect volume based on character position
-        const unsubCharacterPosition = disableSounds !== false ? undefined : useStore.subscribe(
+        const unsubCharacterPosition = useStore.subscribe(
             state => state.characterPosition,
             (characterPosition) => {
                 if (characterPosition) {
@@ -88,9 +79,9 @@ const ProjectsPortals = () => {
         // Remove subscriptions on unmount
         return () => {
             unsubActivaPlate()
-            typeof (unsubCharacterPosition) === "function" ? unsubCharacterPosition() : null;
+            unsubCharacterPosition();
         }
-    }, [disableSounds])
+    }, [])
 
     useFrame(({ clock }) => {
         portalShaderMaterial.uniforms.uTime.value = clock.elapsedTime

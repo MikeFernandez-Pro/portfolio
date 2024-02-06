@@ -1,6 +1,7 @@
 import { useStore } from "./ZustandStorage.jsx";
 import { useEffect } from "react";
 import nipplejs from "nipplejs";
+import gsap from "gsap";
 
 // ScreenOrientation constants
 const PORTRAIT_ORIENTATION = "portrait-primary";
@@ -11,7 +12,7 @@ const DEFAULT_CONFIGURATION = {
     position: { bottom: "8rem", left: "50%" },
     dynamicPage: true,
     follow: false,
-    restOpacity: 1,
+    restOpacity: 0,
     maxNumberOfNipples: 1,
 };
 
@@ -56,32 +57,41 @@ const handleOrientationChange = (joystick) => {
         resetJoystick(joystick);
         joystick = createJoystick(event.target.type);
         setupJoystickEvents(joystick);
-    }
+    };
 };
+
+function hasTouchSupport() {
+    return "ontouchstart" in window || navigator.maxTouchPoints > 0;
+}
 
 let joystick = undefined;
 
 const Joystick = () => {
+
+    if (!hasTouchSupport()) return;
+
     useEffect(() => {
-        const unsubIsMobile = useStore.subscribe(
-            (state) => state.isMobile,
-            (isMobile) => {
-                // Initialize joystick
-                joystick = createJoystick(screen.orientation.type);
-                setupJoystickEvents(joystick);
 
-                // Trigger screen rotation and update joystick size and position
+        setTimeout(() => {
+            // Initialize joystick
+            joystick = createJoystick(screen.orientation.type);
+            setupJoystickEvents(joystick); 
 
+            // Fade Joystick opacity
+            gsap.to(joystick[0].ui.el.style, {opacity: 1, duration:1})
 
-                screen.orientation.addEventListener("change", handleOrientationChange(joystick));
-            }
-        );
+      
+
+            // Trigger screen rotation and update joystick size and position
+            screen.orientation.addEventListener("change", handleOrientationChange(joystick));
+        }, 7000);
 
         // Cleanup subscriber and event listener
         return () => {
-            console.log("cleanup");
-            screen.orientation.removeEventListener("change", handleOrientationChange(joystick));
-            unsubIsMobile();
+            screen.orientation.removeEventListener(
+                "change",
+                handleOrientationChange(joystick)
+            );
         };
     }, []);
 };
