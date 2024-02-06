@@ -110,7 +110,7 @@ body,
     background-image: url("../public/loadingPortal2.svg");
     background-position: center;
     background-repeat: no-repeat;
-    background-size: 100% 100%;  
+    background-size: 60% 60%;  
 }
 
 .loader {
@@ -123,7 +123,7 @@ body,
 }
 
 .start-experience {
-    font-size: clamp(2rem, 6vw, 6rem);
+    font-size: clamp(2rem, 4vw, 6rem);
  
     transition: transform 0.3s, text-shadow 0.3s;
     color: #73D8D2;
@@ -143,8 +143,6 @@ body,
     opacity: 0.9;
     transition: opacity 0.3s;
 }
-/* ? { bottom: "10%", left: "50%" }
-: { bottom: "10vw", left: "10vw" }, */
 
 @media (orientation: portrait) {
     .volume-controller {
