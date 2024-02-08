@@ -56,7 +56,7 @@ const ForgeSparks = () => {
             {
                 value: 1,
                 duration: 0.5,
-                delay: 0,
+                delay: 1,
                 ease: "linear",
                 repeat: -1,
                 repeatDelay: 1.5
