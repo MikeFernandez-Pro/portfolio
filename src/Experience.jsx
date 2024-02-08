@@ -17,6 +17,7 @@ import { useGSAP } from "@gsap/react";
 import Clouds from "./Clouds.jsx";
 import Lights from "./Lights.jsx";
 import Joystick from "./Joystick.jsx";
+import ForgeSparks from "./ForgeSparks.jsx";
 import gsap from "gsap";
 
 const AMBIANT_SOUND_VOLUME = 0.10;
@@ -26,6 +27,8 @@ const AMBIANT_SOUND_VOLUME = 0.10;
 const ambientSound = new Audio("sounds/ambientMusic.mp3");
 ambientSound.loop = true;
 ambientSound.volume = 0;
+
+const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
 const Experience = () => {
 
@@ -77,6 +80,7 @@ const Experience = () => {
 
             <SampledGrass />
 
+            {!isMobile && <ForgeSparks />}
 
             <FireFlies />
 

@@ -13,7 +13,6 @@ import tunnel from "tunnel-rat";
 
 import soundOnIcon from "/sound-on.svg";
 import soundOffIcon from "/sound-off.svg";
-import loadingPortal from "/loadingPortal.svg";
 
 /* Create a tunnel. */
 const ui = tunnel();

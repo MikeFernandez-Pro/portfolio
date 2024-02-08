@@ -70,7 +70,8 @@ const MOBILE_DEVICE = "ontouchstart" in window || navigator.maxTouchPoints > 0;
  */
 const CAMERA_POSITION = new THREE.Vector3(0, 0, 0);
 const LERP_CAMERA_POSITION = new THREE.Vector3(0, 5.2, MOBILE_DEVICE ? 7.5 : 5.5);
-const CAMERA_OFFSET = new THREE.Vector3(0, 4, MOBILE_DEVICE ? 7.5 : 5.5);
+// const CAMERA_OFFSET = new THREE.Vector3(0, 4, MOBILE_DEVICE ? 7.5 : 5.5);
+let CAMERA_OFFSET = new THREE.Vector3(-3.5, 17.4, 29.6)
 
 /*
  *  Keystrokes
@@ -109,7 +110,7 @@ const CharacterController = () => {
 
     // Character Model and animations loaders
     const { scene, animations } = useMemo(
-        () => useGLTF("/models/character/character4.glb"),
+        () => useGLTF("/models/character/character5.glb"),
         []
     );
     const characterAnimations = useAnimations(animations, scene);
@@ -180,7 +181,6 @@ const CharacterController = () => {
     nodes.Sensor.material.visible = false;
 
     useFrame((state, delta) => {
-        if (!controllerActivated) return;
         /**
          * Camera Controller
          */
@@ -281,15 +281,13 @@ const CharacterController = () => {
     useLayoutEffect(() => {
         // Shadows initialization
         if (!MOBILE_DEVICE) {
-            const mesh = scene.getObjectByName("knight").children[0];
+            const mesh = scene.getObjectByName("knight");
             mesh.castShadow = true;
             mesh.material.envMapIntensity = 0.5;
         }
 
         // Set character default animation
-        // characterAnimations.actions[IDLE].fadeIn(0.2).play();
-        characterAnimations.actions["GetUp"].loop = THREE.LoopOnce;
-        characterAnimations.actions["GetUp"].clampWhenFinished = true;
+        characterAnimations.actions[IDLE].fadeIn(0.2).play();
 
         // Jump animation configuration
         characterAnimations.actions[JUMP].loop = THREE.LoopOnce;
@@ -306,21 +304,14 @@ const CharacterController = () => {
             (state) => state.experienceStarted,
             (experienceStarted) => {
                 if (experienceStarted) {
-                    characterAnimations.actions["GetUp"].startAt(6).play();
                     // Set camera default position
-                    gsap.to(camera.position, {
-                        duration: 7,
+                    gsap.to(CAMERA_OFFSET, {
+                        duration: 5, 
                         x: 0,
-                        y: 5.2,
-                        z: CAMERA_OFFSET.z,
+                        y: 4,
+                        z: MOBILE_DEVICE ? 7.5 : 5.5,
                         ease: "power3.out",
-                        onComplete: () => {
-                            controllerActivated = true;
-                            setTimeout(() => {
-                                characterAnimations.actions["GetUp"].fadeOut(0.5);
-                                characterAnimations.actions[IDLE].fadeIn(0.2).play();
-                            }, characterAnimations.actions["GetUp"].getClip.duration + 0.5);
-                        },
+                        onComplete: () => controllerActivated = true
                     });
                 }
             }
@@ -410,7 +401,7 @@ const CharacterController = () => {
     );
 };
 
-useGLTF.preload("/models/character/character4.glb");
+useGLTF.preload("/models/character/character5.glb");
 useGLTF.preload("/models/islandSensors/islandSensors2.glb");
 
 export default CharacterController;

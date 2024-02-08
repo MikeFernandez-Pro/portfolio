@@ -55,42 +55,8 @@ body,
     width: 100%;
     min-width: 320px;
     height: 100%;
-    /* background: rgb(31, 47, 81); */
-
-    background: var(--lighter-bg-color);
-    background: -moz-linear-gradient(
-        top,
-        var(--lighter-bg-color) 0%,
-        var(--darker-bg-color) 100%
-    );
-    background: -webkit-gradient(
-        linear,
-        left top,
-        left bottom,
-        color-stop(0%, var(--lighter-bg-color)),
-        color-stop(100%, var(--darker-bg-color))
-    );
-    background: -webkit-linear-gradient(
-        top,
-        var(--lighter-bg-color) 0%,
-        var(--darker-bg-color) 100%
-    );
-    background: -o-linear-gradient(
-        top,
-        var(--lighter-bg-color) 0%,
-        var(--darker-bg-color) 100%
-    );
-    background: -ms-linear-gradient(
-        top,
-        var(--lighter-bg-color) 0%,
-        var(--darker-bg-color) 100%
-    );
-    background: linear-gradient(
-        to bottom,
-        var(--lighter-bg-color) 0%,
-        var(--darker-bg-color) 100%
-    );
-    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='var(--lighter-bg-color)', endColorstr='var(--darker-bg-color)',GradientType=0 );
+    background: rgb(115,181,243);
+    background: linear-gradient(180deg, rgb(101, 159, 221) 0%, #161a38 100%);
 }
 
 #root {
@@ -107,31 +73,42 @@ body,
     z-index: 2;
     padding: clamp(1rem, 10vw, 10rem);
     overflow: hidden;
-    background-image: url("../public/loadingPortal2.svg");
+    /* background-image: url("../public/loadingPortal3.svg");
     background-position: center;
     background-repeat: no-repeat;
-    background-size: 60% 60%;  
+    background-size: 60% 60%;   */
 }
 
+.container:before {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background-image: url("../public/loadingPortal3.svg");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 60% 60%;
+}
+
+
 .loader {
-    font-size: clamp(4rem, 10vw, 10rem);
+    font-size: clamp(4rem, 8vh, 9rem);
     text-align: center;
-    color: #73D8D2;
-    text-shadow: #11e0d5 3px 2px 15px;
+    text-shadow: #263451 1px 2px 16px;
     font-family: "Almendra SC", serif;
     -webkit-font-smoothing: antialiased;
 }
 
 .start-experience {
-    font-size: clamp(2rem, 4vw, 6rem);
- 
-    transition: transform 0.3s, text-shadow 0.3s;
-    color: #73D8D2;
-    text-shadow: #11e0d5 3px 2px 20px;
+    font-size: clamp(2rem, 4.5vh, 7rem);
+    transition: transform 0.3s;
+    text-shadow: #263451 1px 2px 16px;
 }   
 
 .start-experience:is(:hover, :focus) {
-    transform: rotate(2deg);
+    transform: scale(1.02);
+    outline: none;
 }
 
 .volume-controller {

@@ -72,22 +72,31 @@ const Joystick = () => {
 
     useEffect(() => {
 
-        setTimeout(() => {
-            // Initialize joystick
-            joystick = createJoystick(screen.orientation.type);
-            setupJoystickEvents(joystick); 
+        const unsubExperienceStarted = useStore.subscribe(
+            (state) => state.experienceStarted,
+              (experienceStarted) => {
+                if (!experienceStarted) return;
+                
+                setTimeout(() => {
+                    // Initialize joystick
+                    joystick = createJoystick(screen.orientation.type);
+                    setupJoystickEvents(joystick);
 
-            // Fade Joystick opacity
-            gsap.to(joystick[0].ui.el.style, {opacity: 1, duration:1})
+                    // Fade Joystick opacity
+                    gsap.to(joystick[0].ui.el.style, { opacity: 1, duration: 1 });
 
-      
-
-            // Trigger screen rotation and update joystick size and position
-            screen.orientation.addEventListener("change", handleOrientationChange(joystick));
-        }, 7000);
+                    // Trigger screen rotation and update joystick size and position
+                    screen.orientation.addEventListener(
+                        "change",
+                        handleOrientationChange(joystick)
+                    );
+                }, 5000);
+            }
+        );
 
         // Cleanup subscriber and event listener
         return () => {
+            unsubExperienceStarted();
             screen.orientation.removeEventListener(
                 "change",
                 handleOrientationChange(joystick)
