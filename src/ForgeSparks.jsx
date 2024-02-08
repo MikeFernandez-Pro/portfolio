@@ -56,16 +56,16 @@ const ForgeSparks = () => {
             {
                 value: 1,
                 duration: 0.5,
-                delay: 0.91,
+                delay: 0,
                 ease: "linear",
                 repeat: -1,
                 repeatDelay: 1.5
             }
         );
     }, []);
-
+    
     return (
-        <points position={[-5.82, 1.75, -10.88]}>
+        <points position={[-5.82, 1.75, -10.88]} frustumCulled={false}>
             <bufferGeometry>
                 <bufferAttribute
                     attach="attributes-position"
