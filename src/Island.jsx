@@ -10,6 +10,7 @@ import MagicLetters from "./MagicLetters";
 import SleepText from "./SleepText";
 import AnimatedFlag from "./AnimatedFlag";
 import { useFrame } from "@react-three/fiber";
+import ForgeSparks from "./ForgeSparks";
 
 const MOBILE_DEVICE = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
@@ -35,6 +36,7 @@ const Island = () => {
   const experienceStartedRef = useRef(useStore.getState().experienceStarted);
   const soundActivatedRef = useRef(useStore.getState().soundActivated);
   const magicGlyphActivationRef = useRef(false);
+  const forgeSparksRef = useRef();
 
   //   /**
   //    * Island initialization
@@ -185,8 +187,20 @@ const Island = () => {
     // Play forge hammer sound and anvil animation each 2s
     const forgeHammerInterval = setInterval(() => {
       islandAnimations.actions["anvilAnimation"].reset().play();
+      gsap.fromTo(
+        forgeSparksRef.current.material.uniforms.uProgress,
+        { value: 0 },
+        {
+            value: 1,
+            duration: 0.5,
+            delay: 0.1,
+            ease: "linear",
+        }
+      );
+
       if (!experienceStartedRef.current) return;
       hammerSoundEffect.play();
+      
     }, 2000);
 
     // Clear animations, interval and subscriptions on unmount
@@ -230,6 +244,7 @@ const Island = () => {
       {/* br 16 fr 17 and sp 18 => flags */}
       <SleepText />
       {/* </RigidBody> */}
+      <ForgeSparks ref={forgeSparksRef} />
     </>
   );
 };

@@ -13,10 +13,13 @@ import tunnel from "tunnel-rat";
 
 import soundOnIcon from "/sound-on.svg";
 import soundOffIcon from "/sound-off.svg";
+import PortalLoader from "./PortalLoader.jsx";
 
 /* Create a tunnel. */
 const ui = tunnel();
 const MODELS_AMOUNT = 22;
+
+let gsapAnimation = null;
 
 const App = () => {
     const sceneRevealerRef = useRef();
@@ -24,16 +27,17 @@ const App = () => {
     const soundOffIconRef = useRef();
     const startExperienceRef = useRef();
 
+    let mouseLeaveAnimation = gsap.timeline();
 
     const [dpr, setDpr] = useState(1.5);
 
     const { loaded } = useProgress();
 
-
     const initiateExperience = () => {
         useStore.setState({ experienceStarted: true });
         // if (sceneRevealerRef.current && loaded === MODELS_AMOUNT) {)
 
+        gsapAnimation.kill();
 
         startExperienceRef.current.style.opacity = 1;
         gsap.to(startExperienceRef.current.style, {
@@ -58,11 +62,23 @@ const App = () => {
         gsap.to(sceneRevealerRef.current?.uniforms.get("progress"), {
             value: 1.5,
             duration: 5,
-            ease: "expo.isOut",
+            ease: "expo.isOut"
         });
 
         gsap.to(soundOnIconRef.current.style, { opacity: 0.9, duration: 0.5, delay: 3 });
     };
+
+    useEffect(() => {
+        gsapAnimation = gsap.to(
+            sceneRevealerRef.current?.uniforms.get("progress"),
+            {
+                value: 0.35,
+                duration: 1,
+                ease: "expo.isOut",
+                paused: true,
+            }
+        );
+    })
 
     return (
         <>
@@ -147,6 +163,12 @@ const App = () => {
                             <button
                                 className={"start-experience"}
                                 onClick={initiateExperience}
+                                onMouseEnter={() => {
+                                    gsapAnimation.play()
+                                }}
+                                onMouseLeave={() => {
+                                    gsapAnimation.reverse();
+                                }}
                             >
                                 Enter
                             </button>

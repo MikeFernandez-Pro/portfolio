@@ -28,8 +28,6 @@ const ambientSound = new Audio("sounds/ambientMusic.mp3");
 ambientSound.loop = true;
 ambientSound.volume = 0;
 
-const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-
 const Experience = () => {
 
     const scene = useThree((state) => state.scene);
@@ -79,8 +77,6 @@ const Experience = () => {
 
 
             <SampledGrass />
-
-            {!isMobile && <ForgeSparks />}
 
             <FireFlies />
 

@@ -1,7 +1,6 @@
 uniform float uSize;
 uniform vec2 uResolution;
-uniform float uTime;
-uniform float uElevation;
+uniform float uProgress;
 
 attribute float aSize;
 attribute float aAngle;
@@ -19,7 +18,7 @@ void main()
 {
     float radius = 0.2;
     float height = 0.3;
-    float elevation = uElevation == 1.0 ? 0.0 : uElevation;
+    float elevation = uProgress == 1.0 ? 0.0 : uProgress;
 
     vec3 randomDirection = normalize(vec3(cos(aAngle), 0, sin(aAngle)));
 

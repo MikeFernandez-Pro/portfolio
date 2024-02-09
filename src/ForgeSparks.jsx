@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { forwardRef, useEffect, useRef } from "react";
 import { extend, useFrame, useThree } from "@react-three/fiber";
 import { shaderMaterial } from "@react-three/drei";
 import gsap from "gsap";
@@ -7,7 +7,7 @@ import * as THREE from "three";
 import forgeSparksVertexShader from "./shaders/forgeSparks/vertex.glsl";
 import forgeSparksFragmentShader from "./shaders/forgeSparks/fragment.glsl";
 
-const ForgeSparks = () => {
+const ForgeSparks = forwardRef(({}, ref) => {
     const materialRef = useRef();
 
     const { size } = useThree();
@@ -35,8 +35,7 @@ const ForgeSparks = () => {
         {
             uSize: 0.06,
             uResolution: new THREE.Vector2(size.width * pixelRatio, size.height * pixelRatio),
-            uTime: 0,
-            uElevation: 0,
+            uProgress: 0,
         },
         forgeSparksVertexShader,
         forgeSparksFragmentShader
@@ -44,28 +43,9 @@ const ForgeSparks = () => {
 
     extend({ ForgeSparksMaterial });
 
-    useFrame(({ clock }) => {
-        materialRef.current.uniforms.uTime.value = clock.elapsedTime;
-        // console.log(materialRef.current.uniforms.uElevation.value)
-    });
-
-    useEffect(() => {
-        gsap.fromTo(
-            materialRef.current.uniforms.uElevation,
-            { value: 0 },
-            {
-                value: 1,
-                duration: 0.5,
-                delay: 1,
-                ease: "linear",
-                repeat: -1,
-                repeatDelay: 1.5
-            }
-        );
-    }, []);
     
     return (
-        <points position={[-5.82, 1.75, -10.88]} frustumCulled={false}>
+        <points ref={ref} position={[-5.82, 1.75, -10.88]} frustumCulled={false}>
             <bufferGeometry>
                 <bufferAttribute
                     attach="attributes-position"
@@ -100,6 +80,6 @@ const ForgeSparks = () => {
             />
         </points>
     );
-};
+});
 
 export default ForgeSparks;
