@@ -3,7 +3,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import Experience from "./Experience.jsx";
 import { Bloom, EffectComposer, Outline, ToneMapping } from "@react-three/postprocessing";
 import SceneRevealer from "./SceneRevealer.jsx";
-import { AdaptiveDpr, Bvh, PerformanceMonitor, Preload, useProgress } from "@react-three/drei";
+import { AdaptiveDpr, Bvh, Center, PerformanceMonitor, Preload, useProgress } from "@react-three/drei";
 import gsap from "gsap";
 import { useStore } from "./ZustandStorage.jsx";
 import Joystick from "./Joystick.jsx";
@@ -11,9 +11,8 @@ import * as THREE from "three";
 import { BlendFunction } from "postprocessing";
 import tunnel from "tunnel-rat";
 
-import soundOnIcon from "/sound-on.svg";
-import soundOffIcon from "/sound-off.svg";
-import PortalLoader from "./PortalLoader.jsx";
+import soundOnIcon from "/icons/sound-on.svg";
+import soundOffIcon from "/icons/sound-off.svg";
 
 /* Create a tunnel. */
 const ui = tunnel();
@@ -26,8 +25,7 @@ const App = () => {
     const soundOnIconRef = useRef();
     const soundOffIconRef = useRef();
     const startExperienceRef = useRef();
-
-    let mouseLeaveAnimation = gsap.timeline();
+    const partialLoaderRef = useRef();
 
     const [dpr, setDpr] = useState(1.5);
 
@@ -43,7 +41,7 @@ const App = () => {
         gsap.to(startExperienceRef.current.style, {
             opacity: 0,
             duration: 0.5,
-            delay: 0.5,
+            delay: 0,
             onComplete: () => {
                 startExperienceRef.current.style.display = "none";
             },
@@ -62,23 +60,42 @@ const App = () => {
         gsap.to(sceneRevealerRef.current?.uniforms.get("progress"), {
             value: 1.5,
             duration: 5,
-            ease: "expo.isOut"
+            ease: "expo.isOut",
         });
 
         gsap.to(soundOnIconRef.current.style, { opacity: 0.9, duration: 0.5, delay: 3 });
     };
 
     useEffect(() => {
-        gsapAnimation = gsap.to(
-            sceneRevealerRef.current?.uniforms.get("progress"),
-            {
-                value: 0.35,
+        if (startExperienceRef.current && partialLoaderRef.current && sceneRevealerRef.current) {
+            gsap.to(partialLoaderRef.current.style, {
+                opacity: 0,
+                duration: 0.5,
+                onComplete: () => {
+                    partialLoaderRef.current.style.display = "none";
+                },
+            });
+
+            gsap.to(startExperienceRef.current.style, {
+                opacity: 1,
                 duration: 1,
-                ease: "expo.isOut",
+                delay: 0.7,
+            });
+
+            gsap.to(sceneRevealerRef.current?.uniforms.get("progress"), {
+                value: 0.35,
+                duration: 1.5,
+                ease: "power2.out",
+            });
+
+            gsapAnimation = gsap.to(sceneRevealerRef.current?.uniforms.get("progress"), {
+                value: 0.4,
+                duration: 0.5,
+                ease: "power1.inOut",
                 paused: true,
-            }
-        );
-    })
+            });
+        }
+    }, [startExperienceRef.current]);
 
     return (
         <>
@@ -159,12 +176,22 @@ const App = () => {
                     }
                 >
                     <ui.In>
-                        <div ref={startExperienceRef} className="container">
+                        <div className="container" ref={partialLoaderRef}>
+                            <p className="loader" style={{ display: "block", opacity: 1 }}>
+                                {99}
+                            </p>
+                        </div>
+
+                        <div
+                            ref={startExperienceRef}
+                            className="container"
+                            style={{ opacity: 0 }}
+                        >
                             <button
                                 className={"start-experience"}
                                 onClick={initiateExperience}
                                 onMouseEnter={() => {
-                                    gsapAnimation.play()
+                                    gsapAnimation.play();
                                 }}
                                 onMouseLeave={() => {
                                     gsapAnimation.reverse();

@@ -29,7 +29,7 @@ const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
 const IslandColliders = () => {
 
-    const { nodes } = useMemo(() => useGLTF("/models/islandColliders/islandColliders2.glb"), [])
+    const { nodes } = useMemo(() => useGLTF("/models/islandColliders/islandColliders.glb"), [])
 
     const activePlateRef = useRef(useStore.getState().activePlate)
     const magicGlyphActivation = useStore(state => state.magicGlyphActivation)
@@ -281,6 +281,6 @@ const IslandColliders = () => {
     );
 };
 
-useGLTF.preload("/models/islandColliders/islandColliders2.glb");
+useGLTF.preload("/models/islandColliders/islandColliders.glb");
 
 export default IslandColliders;

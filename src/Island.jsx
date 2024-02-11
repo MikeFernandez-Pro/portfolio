@@ -21,7 +21,7 @@ const HAMMER_SOUND_VOLUME = 0;
 const PRESSURE_PLATES_SOUND_VOLUME = 0.09;
 const MAGIC_GLYPH_SOUND_VOLUME = 0.15
 
-const ISLAND_MODEL_PATH = "/models/island/compressedIsland.glb";
+const ISLAND_MODEL_PATH = "/models/island/island.glb";
 
 const pressurePlatesSoundEffect = new Audio("/sounds/pressurePlatesSoundEffect.mp3");
 pressurePlatesSoundEffect.volume = PRESSURE_PLATES_SOUND_VOLUME;

@@ -38,7 +38,7 @@ void main() {
     float randomMovement = sin(uTime + randomSeed * 10.0) * 0.1;
 
     if(position.y > 0.2) {
-        finalPosition.x += randomMovement * position.y; 
+        finalPosition.x += randomMovement * position.y;
         finalPosition.z += randomMovement * position.y;
     }
 

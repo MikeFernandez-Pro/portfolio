@@ -33,6 +33,9 @@ const Lights = () => {
             }
         )
 
+        characterLightHelper.current.visible = false;
+        fillLighHelper.current.visible = false;
+        backLightHelper.current.visible = false;
         characterLightHelper.current.targetLine.geometry.drawRange.count = 0;
         fillLighHelper.current.targetLine.geometry.drawRange.count = 0;
         backLightHelper.current.targetLine.geometry.drawRange.count = 0;
@@ -58,7 +61,7 @@ const Lights = () => {
             <directionalLight
                 ref={characterLightRef}
                 position={[-3, 4, 3]}
-                intensity={12}
+                intensity={12.5}
                 color="#3a62c8"
                 castShadow={!isMobile}
                 shadow-mapSize={[256, 256]}

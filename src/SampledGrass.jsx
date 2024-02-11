@@ -21,7 +21,7 @@ const SampledGrass = () => {
     const grassRef = useRef(null);
 
     // Load grass ground model for sampling
-    const { nodes } = useMemo(() => useGLTF("/models/island/grassFloorRework.glb"), []);
+    const { nodes } = useMemo(() => useGLTF("/models/island/grassFloorSampler.glb"), []);
 
     // Create a sampler based on the grass ground model
     const sampler = useMemo(() => new MeshSurfaceSampler(nodes.grassGround).build(), []);
@@ -148,6 +148,6 @@ const SampledGrass = () => {
     );
 };
 
-useGLTF.preload("/models/island/grassFloorRework.glb");
+useGLTF.preload("/models/island/grassFloorSampler.glb");
 
 export default SampledGrass;

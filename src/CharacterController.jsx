@@ -5,7 +5,6 @@ import { useRef, useMemo, useCallback, useLayoutEffect, useEffect } from "react"
 import * as THREE from "three";
 import { useStore } from "./ZustandStorage.jsx";
 import gsap from "gsap";
-import * as utils from "./CharacterControllerUtils.js";
 
 const directionOffset = ({ forward, backward, leftward, rightward }, characterBody) => {
     if (!forward && !backward && !leftward && !rightward) return undefined;
@@ -110,7 +109,7 @@ const CharacterController = () => {
 
     // Character Model and animations loaders
     const { scene, animations } = useMemo(
-        () => useGLTF("/models/character/character5.glb"),
+        () => useGLTF("/models/character/character.glb"),
         []
     );
     const characterAnimations = useAnimations(animations, scene);
@@ -126,11 +125,11 @@ const CharacterController = () => {
             characterJumping = true;
             characterBody.current.applyImpulse({ x: 0, y: 1.2, z: 0 });
             updateCharacterAnimation(JUMP);
-            // utils.updateCharacterAnimation(characterAnimations, currentAnimation, JUMP);
         }
     };
 
     const keyboardEventHandler = (event) => {
+
         event.preventDefault();
         if (keysConfigList[event.code]) {
             eventKeys[keysConfigList[event.code]] = event.type === "keydown" ? true : false;
@@ -177,7 +176,7 @@ const CharacterController = () => {
     let direction;
     let characterPosition;
 
-    const { nodes } = useMemo(() => useGLTF("/models/islandSensors/islandSensors2.glb"), []);
+    const { nodes } = useMemo(() => useGLTF("/models/islandSensors/islandSensors.glb"), []);
     nodes.Sensor.material.visible = false;
 
     useFrame((state, delta) => {
@@ -401,7 +400,8 @@ const CharacterController = () => {
     );
 };
 
-useGLTF.preload("/models/character/character5.glb");
-useGLTF.preload("/models/islandSensors/islandSensors2.glb");
+useGLTF.preload("/models/character/character.glb");
+useGLTF.preload("/models/islandSensors/islandSensors.glb");
 
 export default CharacterController;
+

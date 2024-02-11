@@ -32,7 +32,7 @@ const Experience = () => {
 
     const scene = useThree((state) => state.scene);
 
-    const envMap = useLoader(THREE.TextureLoader, "/environmentMaps/envMap.webp");
+    const envMap = useLoader(THREE.TextureLoader, "/envMaps/envMap.webp");
     envMap.mapping = THREE.EquirectangularReflectionMapping;
     envMap.colorSpace = THREE.SRGBColorSpace;
     scene.background = envMap;
