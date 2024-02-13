@@ -13,8 +13,8 @@
 
 /* default reset */
 *,
-*::before,a
-*::after {
+*::before,
+a *::after {
     box-sizing: border-box;
 }
 
@@ -39,21 +39,21 @@ button {
     border: none;
     color: inherit;
     font: inherit;
-  }
-  
+}
+
 #root,
 #__next {
     isolation: isolate;
 }
 
-/* global styles */ 
+/* global styles */
 html,
 body,
 #root {
     position: fixed;
     top: 0;
     left: 0;
-    
+
     width: 100%;
     min-width: 320px;
     height: 100%;
@@ -61,7 +61,7 @@ body,
 
     background: var(--bg-color-100);
     background: linear-gradient(180deg, var(--bg-color-300) 0%, var(--bg-color-800) 100%);
-    
+
     color: var(--text-color);
     font-family: var(--primary-font), cursive;
     line-height: 1.5;
@@ -81,14 +81,19 @@ body,
 .loader {
     font-size: clamp(4rem, 8vh, 9rem);
     font-family: var(--secondary-font), serif;
+    pointer-events: none;
 }
 
 .start-experience {
     font-size: clamp(2rem, 4.5vh, 7rem);
-}   
+    opacity: 0;
+    animation: fadeIn 1.5s ease-in 0.5s 1 normal forwards;
+    transition: transform 0.5s;
+}
 
 .start-experience:is(:hover, :focus) {
     outline: none;
+    transform: scale(1.05);
 }
 
 .volume-controller {
@@ -116,4 +121,12 @@ body,
     }
 }
 
-
+/* animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}

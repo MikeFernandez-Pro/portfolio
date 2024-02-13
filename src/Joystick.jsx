@@ -12,7 +12,7 @@ const DEFAULT_CONFIGURATION = {
     position: { bottom: "8rem", left: "50%" },
     dynamicPage: true,
     follow: false,
-    restOpacity: 0,
+    restOpacity: 0.5,
     maxNumberOfNipples: 1,
 };
 
@@ -25,8 +25,8 @@ const createJoystick = (orientationType) => {
         ...DEFAULT_CONFIGURATION,
         size:
             orientationType === PORTRAIT_ORIENTATION
-                ? screen.width * 0.2
-                : screen.height * 0.2,
+                ? window.innerWidth * 0.2
+                : window.innerHeight * 0.3,
         position:
             orientationType === PORTRAIT_ORIENTATION
                 ? { bottom: "10%", left: "50%" }
@@ -67,16 +67,14 @@ function hasTouchSupport() {
 let joystick = undefined;
 
 const Joystick = () => {
-
     if (!hasTouchSupport()) return;
 
     useEffect(() => {
-
         const unsubExperienceStarted = useStore.subscribe(
             (state) => state.experienceStarted,
-              (experienceStarted) => {
+            (experienceStarted) => {
                 if (!experienceStarted) return;
-                
+
                 setTimeout(() => {
                     // Initialize joystick
                     joystick = createJoystick(screen.orientation.type);

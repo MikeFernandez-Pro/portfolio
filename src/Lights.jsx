@@ -7,31 +7,40 @@ import * as THREE from "three";
 const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
 const Lights = () => {
-
     const fillLightRef = useRef();
     const backLightRef = useRef();
     const characterLightRef = useRef();
     const pointLightRef = useRef();
 
-    const characterLightHelper = useHelper(characterLightRef, THREE.DirectionalLightHelper, 0)
-    const fillLighHelper = useHelper(fillLightRef, THREE.DirectionalLightHelper, 0)
-    const backLightHelper = useHelper(backLightRef, THREE.DirectionalLightHelper, 0)
+    const characterLightHelper = useHelper(characterLightRef, THREE.DirectionalLightHelper, 0);
+    const fillLighHelper = useHelper(fillLightRef, THREE.DirectionalLightHelper, 0);
+    const backLightHelper = useHelper(backLightRef, THREE.DirectionalLightHelper, 0);
 
-    const scene = useThree(state => state.scene);
+    const scene = useThree((state) => state.scene);
     const targetObject = useMemo(() => new THREE.Object3D(), []);
 
     useLayoutEffect(() => {
-        const unsubCharacterPosition = isMobile ? undefined : useStore.subscribe(
-            state => state.characterPosition,
-            (characterPosition) => {
-                if (characterPosition && characterLightRef.current) {
-                    targetObject.position.set(characterPosition.x, characterPosition.y, characterPosition.z)
-                    characterLightRef.current.position.set(characterPosition.x - 3, characterPosition.y + 4, characterPosition.z + 3)
-                    characterLightRef.current.target = targetObject
-                    characterLightRef.current.shadow.camera.target = targetObject
-                }
-            }
-        )
+        const unsubCharacterPosition = isMobile
+            ? undefined
+            : useStore.subscribe(
+                  (state) => state.characterPosition,
+                  (characterPosition) => {
+                      if (characterPosition && characterLightRef.current) {
+                          targetObject.position.set(
+                              characterPosition.x,
+                              characterPosition.y,
+                              characterPosition.z
+                          );
+                          characterLightRef.current.position.set(
+                              characterPosition.x - 3,
+                              characterPosition.y + 4,
+                              characterPosition.z + 3
+                          );
+                          characterLightRef.current.target = targetObject;
+                          characterLightRef.current.shadow.camera.target = targetObject;
+                      }
+                  }
+              );
 
         characterLightHelper.current.visible = false;
         fillLighHelper.current.visible = false;
@@ -40,28 +49,24 @@ const Lights = () => {
         fillLighHelper.current.targetLine.geometry.drawRange.count = 0;
         backLightHelper.current.targetLine.geometry.drawRange.count = 0;
 
-        scene.add(targetObject)
+        scene.add(targetObject);
 
         return () => {
-            scene.remove(targetObject)
-  
-          if (isMobile) return;
+            scene.remove(targetObject);
+
+            if (isMobile) return;
 
             unsubCharacterPosition();
-        }
-    }, [])
-
+        };
+    }, []);
 
     return (
         <>
-            <ambientLight
-                intensity={1.2}
-                color="#526cad"
-            />
+            <ambientLight intensity={1.2} color="#526cad" />
             <directionalLight
                 ref={characterLightRef}
                 position={[-3, 4, 3]}
-                intensity={12.5}
+                intensity={11.5}
                 color="#3a62c8"
                 castShadow={!isMobile}
                 shadow-mapSize={[256, 256]}
@@ -77,7 +82,7 @@ const Lights = () => {
             <directionalLight
                 ref={fillLightRef}
                 position={[20, 15, -22]}
-                intensity={11}
+                intensity={13}
                 color="#2f4b90"
                 target-position={[-18.5, 4, -36]}
             />
@@ -95,9 +100,8 @@ const Lights = () => {
                 intensity={45}
                 color="#ad7351"
             />
-
         </>
     );
-}
+};
 
 export default Lights;

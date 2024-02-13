@@ -1,7 +1,6 @@
-import { forwardRef, useEffect, useRef } from "react";
-import { extend, useFrame, useThree } from "@react-three/fiber";
+import { forwardRef, useRef } from "react";
+import { extend, useThree } from "@react-three/fiber";
 import { shaderMaterial } from "@react-three/drei";
-import gsap from "gsap";
 import * as THREE from "three";
 
 import forgeSparksVertexShader from "./shaders/forgeSparks/vertex.glsl";
@@ -43,7 +42,6 @@ const ForgeSparks = forwardRef(({}, ref) => {
 
     extend({ ForgeSparksMaterial });
 
-    
     return (
         <points ref={ref} position={[-5.82, 1.75, -10.88]} frustumCulled={false}>
             <bufferGeometry>

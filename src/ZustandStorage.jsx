@@ -1,23 +1,19 @@
-import { create } from 'zustand'    
-import { subscribeWithSelector } from 'zustand/middleware'  
+import { create } from "zustand";
+import { subscribeWithSelector } from "zustand/middleware";
 
-export const useStore = create(subscribeWithSelector((set) => ({
+export const useStore = create(
+    subscribeWithSelector((set) => ({
+        experienceStarted: false,
 
-    experienceStarted: false,
-    soundActivated: true,
+        joystickAngle: undefined,
 
-    joystickAngle: undefined,
+        //Magic Glyph activation handler
+        magicGlyphActivation: false,
 
-    //Magic Circle activation handler
-    magicGlyphActivation: false,
+        // Portal activation handlers
+        activePlate: undefined,
 
-    /**
-     * Projects Portals activation handlers
-     */
-
-    activePlate: undefined,
-
-    characterPosition: undefined,
-    isCharacterMoving: false,
-})))
-
+        characterPosition: undefined,
+        isCharacterMoving: false,
+    }))
+);

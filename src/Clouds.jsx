@@ -1,6 +1,6 @@
-import React, { useRef, useEffect } from "react";
+import React from "react";
 import { Cloud, Clouds as CloudsGroup } from "@react-three/drei";
-import gsap from "gsap";
+
 const Clouds = (props) => {
 
     return (

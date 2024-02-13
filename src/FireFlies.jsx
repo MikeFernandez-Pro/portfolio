@@ -1,11 +1,10 @@
-import { useRef, useMemo } from 'react';
-import { extend, useFrame, useThree } from '@react-three/fiber';
-import { shaderMaterial } from '@react-three/drei';
-import * as THREE from 'three';
+import { useRef, useMemo } from "react";
+import { extend, useFrame, useThree } from "@react-three/fiber";
+import { shaderMaterial } from "@react-three/drei";
+import * as THREE from "three";
 
-import firefliesVertexShader from './shaders/fireflies/vertex.glsl';
-import firefliesFragmentShader from './shaders/fireflies/fragment.glsl';
-
+import firefliesVertexShader from "./shaders/fireflies/vertex.glsl";
+import firefliesFragmentShader from "./shaders/fireflies/fragment.glsl";
 
 const FIREFLIES_POSITIONS = [
     [-0.7, 2.3, -3.8],
@@ -22,7 +21,7 @@ const FIREFLIES_POSITIONS = [
     [-10.5, 6.35, -35.6],
     [-10.5, 8.45, -41.9],
     [-9.15, 8.45, -41.9],
-]
+];
 
 const FIREFLIES_PER_LAMP = 20;
 const TOTAL_FIREFLIES_COUNT = FIREFLIES_POSITIONS.length * FIREFLIES_PER_LAMP;
@@ -36,39 +35,42 @@ for (let i = 0; i < TOTAL_FIREFLIES_COUNT; i++) {
         currrentLampCount++;
     }
 
-    POSITIONS_ARRAY[i * 3 + 0] = ((Math.random() - 0.5) * 0.6) + FIREFLIES_POSITIONS[currrentLampCount - 1][0];
-    POSITIONS_ARRAY[i * 3 + 1] = ((Math.random() - 0.5) * 0.3) + FIREFLIES_POSITIONS[currrentLampCount - 1][1];
-    POSITIONS_ARRAY[i * 3 + 2] = ((Math.random() - 0.5) * 0.6) + FIREFLIES_POSITIONS[currrentLampCount - 1][2];
+    POSITIONS_ARRAY[i * 3 + 0] =
+        (Math.random() - 0.5) * 0.6 + FIREFLIES_POSITIONS[currrentLampCount - 1][0];
+    POSITIONS_ARRAY[i * 3 + 1] =
+        (Math.random() - 0.5) * 0.3 + FIREFLIES_POSITIONS[currrentLampCount - 1][1];
+    POSITIONS_ARRAY[i * 3 + 2] =
+        (Math.random() - 0.5) * 0.6 + FIREFLIES_POSITIONS[currrentLampCount - 1][2];
     SCALES_ARRAY[i] = Math.random() * 0.5 + 0.5;
 }
 
-
-
 const FireFlies = () => {
-
-    const pixelRatio = useThree(state => state.gl).getPixelRatio();
+    const pixelRatio = useThree((state) => state.gl).getPixelRatio();
 
     const firefliesRef = useRef();
 
-
-    const FirefliesShaderMaterial = useMemo(() => shaderMaterial(
-        {
-            uPixelRatio: pixelRatio,
-            uSize: 30,
-            uTime: 0,
-            uVelocity: 0.17,
-            uColor: new THREE.Color("#ffcaaf"),
-            uIntensity: 8
-        },
-        firefliesVertexShader,
-        firefliesFragmentShader
-    ), [pixelRatio])
+    const FirefliesShaderMaterial = useMemo(
+        () =>
+            shaderMaterial(
+                {
+                    uPixelRatio: pixelRatio,
+                    uSize: 30,
+                    uTime: 0,
+                    uVelocity: 0.17,
+                    uColor: new THREE.Color("#ffcaaf"),
+                    uIntensity: 8,
+                },
+                firefliesVertexShader,
+                firefliesFragmentShader
+            ),
+        [pixelRatio]
+    );
 
     extend({ FirefliesShaderMaterial });
 
     useFrame(({ clock }) => {
         firefliesRef.current.uniforms.uTime.value = clock.elapsedTime;
-    })
+    });
 
     return (
         <points>
@@ -93,7 +95,6 @@ const FireFlies = () => {
                 depthWrite={false}
             />
         </points>
-
     );
 };
 

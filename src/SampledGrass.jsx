@@ -6,16 +6,25 @@ import { useStore } from "./ZustandStorage";
 import grassVertexShader from "./shaders/grass/vertex.glsl";
 import grassFragmentShader from "/shaders/grass/fragment.glsl";
 import { useFrame } from "@react-three/fiber";
+import { Howl } from "howler";
 
-const GRASS_SOUND_VOLUME = 0.2;
 const BLADES_COUNT = 27000;
 const BLADES_HEIGHT = 0.31;
 const BLADES_WIDTH = 0.14;
 
-const grassSoundEffect = new Audio("/sounds/runningInGrassSoundEffect.mp3");
-grassSoundEffect.loop = true;
-grassSoundEffect.volume = GRASS_SOUND_VOLUME;
-let intersects; 
+const MOBILE_DEVICE = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+var grassSoundEffect = MOBILE_DEVICE
+    ? undefined
+    : new Howl({
+          src: ["/sounds/runningInGrassSoundEffect.mp3"],
+          autoplay: false,
+          loop: true,
+          volume: 0.2,
+      });
+
+let intersects;
+let isAudioPlaying = false;
 
 const SampledGrass = () => {
     const grassRef = useRef(null);
@@ -78,45 +87,43 @@ const SampledGrass = () => {
 
     useLayoutEffect(() => {
         // Subscribe to characterPosition zustand store state
-        const unsubCharacterPosition = useStore.subscribe(
-            (state) => [state.characterPosition, state.isCharacterMoving],
-            ([characterPosition, isCharacterMoving]) => {
-                if (characterPosition) {
-                    // Set the raycaster to the character position with de default rayDirection
-                    characterPosition.y += 0.5;
-                    raycaster.set(characterPosition, rayDirection);
+        const unsubCharacterPosition = MOBILE_DEVICE
+            ? undefined
+            : useStore.subscribe(
+                  (state) => [state.characterPosition, state.isCharacterMoving],
+                  ([characterPosition, isCharacterMoving]) => {
+                      if (characterPosition) {
+                          // Set the raycaster to the character position with de default rayDirection
+                          characterPosition.y += 0.5;
+                          raycaster.set(characterPosition, rayDirection);
 
-                    // Test intersection with grass floor, update blades verteces position
-                    // depending on the intersection point and play / pause sound effect
-                    intersects = raycaster.intersectObjects([nodes.grassGround]);
-                    if (intersects.length > 0 && grassRef.current) {
-                        grassRef.current.material.uniforms.uCharacter.value =
-                            intersects[0].point;
-                        if (isCharacterMoving) {
-                            grassSoundEffect.play();
-                        } else {
-                            grassSoundEffect.pause();
-                            grassSoundEffect.currentTime = 0;
-                        }
-                    } else {
-                        grassSoundEffect.pause();
-                        grassSoundEffect.currentTime = 0;
-                    }
-                }
-            }
-        );
-
-        const unsubSoundActivated = useStore.subscribe(
-            (state) => state.soundActivated,
-            (soundActivated) => {
-                grassSoundEffect.volume = soundActivated ? GRASS_SOUND_VOLUME : 0;
-            }
-        );
+                          // Test intersection with grass floor, update blades verteces position
+                          // depending on the intersection point and play / pause sound effect
+                          intersects = raycaster.intersectObjects([nodes.grassGround]);
+                          if (intersects.length > 0 && grassRef.current) {
+                              grassRef.current.material.uniforms.uCharacter.value =
+                                  intersects[0].point;
+                              if (isCharacterMoving) {
+                                  if (!isAudioPlaying) {
+                                      grassSoundEffect.play();
+                                      isAudioPlaying = true;
+                                  }
+                              } else {
+                                  isAudioPlaying = false;
+                                  grassSoundEffect.stop();
+                              }
+                          } else {
+                              isAudioPlaying = false;
+                              grassSoundEffect.stop();
+                          }
+                      }
+                  }
+              );
 
         // Clear subscriptions on unmount
         return () => {
+            if (MOBILE_DEVICE) return;
             unsubCharacterPosition();
-            unsubSoundActivated();
         };
     }, [BLADES_COUNT, BLADES_HEIGHT, BLADES_WIDTH]);
 

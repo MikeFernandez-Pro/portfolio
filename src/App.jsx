@@ -1,61 +1,57 @@
-import { useState, Suspense, useRef, useEffect } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useState, Suspense, useRef, useEffect, useCallback } from "react";
+import { Canvas } from "@react-three/fiber";
 import Experience from "./Experience.jsx";
-import { Bloom, EffectComposer, Outline, ToneMapping } from "@react-three/postprocessing";
+import { Bloom, EffectComposer, ToneMapping } from "@react-three/postprocessing";
 import SceneRevealer from "./SceneRevealer.jsx";
-import { AdaptiveDpr, Bvh, Center, PerformanceMonitor, Preload, useProgress } from "@react-three/drei";
+import {
+    AdaptiveDpr,
+    Bvh,
+    PerformanceMonitor,
+    Preload,
+    useProgress,
+} from "@react-three/drei";
 import gsap from "gsap";
 import { useStore } from "./ZustandStorage.jsx";
-import Joystick from "./Joystick.jsx";
-import * as THREE from "three";
 import { BlendFunction } from "postprocessing";
 import tunnel from "tunnel-rat";
+import { Howler } from "howler";
+import * as THREE from "three";
 
 import soundOnIcon from "/icons/sound-on.svg";
 import soundOffIcon from "/icons/sound-off.svg";
 
-/* Create a tunnel. */
-const ui = tunnel();
 const MODELS_AMOUNT = 22;
 
-let gsapAnimation = null;
+/* Tunnel */
+const ui = tunnel();
+
+// Visibility Change
+const visibilityChangeHandler = () => Howler.mute(document.visibilityState === "hidden");
+
+// Animations
+let hoverAnimation = undefined;
 
 const App = () => {
     const sceneRevealerRef = useRef();
     const soundOnIconRef = useRef();
     const soundOffIconRef = useRef();
     const startExperienceRef = useRef();
-    const partialLoaderRef = useRef();
 
     const [dpr, setDpr] = useState(1.5);
 
     const { loaded } = useProgress();
 
-    const initiateExperience = () => {
+    const initiateExperience = useCallback(() => {
+        hoverAnimation?.kill();
+        startExperienceRef.current.style.pointerEvents = "none";
+        
         useStore.setState({ experienceStarted: true });
-        // if (sceneRevealerRef.current && loaded === MODELS_AMOUNT) {)
-
-        gsapAnimation.kill();
-
-        startExperienceRef.current.style.opacity = 1;
+    
         gsap.to(startExperienceRef.current.style, {
             opacity: 0,
             duration: 0.5,
             delay: 0,
-            onComplete: () => {
-                startExperienceRef.current.style.display = "none";
-            },
         });
-
-        // loadingPortalRef.current.style.opacity = 1;
-        // gsap.to(loadingPortalRef.current.style, {
-        //     opacity: 0,
-        //     duration: 0.5,
-        //     delay: 0.4,
-        //     onComplete: () => {
-        //         loadingPortalRef.current.style.display = "none";
-        //     },
-        // });
 
         gsap.to(sceneRevealerRef.current?.uniforms.get("progress"), {
             value: 1.5,
@@ -63,39 +59,16 @@ const App = () => {
             ease: "expo.isOut",
         });
 
-        gsap.to(soundOnIconRef.current.style, { opacity: 0.9, duration: 0.5, delay: 3 });
-    };
+        gsap.to(soundOnIconRef.current?.style, { opacity: 0.9, duration: 0.5, delay: 3 });
+    }, []);
 
     useEffect(() => {
-        if (startExperienceRef.current && partialLoaderRef.current && sceneRevealerRef.current) {
-            gsap.to(partialLoaderRef.current.style, {
-                opacity: 0,
-                duration: 0.5,
-                onComplete: () => {
-                    partialLoaderRef.current.style.display = "none";
-                },
-            });
+        document.addEventListener("visibilitychange", visibilityChangeHandler);
 
-            gsap.to(startExperienceRef.current.style, {
-                opacity: 1,
-                duration: 1,
-                delay: 0.7,
-            });
-
-            gsap.to(sceneRevealerRef.current?.uniforms.get("progress"), {
-                value: 0.35,
-                duration: 1.5,
-                ease: "power2.out",
-            });
-
-            gsapAnimation = gsap.to(sceneRevealerRef.current?.uniforms.get("progress"), {
-                value: 0.4,
-                duration: 0.5,
-                ease: "power1.inOut",
-                paused: true,
-            });
-        }
-    }, [startExperienceRef.current]);
+        return () => {
+            removeEventListener("visibilitychange", visibilityChangeHandler);
+        };
+    }, []);
 
     return (
         <>
@@ -109,7 +82,7 @@ const App = () => {
                 onClick={() => {
                     soundOnIconRef.current.style.display = "none";
                     soundOffIconRef.current.style.display = "block";
-                    useStore.setState({ soundActivated: false });
+                    Howler.mute(true);
                 }}
             />
             <img
@@ -121,7 +94,7 @@ const App = () => {
                 onClick={() => {
                     soundOffIconRef.current.style.display = "none";
                     soundOnIconRef.current.style.display = "block";
-                    useStore.setState({ soundActivated: true });
+                    Howler.mute(false);
                 }}
             />
             <Canvas
@@ -130,8 +103,6 @@ const App = () => {
                 performance={{ min: 0.5 }}
                 camera={{
                     position: [-3.5, 17.4, 29.6],
-                    // position: [0, 30, 70],
-                    // position: [0, 5.2, 5.5],
                     rotation: [-Math.PI / 8, 0, 0],
                     fov: 40,
                     near: 0.5,
@@ -145,25 +116,6 @@ const App = () => {
             >
                 <PerformanceMonitor onIncline={() => setDpr(2)} onDecline={() => setDpr(1)} />
                 <AdaptiveDpr pixelated />
-
-                <EffectComposer disableNormalPass multisampling={0}>
-                    <SceneRevealer ref={sceneRevealerRef} />
-                    <Bloom
-                        mipmapBlur
-                        luminanceThreshold={1}
-                        luminanceSmoothing={1}
-                        intensity={2}
-                    />
-                    <ToneMapping blendFunction={BlendFunction.DARKEN} />
-                    {/* <DepthOfField
-                                    resolutionX={1024}
-                                    resolutionY={1024}
-                                    focusDistance={ 1.5 }
-                                    focalLength={ 3 }
-                                    bokehScale={ 8 }
-          />  */}
-                </EffectComposer>
-
                 <Suspense
                     fallback={
                         <ui.In>
@@ -176,31 +128,40 @@ const App = () => {
                     }
                 >
                     <ui.In>
-                        <div className="container" ref={partialLoaderRef}>
-                            <p className="loader" style={{ display: "block", opacity: 1 }}>
-                                {99}
-                            </p>
-                        </div>
-
                         <div
                             ref={startExperienceRef}
                             className="container"
-                            style={{ opacity: 0 }}
+                            style={{pointerEvents: "auto"}}
                         >
                             <button
                                 className={"start-experience"}
                                 onClick={initiateExperience}
-                                onMouseEnter={() => {
-                                    gsapAnimation.play();
-                                }}
-                                onMouseLeave={() => {
-                                    gsapAnimation.reverse();
-                                }}
+                                onMouseEnter={() => 
+                                    hoverAnimation = gsap.to(sceneRevealerRef.current?.uniforms.get("progress"), {
+                                        value: 0.45,
+                                        duration: 0.5,
+                                        ease: "power2.out",
+                                    })
+                                }
+                                onMouseLeave={() => 
+                                    hoverAnimation?.reverse()
+                                }
                             >
                                 Enter
                             </button>
                         </div>
                     </ui.In>
+                    <EffectComposer disableNormalPass multisampling={0}>
+                        <SceneRevealer ref={sceneRevealerRef} />
+                        <Bloom
+                            mipmapBlur
+                            luminanceThreshold={1}
+                            luminanceSmoothing={1}
+                            intensity={2}
+                        />
+                        <ToneMapping blendFunction={BlendFunction.DARKEN} />
+                    </EffectComposer>
+
                     <Bvh firstHitOnly>
                         <Experience />
                     </Bvh>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect } from "react";
 import TorchSparks from "./TorchSparks/TorchSparks";
 import { useThree } from "@react-three/fiber";
 import { useStore } from "../ZustandStorage";
@@ -54,18 +54,21 @@ const TORCHES_POSITIONS = [
 ];
 
 const torchesConfig = new Array(TORCHES_POSITIONS.length).fill(undefined).map((_, index) => {
-    // Sound Effect by Julius H.
-    // https://pixabay.com/fr/users/juliush-3921568/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=8012
-    const soundEffect = new Audio("/sounds/torchesSoundEffect.mp3");
-    soundEffect.loop = true;
-    soundEffect.volume = 0;
-    soundEffect.playbackRate = 1.5;
-    soundEffect.currentTime = Math.random() * 50;
+    const soundEffect = new Howl({
+        // Sound Effect by Julius H.
+        // https://pixabay.com/fr/users/juliush-3921568/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=8012
+        src: ["/sounds/torchesSoundEffect.mp3"],
+        autoplay: false,
+        loop: true,
+        volume: 0,
+        playbackRate: 1.5,
+        currentTime: Math.random() * 50,
+    });
+
     return { soundEffect, position: new THREE.Vector3(...TORCHES_POSITIONS[index]) };
 });
 
 const TorchesSparks = () => {
-    const soundActivatedRef = useRef(useStore.getState().soundActivated);
     const pixelRatio = useThree((state) => state.gl).getPixelRatio();
 
     useEffect(() => {
@@ -79,7 +82,7 @@ const TorchesSparks = () => {
                 }
             }
         );
-        
+
         const unsubCharacterPosition = useStore.subscribe(
             (state) => state.characterPosition,
             (characterPosition) => {
@@ -87,20 +90,12 @@ const TorchesSparks = () => {
                     for (const torchConfig of torchesConfig) {
                         torchConfig.distanceToCharacter =
                             torchConfig.position.distanceTo(characterPosition);
-                        torchConfig.soundEffect.volume = !soundActivatedRef.current
-                            ? 0
-                            : torchConfig.distanceToCharacter < 13
-                            ? Math.min(1 / torchConfig.distanceToCharacter, 0.2)
-                            : 0;
+                        torchConfig.soundEffect.volume(
+                            torchConfig.distanceToCharacter < 13
+                                ? Math.min(1 / torchConfig.distanceToCharacter, 0.2) * 0.5
+                                : 0)
                     }
                 }
-            }
-        );
-
-        const unsubSoundActivated = useStore.subscribe(
-            (state) => state.soundActivated,
-            (soundActivated) => {
-                soundActivatedRef.current = soundActivated;
             }
         );
 
@@ -108,7 +103,6 @@ const TorchesSparks = () => {
         return () => {
             unsubExperienceStarted();
             unsubCharacterPosition();
-            unsubSoundActivated();
         };
     }, []);
 
