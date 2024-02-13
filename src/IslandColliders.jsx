@@ -214,7 +214,7 @@ const IslandColliders = () => {
         if (event.key === "Enter") {
             if (activeLink) {
                 activeLink.current.id === "mailBox"
-                    ? (window.location.href = "mailto:mike.fernandez.pro@gmail.com")
+                    ? (window.location.href = "mailto:contact@mike-fernandez.dev")
                     : activeLink.current.id === "portal"
                     ? window.open(activeLink.current.href[activePlateRef.current], "_blank")
                     : window.open(activeLink.current.href, "_blank");
