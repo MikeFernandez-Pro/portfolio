@@ -1,9 +1,10 @@
 import { useMemo, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
+import * as THREE from "three";
 
 import SparksMaterial from "../SparksMaterial/SparksMaterial";
 
-const TorchSparks = ({ particlesCount, config, pixelRatio }) => {
+const TorchSparks = ({ particlesCount, config }) => {
 
     const sparksRef = useRef()
 
@@ -42,8 +43,14 @@ const TorchSparks = ({ particlesCount, config, pixelRatio }) => {
         return { positions, offsets, scales, elevation };
     }, [particlesCount, config.offsets.length]);
 
+    const width = useThree((state) => state.size.width);
+    const height = useThree((state) => state.size.height);
+    const pixelRatio = useThree((state) => state.viewport.dpr);
+    const resolution = new THREE.Vector2(width * pixelRatio, height * pixelRatio);
+
     useFrame((state, delta) => {
         sparksRef.current.material.uniforms.uTime.value = state.clock.elapsedTime;
+        sparksRef.current.material.uniforms.uResolution.value = resolution;
     })
 
     return (
@@ -74,7 +81,7 @@ const TorchSparks = ({ particlesCount, config, pixelRatio }) => {
                     itemSize={3}
                 />
             </bufferGeometry>
-            <SparksMaterial size={config.size} pixelRatio={pixelRatio} />
+            <SparksMaterial size={config.size} />
         </points>
     );
 };

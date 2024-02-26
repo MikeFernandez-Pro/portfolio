@@ -1,6 +1,7 @@
 uniform float uSize;
 uniform float uTime;
 uniform float uSpeed;
+uniform vec2 uResolution;
 
 attribute float aScale;
 attribute float aElevation;
@@ -36,5 +37,6 @@ void main() {
 */
 
     gl_PointSize = min((uSize * aScale), pow((uSize * aScale) / ((newPosition.y - aOffset.y) * (uSize * aScale)), 2.0) * 10.0);
+    gl_PointSize *= uResolution.y;
     gl_PointSize *= (1.0 / -viewPosition.z);
 }

@@ -1,8 +1,5 @@
-import { useEffect } from "react";
 import TorchSparks from "./TorchSparks/TorchSparks";
 import { useThree } from "@react-three/fiber";
-import { useStore } from "../ZustandStorage";
-import * as THREE from "three";
 
 /*
  *   Config
@@ -10,7 +7,7 @@ import * as THREE from "three";
 const PARTICLES_COUNT = 40; // Number of particles per torch
 
 const SMALL_TORCHES_SPARKS = {
-    size: 60,
+    size: 0.04,
     scale: [0.45, 0.9, 0.45],
     offsets: [
         [-12.85, 2.0, -36.78], // -5.8, 1.7, -16.6
@@ -24,7 +21,7 @@ const SMALL_TORCHES_SPARKS = {
 };
 
 const MEDIUM_TORCHES_SPARKS = {
-    size: 80,
+    size: 0.06,
     scale: [0.8, 1.3, 0.8],
     offsets: [
         [-7.86, 6.55, -72.52], // -6.3 8.5 -58.0
@@ -33,7 +30,7 @@ const MEDIUM_TORCHES_SPARKS = {
 };
 
 const LARGE_TORCHES_SPARKS = {
-    size: 180,
+    size: 0.16,
     scale: [1.5, 3, 1.5],
     offsets: [
         [-0.94, 2.4, -37.16], // -1.5 7.1 -55.8
@@ -53,76 +50,12 @@ const TORCHES_POSITIONS = [
     [-1.5, 7.1, -55.8],
 ];
 
-const torchesConfig = new Array(TORCHES_POSITIONS.length).fill(undefined).map((_, index) => {
-    const soundEffect = new Howl({
-        // Sound Effect by Julius H.
-        // https://pixabay.com/fr/users/juliush-3921568/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=8012
-        src: ["/sounds/torchesSoundEffect.mp3"],
-        autoplay: false,
-        loop: true,
-        volume: 0,
-        playbackRate: 1.5,
-        currentTime: Math.random() * 50,
-    });
-
-    return { soundEffect, position: new THREE.Vector3(...TORCHES_POSITIONS[index]) };
-});
-
 const TorchesSparks = () => {
-    const pixelRatio = useThree((state) => state.gl).getPixelRatio();
-
-    useEffect(() => {
-        const unsubExperienceStarted = useStore.subscribe(
-            (state) => state.experienceStarted,
-            (experienceStarted) => {
-                if (experienceStarted) {
-                    for (const torch of torchesConfig) {
-                        torch.soundEffect.play();
-                    }
-                }
-            }
-        );
-
-        const unsubCharacterPosition = useStore.subscribe(
-            (state) => state.characterPosition,
-            (characterPosition) => {
-                if (characterPosition) {
-                    for (const torchConfig of torchesConfig) {
-                        torchConfig.distanceToCharacter =
-                            torchConfig.position.distanceTo(characterPosition);
-                        torchConfig.soundEffect.volume(
-                            torchConfig.distanceToCharacter < 13
-                                ? Math.min(1 / torchConfig.distanceToCharacter, 0.2) * 0.5
-                                : 0)
-                    }
-                }
-            }
-        );
-
-        // Clear animations, interval and subscriptions on unmount
-        return () => {
-            unsubExperienceStarted();
-            unsubCharacterPosition();
-        };
-    }, []);
-
     return (
         <>
-            <TorchSparks
-                particlesCount={PARTICLES_COUNT}
-                config={SMALL_TORCHES_SPARKS}
-                pixelRatio={pixelRatio}
-            />
-            <TorchSparks
-                particlesCount={PARTICLES_COUNT}
-                config={MEDIUM_TORCHES_SPARKS}
-                pixelRatio={pixelRatio}
-            />
-            <TorchSparks
-                particlesCount={PARTICLES_COUNT}
-                config={LARGE_TORCHES_SPARKS}
-                pixelRatio={pixelRatio}
-            />
+            <TorchSparks particlesCount={PARTICLES_COUNT} config={SMALL_TORCHES_SPARKS} />
+            <TorchSparks particlesCount={PARTICLES_COUNT} config={MEDIUM_TORCHES_SPARKS} />
+            <TorchSparks particlesCount={PARTICLES_COUNT} config={LARGE_TORCHES_SPARKS} />
         </>
     );
 };
