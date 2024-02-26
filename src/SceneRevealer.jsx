@@ -4,9 +4,9 @@ import { useFrame, useThree } from "@react-three/fiber";
 import gsap from "gsap";
 
 const SceneRevealer = forwardRef(({}, ref) => {
-    const viewport = useThree((state) => state.viewport);
+    const aspectRatio = useThree((state) => state.viewport.aspect);
 
-    const effect = useMemo(() => new sceneRevealerEffect(viewport.aspect), [viewport.aspect]);
+    const effect = useMemo(() => new sceneRevealerEffect(aspectRatio), []);
 
     useEffect(() => {
         gsap.to(ref.current?.uniforms.get("progress"), {
@@ -18,9 +18,8 @@ const SceneRevealer = forwardRef(({}, ref) => {
     }, []);
 
     useFrame(({ clock }) => {
-        if (ref.current) {
             ref.current.uniforms.get("uTime").value = clock.elapsedTime;
-        }
+            ref.current.uniforms.get("aspectRatio").value = aspectRatio;
     });
 
     return <primitive ref={ref} object={effect} />;
