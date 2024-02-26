@@ -45,7 +45,11 @@ for (let i = 0; i < TOTAL_FIREFLIES_COUNT; i++) {
 }
 
 const FireFlies = () => {
-    const pixelRatio = useThree((state) => state.gl).getPixelRatio();
+  
+    const width = useThree((state) => state.size.width);
+    const height = useThree((state) => state.size.height);
+    const pixelRatio = useThree((state) => state.viewport.dpr);
+    const resolution = new THREE.Vector2(width * pixelRatio, height * pixelRatio);
 
     const firefliesRef = useRef();
 
@@ -53,8 +57,8 @@ const FireFlies = () => {
         () =>
             shaderMaterial(
                 {
-                    uPixelRatio: pixelRatio,
-                    uSize: 30,
+                    uResolution: resolution,
+                    uSize: 0.02,
                     uTime: 0,
                     uVelocity: 0.17,
                     uColor: new THREE.Color("#ffcaaf"),
@@ -70,6 +74,7 @@ const FireFlies = () => {
 
     useFrame(({ clock }) => {
         firefliesRef.current.uniforms.uTime.value = clock.elapsedTime;
+        firefliesRef.current.uniforms.uResolution.value = resolution;
     });
 
     return (

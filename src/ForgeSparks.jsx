@@ -1,5 +1,5 @@
 import { forwardRef, useRef } from "react";
-import { extend, useThree } from "@react-three/fiber";
+import { extend, useFrame, useThree } from "@react-three/fiber";
 import { shaderMaterial } from "@react-three/drei";
 import * as THREE from "three";
 
@@ -9,8 +9,11 @@ import forgeSparksFragmentShader from "./shaders/forgeSparks/fragment.glsl";
 const ForgeSparks = forwardRef(({}, ref) => {
     const materialRef = useRef();
 
-    const { size } = useThree();
-    const pixelRatio = useThree((state) => state.gl).getPixelRatio();
+   
+    const width = useThree((state) => state.size.width);
+    const height = useThree((state) => state.size.height);
+    const pixelRatio = useThree((state) => state.viewport.dpr);
+    const resolution = new THREE.Vector2(width * pixelRatio, height * pixelRatio);
 
     const count = 100;
     const radius = 0.5;
@@ -33,12 +36,16 @@ const ForgeSparks = forwardRef(({}, ref) => {
     const ForgeSparksMaterial = shaderMaterial(
         {
             uSize: 0.06,
-            uResolution: new THREE.Vector2(size.width * pixelRatio, size.height * pixelRatio),
+            uResolution: new THREE.Vector2(),
             uProgress: 0,
         },
         forgeSparksVertexShader,
         forgeSparksFragmentShader
     );
+
+    useFrame(() => {
+        materialRef.current.uniforms.uResolution.value = resolution;
+    })
 
     extend({ ForgeSparksMaterial });
 

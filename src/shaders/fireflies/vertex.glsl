@@ -1,4 +1,4 @@
-uniform float uPixelRatio;
+uniform vec2 uResolution;
 uniform float uSize;
 uniform float uTime;
 uniform float uVelocity;
@@ -13,9 +13,9 @@ void main() {
 
     vec4 viewPosition = viewMatrix * modelPosition;
     vec4 projectionPosition = projectionMatrix * viewPosition;
-
     gl_Position = projectionPosition;
-    gl_PointSize = uSize * aScale * uPixelRatio;
+
+    gl_PointSize = uSize * aScale * uResolution.y;
     gl_PointSize *= (1.0 / -viewPosition.z);
 
     vScale = aScale;
