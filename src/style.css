@@ -3,9 +3,9 @@
 
 /* variables */
 * {
-    --bg-color-100: #73b5f3;
-    --bg-color-300: #659fdd;
-    --bg-color-800: #161a38;
+    --bg-color-100: #1d4065;    
+    --bg-color-300: #132f5f;
+    --bg-color-800: hsl(264, 98%, 82%);
     --text-color: #fff;
     --primary-font: "Metamorphous", cursive;
     --secondary-font: "Almendra SC", serif;
@@ -59,7 +59,6 @@ body,
     height: 100%;
     height: 100dvh;
 
-    background: var(--bg-color-100);
     background: linear-gradient(180deg, var(--bg-color-300) 0%, var(--bg-color-800) 100%);
 
     color: var(--text-color);

@@ -297,7 +297,6 @@ const CharacterController = () => {
     if (!IS_MOBILE_DEVICE) {
       const mesh = scene.getObjectByName("knight");
       mesh.castShadow = true;
-      mesh.material.envMapIntensity = 0.5;
     }
 
     // Set character default animation

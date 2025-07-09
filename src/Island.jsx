@@ -82,7 +82,7 @@ const Island = () => {
   const islandAnimations = useAnimations(island.animations, island.scene);
 
   // useLayoutEffect(() => {
-  island.materials.islandTexture.aoMapIntensity = 2.73;
+  island.materials.islandTexture.aoMapIntensity = 1;
   island.materials.magicPortal.emissive = new THREE.Color("#E1754B");
   island.materials.magicPortal.emissiveIntensity = 0;
 

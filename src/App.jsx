@@ -14,10 +14,9 @@ import {
   Preload,
   useProgress,
 } from "@react-three/drei";
-
 import gsap from "gsap";
 import { useStore } from "./ZustandStorage.jsx";
-import { BlendFunction } from "postprocessing";
+import { ToneMappingMode } from "postprocessing";
 import tunnel from "tunnel-rat";
 import { Howler } from "howler";
 import * as THREE from "three";
@@ -116,7 +115,7 @@ const App = () => {
           rotation: [-Math.PI / 8, 0, 0],
           fov: 40,
           near: 0.5,
-          far: 1000,
+          far: 120,
         }}
         gl={{
           powerPreference: "high-performance",
@@ -165,15 +164,15 @@ const App = () => {
               </button>
             </div>
           </ui.In>
-          <EffectComposer disableNormalPass multisampling={0}>
+          <EffectComposer enableNormalPass={false} multisampling={0}>
             <SceneRevealer ref={sceneRevealerRef} />
             <Bloom
               mipmapBlur
-              luminanceThreshold={1}
+              luminanceThreshold={2}
               luminanceSmoothing={1}
               intensity={2}
             />
-            <ToneMapping blendFunction={BlendFunction.DARKEN} />
+            <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
           </EffectComposer>
 
           <Bvh firstHitOnly>
