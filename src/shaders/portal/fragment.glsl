@@ -1,41 +1,31 @@
 uniform float uTime;
 uniform float uSize;
-uniform sampler2D uTextureMap; // The texture uniform
-uniform float uContrast;
-uniform float uLightIntensity;
+uniform sampler2D uTextureMap;
+uniform sampler2D uPerlinTexture;
 
 varying vec2 vUv;
 
-#include ../includes/simplexNoise3d.glsl
-
 void main() {
+    vec2 center = vec2(0.5);
+    float baseRadius =  uSize;
+    
+    float dist = length(vUv - center);
 
-    float distanceToCenter = length(vUv - 0.5);
+    float noise = texture2D(uPerlinTexture, vUv * 1.0 + uTime * 0.05).r;
 
-    // Initial Noise 
-    float noise = snoise(vec3(vUv * 7., uTime * 0.5));
+    float deformationStrength = smoothstep(0.3, 0.4, dist);
+    float deformedRadius = baseRadius + (noise - 0.5) * 0.3 * deformationStrength;
 
-    // Displace the UV
-    vec2 displacedUv = vUv + noise;
-
-    // Outer noise
-    if(distanceToCenter - noise * 0.3 > uSize) {
-        gl_FragColor = vec4(0.1, 0.05, 0.05, 0.0);
-        return;
+    if (dist > deformedRadius) {
+        discard;
     }
+  
+    vec2 displacedUv = vUv + noise;
+    float noise2 = texture2D(uPerlinTexture, displacedUv).r;
+    noise2 = step(0.5, noise2);
 
-    // Perlin noise
-    float strength = snoise(vec3(displacedUv * 0.3, uTime * 0.001));
-
-    // Apply cool step
-    // strength += step(- 0.3, strength) * 0.1;
-
-    // Clamp the value from 0 to 1
-    strength = clamp(strength, 0.0, 1.0);
-
-    // Texture
-    vec4 texColor = texture2D(uTextureMap, vUv + (noise * 0.02));
-    texColor.rgb = (texColor.rgb - 0.5) * uContrast + uLightIntensity;
-
-    gl_FragColor = mix(texColor, texColor * 0.85, strength * 15.);
+    vec4 texColor = texture2D(uTextureMap, vUv);    
+    texColor.rgb = mix(texColor.rgb, texColor.rgb *2.0, noise2 * 0.5);
+    
+    gl_FragColor = texColor;
 }
