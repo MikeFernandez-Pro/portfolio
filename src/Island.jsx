@@ -13,12 +13,13 @@ import ForgeSparks from "./ForgeSparks";
 import { Howl } from "howler";
 import { IS_MOBILE_DEVICE } from "./utils/utils.js";
 
+import islandModel from "/models/island/island.glb?url";
+import { LanternsAndHome } from "./Island/LanternsAndHome";
+
 const ISLAND_POSITION = [-1.35, 2.25, -15];
 const HAMMER_POSITION = new THREE.Vector3(-5.8, 1.8, -10.8);
 const HAMMER_MAX_DISTANCE = 17;
 const MAGIC_GLYPH_SOUND_VOLUME = 0.15;
-
-const ISLAND_MODEL_PATH = "/models/island/island.glb";
 
 /**
  * Sounds Effects
@@ -50,7 +51,8 @@ const Island = () => {
   //    * Island initialization
   //    */
   const island = useMemo(() => {
-    const island = useGLTF(ISLAND_MODEL_PATH);
+    const island = useGLTF(islandModel);
+
     island.scene.traverse((child) => {
       if (child.isMesh && child.material.isMeshStandardMaterial) {
         child.material.name === "islandTexture" && !IS_MOBILE_DEVICE
@@ -244,10 +246,11 @@ const Island = () => {
       />
       <SleepText />
       <ForgeSparks ref={forgeSparksRef} />
+      <LanternsAndHome island={island} />
     </>
   );
 };
 
-useGLTF.preload(ISLAND_MODEL_PATH);
+useGLTF.preload(islandModel);
 
 export default Island;
