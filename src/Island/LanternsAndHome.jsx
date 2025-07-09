@@ -1,11 +1,11 @@
 import { useControls } from "leva";
 
-const isDebug = window.location.hash === "#debug";
+const isDebugActive = window.location.hash === "#debug";
 
 const LanternsAndHome = (props) => {
   const { island } = props;
 
-  if (isDebug) {
+  if (isDebugActive) {
     useControls("Lanterns", {
       color: {
         value: "#f28b8b",

@@ -14,6 +14,7 @@ import { IS_MOBILE_DEVICE } from "./utils/utils.js";
 import { CountriesFlags } from "./Island/CountriesFlags";
 import islandModel from "/models/island/island.glb?url";
 import { LanternsAndHome } from "./Island/LanternsAndHome";
+import { Well } from "./Island/Well";
 
 const ISLAND_POSITION = [-1.35, 2.25, -15];
 const HAMMER_POSITION = new THREE.Vector3(-5.8, 1.8, -10.8);
@@ -220,10 +221,11 @@ const Island = () => {
         scale={0.45}
         position={ISLAND_POSITION}
       />
-      <LiquidsShaders
+      {/* <LiquidsShaders
         well={island.scene.children[0].children[0].children[6]}
         cauldron={island.scene.children[0].children[0].children[7]}
-      />
+      /> */}
+      <Well island={island} />
       <MagicBooksShader
         magicBooks={island.scene.children[0].children[0].children[9]}
       />

@@ -37,6 +37,8 @@ const CountryFlag = ({ flag }) => {
   useFrame(({ clock }) => {
     flag.material.uniforms.uTime.value = clock.elapsedTime;
   });
+
+  return null;
 };
 
 export { CountryFlag };
