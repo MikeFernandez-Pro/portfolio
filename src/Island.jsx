@@ -7,12 +7,11 @@ import gsap from "gsap";
 import { useStore } from "./ZustandStorage";
 import MagicLetters from "./MagicLetters";
 import SleepText from "./SleepText";
-import AnimatedFlag from "./AnimatedFlag";
 import { useFrame } from "@react-three/fiber";
 import ForgeSparks from "./ForgeSparks";
 import { Howl } from "howler";
 import { IS_MOBILE_DEVICE } from "./utils/utils.js";
-
+import { CountriesFlags } from "./Island/CountriesFlags";
 import islandModel from "/models/island/island.glb?url";
 import { LanternsAndHome } from "./Island/LanternsAndHome";
 
@@ -232,18 +231,7 @@ const Island = () => {
         magicLetters={island.scene.children[0].children[0].children[10]}
         island={island.scene.children[0].children[0].children[0]}
       />
-      <AnimatedFlag
-        flag={island.scene.children[0].children[0].children[16]}
-        offset={0.345}
-      />
-      <AnimatedFlag
-        flag={island.scene.children[0].children[0].children[17]}
-        offset={0.265}
-      />
-      <AnimatedFlag
-        flag={island.scene.children[0].children[0].children[18]}
-        offset={0.26}
-      />
+      <CountriesFlags island={island} />
       <SleepText />
       <ForgeSparks ref={forgeSparksRef} />
       <LanternsAndHome island={island} />
