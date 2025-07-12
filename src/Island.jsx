@@ -1,8 +1,7 @@
 import { useGLTF, useAnimations } from "@react-three/drei";
 import React, { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import LiquidsShaders from "./LiquidsShaders";
-import MagicBooksShader from "./MagicBooksShader";
+
 import gsap from "gsap";
 import { useStore } from "./ZustandStorage";
 import MagicLetters from "./MagicLetters";
@@ -15,6 +14,7 @@ import { CountriesFlags } from "./Island/CountriesFlags";
 import islandModel from "/models/island/island.glb?url";
 import { LanternsAndHome } from "./Island/LanternsAndHome";
 import { Well } from "./Island/Well";
+import { MagicBooks } from "./Island/MagicBooks";
 
 const ISLAND_POSITION = [-1.35, 2.25, -15];
 const HAMMER_POSITION = new THREE.Vector3(-5.8, 1.8, -10.8);
@@ -226,7 +226,7 @@ const Island = () => {
         cauldron={island.scene.children[0].children[0].children[7]}
       /> */}
       <Well island={island} />
-      <MagicBooksShader
+      <MagicBooks
         magicBooks={island.scene.children[0].children[0].children[9]}
       />
       <MagicLetters
