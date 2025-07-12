@@ -18,6 +18,7 @@ import TorchesSparks from "./TorchSparks/TorchesSparks.jsx";
 import FireFlies from "./FireFlies.jsx";
 import Sky from "./Sky.jsx";
 import { Perf } from "r3f-perf";
+import { Grass } from "./Grass.jsx";
 
 var ambientSound = new Howl({
   // Music by Aleksey Chistilin
@@ -59,6 +60,7 @@ const Experience = () => {
       <Smoke />
       <TorchesSparks />
       <ProjectsPortals />
+      <Grass />
       <Island />
       <Physics timeStep="vary" gravity={[0, -29.43, 0]}>
         <IslandColliders />
