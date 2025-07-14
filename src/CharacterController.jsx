@@ -224,9 +224,9 @@ const CharacterController = () => {
      */
     useStore.setState({ characterPosition: characterPosition });
 
-    CAMERA_POSITION.addVectors(characterPosition, CAMERA_OFFSET);
-    LERP_CAMERA_POSITION.lerp(CAMERA_POSITION, 5 * delta);
-    state.camera.position.set(...LERP_CAMERA_POSITION);
+    // CAMERA_POSITION.addVectors(characterPosition, CAMERA_OFFSET);
+    // LERP_CAMERA_POSITION.lerp(CAMERA_POSITION, 5 * delta);
+    // state.camera.position.set(...LERP_CAMERA_POSITION);
 
     /**
      * Character Controller

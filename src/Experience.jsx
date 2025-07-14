@@ -18,7 +18,8 @@ import TorchesSparks from "./TorchSparks/TorchesSparks.jsx";
 import FireFlies from "./FireFlies.jsx";
 import Sky from "./Sky.jsx";
 import { Perf } from "r3f-perf";
-import { Grass } from "./Grass.jsx";
+import { Grass } from "./grass/Grass.tsx";
+import { OrbitControls } from "@react-three/drei";
 
 var ambientSound = new Howl({
   // Music by Aleksey Chistilin
@@ -50,9 +51,10 @@ const Experience = () => {
 
   return (
     <>
+      <OrbitControls />
       <Perf position="top-left" />
       <Joystick />
-      <Clouds />
+      {/* <Clouds /> */}
       <Sky />
       <Lights />
       <SampledGrass />
