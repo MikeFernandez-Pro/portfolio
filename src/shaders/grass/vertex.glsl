@@ -3,6 +3,7 @@ uniform vec3 uGrassBaseColor;
 uniform vec3 uGrassTopColor;
 uniform float uTime;
 uniform sampler2D uHeightDataTexture;
+uniform sampler2D uPerlinNoiseTexture;
 uniform bool uSquareShape;
 uniform float uPositionX;
 uniform float uPositionZ;
@@ -12,7 +13,6 @@ uniform float uWindStrength;
 uniform float uWindSpeed;
 
 varying vec3 vColor;
-varying vec4 vGrassData;
 
 // inverseLerp and remap are for remapping values
 float inverseLerp(float v, float minValue, float maxValue) {
@@ -45,6 +45,7 @@ uvec2 murmurHash21(uint src) {
   h ^= h >> 15u;
   return h;
 }
+
 // 1 input -> 2 output
 vec2 hash21(float src) {
   uvec2 h = murmurHash21(floatBitsToUint(src));
@@ -78,13 +79,6 @@ vec3 bezier(vec3 P0, vec3 P1, vec3 P2, vec3 P3, float t) {
   t * t * t * P3;
 }
 
-// Normal calculations
-vec3 bezierGrad(vec3 P0, vec3 P1, vec3 P2, vec3 P3, float t) {
-  return 3.0 * (1.0 - t) * (1.0 - t) * (P1 - P0) +
-  6.0 * (1.0 - t) * t * (P2 - P1) +
-  3.0 * t * t * (P3 - P2);
-}
-
 // Rotation matrix functions
 mat3 rotateY(float theta) {
   float c = cos(theta);
@@ -107,44 +101,6 @@ mat3 rotateAxis(vec3 axis, float angle) {
     oc * axis.z * axis.x - axis.y * s,
     oc * axis.y * axis.z + axis.x * s,
     oc * axis.z * axis.z + c
-  );
-}
-
-// Noise function for wind
-float noise(vec3 p) {
-  vec3 i = floor(p);
-  vec3 f = fract(p);
-
-  vec3 u = f * f * (3.0 - 2.0 * f);
-
-  return mix(
-    mix(
-      mix(
-        dot(hash(i + vec3(0.0, 0.0, 0.0)), f - vec3(0.0, 0.0, 0.0)),
-        dot(hash(i + vec3(1.0, 0.0, 0.0)), f - vec3(1.0, 0.0, 0.0)),
-        u.x
-      ),
-      mix(
-        dot(hash(i + vec3(0.0, 1.0, 0.0)), f - vec3(0.0, 1.0, 0.0)),
-        dot(hash(i + vec3(1.0, 1.0, 0.0)), f - vec3(1.0, 1.0, 0.0)),
-        u.x
-      ),
-      u.y
-    ),
-    mix(
-      mix(
-        dot(hash(i + vec3(0.0, 0.0, 1.0)), f - vec3(0.0, 0.0, 1.0)),
-        dot(hash(i + vec3(1.0, 0.0, 1.0)), f - vec3(1.0, 0.0, 1.0)),
-        u.x
-      ),
-      mix(
-        dot(hash(i + vec3(0.0, 1.0, 1.0)), f - vec3(0.0, 1.0, 1.0)),
-        dot(hash(i + vec3(1.0, 1.0, 1.0)), f - vec3(1.0, 1.0, 1.0)),
-        u.x
-      ),
-      u.y
-    ),
-    u.z
   );
 }
 
@@ -202,15 +158,20 @@ void main() {
   float z = 0.0;
 
   // Grass wind parameters
-  float windStrength = noise(
-    vec3(grassBladeWorldPos.xz * uWindScale, 0.0) + uTime * uWindSpeed
-  );
+float windStrength = texture2D(uPerlinNoiseTexture, 
+  vec2( 
+    vec3(-grassBladeWorldPos.x * uWindScale, grassBladeWorldPos.z * uWindScale, 0.0) + uTime * uWindSpeed
+  )).r; 
+  
   float windAngle = 0.0;
   vec3 windAxis = vec3(cos(windAngle), 0.0, sin(windAngle));
   float windLeanAngle = windStrength * uWindStrength * heightPercent;
-  float randomLeanAnimation =
-    noise(vec3(grassBladeWorldPos.xz, uTime * uWindSpeed * 1.3)) *
-    (windStrength * 0.5 + 0.125);
+  float randomLeanAnimation = 
+    texture2D(uPerlinNoiseTexture, 
+        vec2(
+            vec3(-grassBladeWorldPos.x * uWindScale * 1.3, grassBladeWorldPos.z * uWindScale * 1.3, 0.0) + uTime * uWindSpeed * 1.3
+        )
+    ).r * (windStrength * 0.5 + 0.125);
 
   // Grass lean factor
   float leanFactor =
@@ -247,9 +208,14 @@ void main() {
   mvPosition.x += viewSpaceThickenFactor * (xSide - 0.5) * width * 0.5 * -zSide;
 
   gl_Position = projectionMatrix * mvPosition;
-  gl_Position.w = grassHeight < 0.25 ? 0.0 : gl_Position.w;
+  
+  if (grassHeight < 0.25) {
+        gl_Position = vec4(0.0, 0.0, 0.0, 0.0); // Position hors écran ou invalide
+        vColor = vec3(0.0); 
+        return;
+    }
 
   // Pass the color to the fragment shader
   vColor = mix(uGrassBaseColor, uGrassTopColor, heightPercent);
-  vGrassData = vec4(x, heightPercent, xSide, grassHeight);
+  // vColor = vec3(windStrength);
 }

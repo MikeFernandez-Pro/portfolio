@@ -7,29 +7,30 @@ import * as THREE from "three";
 import { Butterfly } from "./Butterfly";
 import grassFragmentShader from "../shaders/grass/fragment.glsl";
 import grassVertexShader from "../shaders/grass/vertex.glsl";
-import grassHeightTextureAsset from "./textures/grassHeightMap.png";
+import grassHeightTextureAsset from "./textures/grassHeightMap7.png";
+import perlinNoiseImage from "/textures/perlin.png";
 import { useThree } from "@react-three/fiber";
 
 const Grass = () => {
-  const grassRef = useRef<THREE.Mesh>(null);
+  const grassRef = useRef(null);
 
   // Controls
   const controls = useControls("Grass", {
-    colorBase: "#44a33f",
+    colorBase: "#297a25",
     colorTop: "#4cf288",
-    count: { value: 16 * 1000, min: 0, max: 16 * 1000, step: 1 },
+    count: { value: 16 * 5000, min: 0, max: 16 * 50000, step: 1 },
     segmentsCount: { value: 3, min: 1, max: 10, step: 1 },
-    patchSize: { value: 12.05, min: 0, max: 13, step: 0.01 },
+    patchSize: { value: 11.7, min: 11, max: 13, step: 0.001 },
     width: { value: 0.08, min: 0, max: 0.2, step: 0.001 },
     height: { value: 0.36, min: 0, max: 1, step: 0.001 },
     squared: false,
-    position: { value: [-8.61, 6.83, -53.03], step: 0.01 },
+    position: { value: [-8.88, 6.83, -52.98], step: 0.001 },
   });
 
   const windControls = useControls("Wind", {
-    scale: { value: 0.25, min: -2, max: 2, step: 0.01 },
+    scale: { value: 0.04, min: 0, max: 0.2, step: 0.001 },
     strength: { value: 1.0, min: -5, max: 5, step: 0.01 },
-    speed: { value: 0.7, min: 0, max: 5, step: 0.01 },
+    speed: { value: 0.13, min: 0, max: 5, step: 0.01 },
   });
 
   // Geometry
@@ -74,6 +75,12 @@ const Grass = () => {
     texture.flipY = false;
   });
 
+  const perlinNoiseTexture = useTexture(perlinNoiseImage, (texture) => {
+    texture.colorSpace = THREE.NoColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+  });
+
   const grassMaterial = useMemo(
     () =>
       new THREE.ShaderMaterial({
@@ -90,6 +97,7 @@ const Grass = () => {
           uGrassBaseColor: { value: new THREE.Color(controls.colorBase) },
           uGrassTopColor: { value: new THREE.Color(controls.colorTop) },
           uHeightDataTexture: { value: grassHeightTexture },
+          uPerlinNoiseTexture: { value: perlinNoiseTexture },
           uSquareShape: { value: controls.squared },
           uPositionX: { value: 0 },
           uPositionZ: { value: 0 },
