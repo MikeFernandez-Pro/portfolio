@@ -1,10 +1,10 @@
-#include ../includes/simplexNoise3d.glsl
 #include ../includes/rotate2d.glsl
 
 uniform float progress;
 uniform float size;
 uniform float aspectRatio;
 uniform float uTime;
+uniform sampler2D uPerlinNoiseTexture;
 
 void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
 
@@ -13,11 +13,13 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor)
 
     float distanceToCenter = length(centeredUv / progress);
 
-    centeredUv = rotate2d(sin(progress) * 3.141592) * centeredUv;
+    centeredUv = rotate2d(sin( -uTime * 0.05) * 3.141592) * centeredUv;
 
-    float perlinNoise = snoise(vec3(centeredUv.x * size, centeredUv.y * size, uTime * 0.15));
+    // float perlinNoise = snoise(vec3(centeredUv.x * size, centeredUv.y * size, uTime * 0.15));
+    vec2 perlinUv = vec2(centeredUv.x * size + uTime * 0.1, centeredUv.y * size + uTime * 0.1);
+    float perlinNoise = texture2D(uPerlinNoiseTexture, perlinUv).r; 
 
-    if(distanceToCenter - perlinNoise * 0.1 > progress)
+    if(distanceToCenter - perlinNoise * 0.5 > progress)
         discard;
 
     outputColor = inputColor;

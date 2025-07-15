@@ -4,6 +4,7 @@ import Experience from "./Experience.jsx";
 import {
   Bloom,
   EffectComposer,
+  SMAA,
   ToneMapping,
 } from "@react-three/postprocessing";
 import SceneRevealer from "./SceneRevealer.jsx";
@@ -23,6 +24,7 @@ import * as THREE from "three";
 
 import soundOnIcon from "/icons/sound-on.svg";
 import soundOffIcon from "/icons/sound-off.svg";
+import { BlurPass } from "./effectComposer/BlurPass.jsx";
 
 const MODELS_AMOUNT = 22;
 
@@ -38,6 +40,8 @@ let hoverAnimation = undefined;
 
 const App = () => {
   const sceneRevealerRef = useRef();
+  const horizontalBlurPassRef = useRef();
+  const verticalBlurPassRef = useRef();
   const soundOnIconRef = useRef();
   const soundOffIconRef = useRef();
   const startExperienceRef = useRef();
@@ -164,8 +168,12 @@ const App = () => {
               </button>
             </div>
           </ui.In>
-          <EffectComposer enableNormalPass={false} multisampling={0}>
+          <EffectComposer enabl eNormalPass={false} multisampling={0}>
             <SceneRevealer ref={sceneRevealerRef} />
+            <BlurPass
+              horizontalBlurPassRef={horizontalBlurPassRef}
+              verticalBlurPassRef={verticalBlurPassRef}
+            />
             <Bloom
               mipmapBlur
               luminanceThreshold={2}
@@ -173,6 +181,7 @@ const App = () => {
               intensity={2}
             />
             <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+            <SMAA />
           </EffectComposer>
 
           <Bvh firstHitOnly>
