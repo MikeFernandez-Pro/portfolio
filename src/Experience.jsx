@@ -19,7 +19,8 @@ import FireFlies from "./FireFlies.jsx";
 import Sky from "./Sky.jsx";
 import { Perf } from "r3f-perf";
 import { Grass } from "./grass/Grass.tsx";
-import { OrbitControls } from "@react-three/drei";
+import { GradientTexture, OrbitControls } from "@react-three/drei";
+import { useControls } from "leva";
 
 var ambientSound = new Howl({
   // Music by Aleksey Chistilin
@@ -32,6 +33,11 @@ var ambientSound = new Howl({
 
 const Experience = () => {
   const scene = useThree((state) => state.scene);
+
+  const controls = useControls({
+    bottomColor: "#203e71",
+    topColor: "#d998fd",
+  });
 
   useEffect(() => {
     const unsubExperienceStarted = useStore.subscribe(
@@ -64,6 +70,16 @@ const Experience = () => {
       <ProjectsPortals />
       <Grass />
       <Island />
+      <mesh>
+        <sphereGeometry args={[125]} />
+        <meshBasicMaterial side={THREE.BackSide}>
+          <GradientTexture
+            stops={[0.35, 1]}
+            colors={[controls.bottomColor, controls.topColor]}
+            size={1024}
+          />
+        </meshBasicMaterial>
+      </mesh>
       <Physics timeStep="vary" gravity={[0, -29.43, 0]}>
         <IslandColliders />
         <CharacterController />

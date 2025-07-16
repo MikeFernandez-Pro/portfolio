@@ -3,9 +3,9 @@
 
 /* variables */
 * {
-    --bg-color-100: #1d4065;    
-    --bg-color-300: #132f5f;
-    --bg-color-800: hsl(264, 98%, 82%);
+    --bg-color-100: #73b5f3;
+    --bg-color-300: #659fdd;
+    --bg-color-800: #161a38;
     --text-color: #fff;
     --primary-font: "Metamorphous", cursive;
     --secondary-font: "Almendra SC", serif;

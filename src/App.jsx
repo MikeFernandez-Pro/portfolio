@@ -119,7 +119,7 @@ const App = () => {
           rotation: [-Math.PI / 8, 0, 0],
           fov: 40,
           near: 0.5,
-          far: 120,
+          far: 200,
         }}
         gl={{
           powerPreference: "high-performance",
@@ -156,7 +156,7 @@ const App = () => {
                   (hoverAnimation = gsap.to(
                     sceneRevealerRef.current?.uniforms.get("progress"),
                     {
-                      value: 0.45,
+                      value: 0.35,
                       duration: 0.5,
                       ease: "power2.out",
                     }
@@ -168,8 +168,8 @@ const App = () => {
               </button>
             </div>
           </ui.In>
-          <EffectComposer enabl eNormalPass={false} multisampling={0}>
-            <SceneRevealer ref={sceneRevealerRef} />
+          <EffectComposer enableNormalPass={false} multisampling={0}>
+            <SceneRevealer sceneRevealerRef={sceneRevealerRef} />
             <BlurPass
               horizontalBlurPassRef={horizontalBlurPassRef}
               verticalBlurPassRef={verticalBlurPassRef}

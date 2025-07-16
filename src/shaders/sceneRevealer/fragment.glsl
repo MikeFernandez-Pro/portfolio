@@ -16,7 +16,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor)
     centeredUv = rotate2d(sin( -uTime * 0.05) * 3.141592) * centeredUv;
 
     // float perlinNoise = snoise(vec3(centeredUv.x * size, centeredUv.y * size, uTime * 0.15));
-    vec2 perlinUv = vec2(centeredUv.x * size + uTime * 0.1, centeredUv.y * size + uTime * 0.1);
+    vec2 perlinUv = vec2(centeredUv.x * size + uTime * 0.05, centeredUv.y * size + uTime * 0.05);
     float perlinNoise = texture2D(uPerlinNoiseTexture, perlinUv).r; 
 
     if(distanceToCenter - perlinNoise * 0.5 > progress)
