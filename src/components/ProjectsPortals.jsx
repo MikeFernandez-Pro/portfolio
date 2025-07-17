@@ -1,12 +1,12 @@
 import { useMemo, useEffect, useRef } from "react";
 import { useFrame, useLoader } from "@react-three/fiber";
 import { Circle, useTexture } from "@react-three/drei";
-import { useStore } from "./ZustandStorage";
+import { useStore } from "../store/ZustandStorage.jsx";
 import gsap from "gsap";
 import * as THREE from "three";
 
-import portalVertexShader from "./shaders/portal/vertex.glsl";
-import portalFragmentShader from "./shaders/portal/fragment.glsl";
+import portalVertexShader from "../shaders/portal/vertex.glsl";
+import portalFragmentShader from "../shaders/portal/fragment.glsl";
 
 import portalSound from "/sounds/portalSoundEffect.mp3";
 

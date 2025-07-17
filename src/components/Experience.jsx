@@ -3,12 +3,11 @@ import { Physics } from "@react-three/rapier";
 import { useLoader, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { Howl } from "howler";
-import { useStore } from "./ZustandStorage.jsx";
+import { useStore } from "../store/ZustandStorage.jsx";
 
 import Joystick from "./Joystick.jsx";
 import Island from "./Island.jsx";
 import IslandColliders from "./IslandColliders.jsx";
-import SampledGrass from "./SampledGrass.jsx";
 import CharacterController from "./CharacterController.jsx";
 import ProjectsPortals from "./ProjectsPortals.jsx";
 import Clouds from "./Clouds.jsx";
@@ -63,7 +62,6 @@ const Experience = () => {
       {/* <Clouds /> */}
       <Sky />
       <Lights />
-      <SampledGrass />
       <FireFlies />
       <Smoke />
       <TorchesSparks />

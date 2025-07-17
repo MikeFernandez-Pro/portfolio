@@ -1,13 +1,13 @@
 import { useState, Suspense, useRef, useEffect, useCallback } from "react";
 import { Canvas } from "@react-three/fiber";
-import Experience from "./Experience.jsx";
+import Experience from "./components/Experience.jsx";
 import {
   Bloom,
   EffectComposer,
   SMAA,
   ToneMapping,
 } from "@react-three/postprocessing";
-import SceneRevealer from "./SceneRevealer.jsx";
+import SceneRevealer from "./components/effectComposer/SceneRevealer.jsx";
 import {
   AdaptiveDpr,
   Bvh,
@@ -16,7 +16,7 @@ import {
   useProgress,
 } from "@react-three/drei";
 import gsap from "gsap";
-import { useStore } from "./ZustandStorage.jsx";
+import { useStore } from "./store/ZustandStorage.jsx";
 import { ToneMappingMode } from "postprocessing";
 import tunnel from "tunnel-rat";
 import { Howler } from "howler";
@@ -24,7 +24,7 @@ import * as THREE from "three";
 
 import soundOnIcon from "/icons/sound-on.svg";
 import soundOffIcon from "/icons/sound-off.svg";
-import { BlurPass } from "./effectComposer/BlurPass.jsx";
+import { BlurPass } from "./components/effectComposer/BlurPass.jsx";
 
 const MODELS_AMOUNT = 22;
 

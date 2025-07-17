@@ -1,8 +1,8 @@
-import { useStore } from "./ZustandStorage.jsx";
+import { useStore } from "../store/ZustandStorage.jsx";
 import { useEffect } from "react";
 import nipplejs from "nipplejs";
 import gsap from "gsap";
-import { IS_MOBILE_DEVICE } from "./utils/utils.js";
+import { IS_MOBILE_DEVICE } from "../utils/utils.js";
 
 // ScreenOrientation constants
 const PORTRAIT_ORIENTATION = "portrait-primary";

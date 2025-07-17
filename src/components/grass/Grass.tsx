@@ -4,10 +4,10 @@ import { useControls } from "leva";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
-import { Butterfly } from "./Butterfly";
-import grassFragmentShader from "../shaders/grass/fragment.glsl";
-import grassVertexShader from "../shaders/grass/vertex.glsl";
-import grassHeightTextureAsset from "./textures/grassHeightMap7.png";
+import { Butterfly } from "./Butterfly.tsx";
+import grassFragmentShader from "../../shaders/grass/fragment.glsl";
+import grassVertexShader from "../../shaders/grass/vertex.glsl";
+import grassHeightTextureAsset from "/textures/grassHeightMap7.png";
 import perlinNoiseImage from "/textures/perlin.png";
 import { useThree } from "@react-three/fiber";
 

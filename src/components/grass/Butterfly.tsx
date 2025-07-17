@@ -3,7 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import type * as THREE from "three";
 
-import butterflyModel from "./models/butterfly.glb?url";
+import butterflyModel from "/models/butterfly.glb?url";
 
 type Model = {
   nodes: {

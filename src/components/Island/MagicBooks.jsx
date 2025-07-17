@@ -2,10 +2,10 @@ import CustomShaderMaterial from "three-custom-shader-material/vanilla";
 import * as THREE from "three";
 import { useLayoutEffect, useMemo } from "react";
 import gsap from "gsap";
-import { useStore } from "../ZustandStorage";
+import { useStore } from "../../store/ZustandStorage.jsx";
 
-import magicBooksVertexShader from "../shaders/magicBooks/vertex.glsl";
-import magicBooksFragmentShader from "../shaders/magicBooks/fragment.glsl";
+import magicBooksVertexShader from "../../shaders/magicBooks/vertex.glsl";
+import magicBooksFragmentShader from "../../shaders/magicBooks/fragment.glsl";
 
 const MagicBooks = ({ magicBooks }) => {
   const magicBooksShaderMaterial = useMemo(

@@ -1,9 +1,9 @@
 import { useGLTF, Image } from "@react-three/drei";
 import { InstancedRigidBodies, RigidBody } from "@react-three/rapier";
-import { useStore } from "./ZustandStorage";
+import { useStore } from "../store/ZustandStorage.jsx";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import gsap from "gsap";
-import { IS_MOBILE_DEVICE } from "./utils/utils.js";
+import { IS_MOBILE_DEVICE } from "../utils/utils.js";
 
 const INTERACTION_PROMPT_URL = "/textures/Enter.webp";
 

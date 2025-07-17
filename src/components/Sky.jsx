@@ -4,8 +4,8 @@ import * as THREE from "three";
 import { useTexture } from "@react-three/drei";
 import { useControls } from "leva";
 
-import starsVertexShader from "./shaders/stars/vertex.glsl";
-import starsFragmentShader from "./shaders/stars/fragment.glsl";
+import starsVertexShader from "../shaders/stars/vertex.glsl";
+import starsFragmentShader from "../shaders/stars/fragment.glsl";
 
 const SKY_RADIUS = 120;
 

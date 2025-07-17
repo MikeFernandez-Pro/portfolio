@@ -3,10 +3,10 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { CapsuleCollider, RigidBody } from "@react-three/rapier";
 import { useRef, useMemo, useCallback, useLayoutEffect } from "react";
 import * as THREE from "three";
-import { useStore } from "./ZustandStorage.jsx";
+import { useStore } from "../store/ZustandStorage.jsx";
 import gsap from "gsap";
 import { Howl } from "howler";
-import { IS_MOBILE_DEVICE } from "./utils/utils.js";
+import { IS_MOBILE_DEVICE } from "../utils/utils.js";
 
 const directionOffset = (
   { forward, backward, leftward, rightward },

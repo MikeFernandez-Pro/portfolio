@@ -7,8 +7,8 @@ import CustomShaderMaterial from "three-custom-shader-material/vanilla";
 
 import perlinNoiseImage from "/textures/perlin.png";
 
-import wellVertexShader from "../shaders/well/vertex.glsl";
-import wellFragmentShader from "../shaders/well/fragment.glsl";
+import wellVertexShader from "../../shaders/well/vertex.glsl";
+import wellFragmentShader from "../../shaders/well/fragment.glsl";
 
 const isDebugActive = window.location.hash === "#debug";
 
