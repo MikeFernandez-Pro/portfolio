@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useStore } from "../store/ZustandStorage.jsx";
 import * as THREE from "three";
@@ -6,7 +6,6 @@ import gsap from "gsap";
 
 import floatingTextVertexShader from "../shaders/floatingText/vertex.glsl";
 import floatingTextFragmentShader from "../shaders/floatingText/fragment.glsl";
-import { useGSAP } from "@gsap/react";
 
 const MagicLetters = ({ magicLetters, island }) => {
   const magicLettersShaderMaterial = useMemo(
@@ -28,30 +27,33 @@ const MagicLetters = ({ magicLetters, island }) => {
     []
   );
 
-  useGSAP((context, contextSafe) => {
+  useEffect(() => {
     // Replace magicLetters default material with new shader material
     magicLetters.material.dispose();
     magicLetters.material = magicLettersShaderMaterial;
 
-    const magicLettersActivation = contextSafe(() => {
-      gsap.to(magicLetters.material.uniforms.uOpacity, {
+    const magicLettersActivation = gsap.to(
+      magicLetters.material.uniforms.uOpacity,
+      {
         duration: 1,
         delay: 1,
         value: 1,
         ease: "expo.in",
-      });
-    });
+        paused: true,
+      }
+    );
 
     // Subscribe to the magic glyph zustand store state
     const unsubMagicGlyphActivation = useStore.subscribe(
       (state) => state.magicGlyphActivation,
-      (magicGlyphActivation) => {
-        magicLettersActivation();
+      () => {
+        magicLettersActivation.play();
       }
     );
 
     // Clear subscriptions on unmount
     return () => {
+      magicLettersActivation?.kill();
       unsubMagicGlyphActivation();
     };
   }, []);
