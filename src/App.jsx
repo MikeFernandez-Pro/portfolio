@@ -1,30 +1,22 @@
-import { useState, Suspense, useRef, useEffect, useCallback } from "react";
-import { Canvas } from "@react-three/fiber";
-import Experience from "./components/Experience.jsx";
-import {
-  Bloom,
-  EffectComposer,
-  SMAA,
-  ToneMapping,
-} from "@react-three/postprocessing";
-import SceneRevealer from "./components/effectComposer/SceneRevealer.jsx";
+import { useState, Suspense, useRef, useEffect, useCallback } from 'react';
+import { Canvas } from '@react-three/fiber';
+import Experience from './components/Experience.jsx';
 import {
   AdaptiveDpr,
   Bvh,
   PerformanceMonitor,
   Preload,
   useProgress,
-} from "@react-three/drei";
-import gsap from "gsap";
-import { useStore } from "./store/ZustandStorage.jsx";
-import { ToneMappingMode } from "postprocessing";
-import tunnel from "tunnel-rat";
-import { Howler } from "howler";
-import * as THREE from "three";
+} from '@react-three/drei';
+import gsap from 'gsap';
+import { useStore } from './store/ZustandStorage.jsx';
+import tunnel from 'tunnel-rat';
+import { Howler } from 'howler';
+import * as THREE from 'three';
 
-import soundOnIcon from "/icons/sound-on.svg";
-import soundOffIcon from "/icons/sound-off.svg";
-import { BlurPass } from "./components/effectComposer/BlurPass.jsx";
+import soundOnIcon from '/icons/sound-on.svg';
+import soundOffIcon from '/icons/sound-off.svg';
+import { EffectComposer } from './components/effectComposer/EffectComposer.jsx';
 
 const MODELS_AMOUNT = 22;
 
@@ -33,7 +25,7 @@ const ui = tunnel();
 
 // Visibility Change
 const visibilityChangeHandler = () =>
-  Howler.mute(document.visibilityState === "hidden");
+  Howler.mute(document.visibilityState === 'hidden');
 
 // Animations
 let hoverAnimation = undefined;
@@ -52,7 +44,7 @@ const App = () => {
 
   const initiateExperience = useCallback(() => {
     hoverAnimation?.kill();
-    startExperienceRef.current.style.pointerEvents = "none";
+    startExperienceRef.current.style.pointerEvents = 'none';
 
     useStore.setState({ experienceStarted: true });
 
@@ -62,10 +54,10 @@ const App = () => {
       delay: 0,
     });
 
-    gsap.to(sceneRevealerRef.current?.uniforms.get("progress"), {
+    gsap.to(sceneRevealerRef.current?.uniforms.get('progress'), {
       value: 1.5,
       duration: 5,
-      ease: "expo.isOut",
+      ease: 'expo.isOut',
     });
 
     gsap.to(soundOnIconRef.current?.style, {
@@ -76,10 +68,10 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    document.addEventListener("visibilitychange", visibilityChangeHandler);
+    document.addEventListener('visibilitychange', visibilityChangeHandler);
 
     return () => {
-      removeEventListener("visibilitychange", visibilityChangeHandler);
+      removeEventListener('visibilitychange', visibilityChangeHandler);
     };
   }, []);
 
@@ -93,20 +85,20 @@ const App = () => {
         className="volume-controller"
         alt="Sound on button"
         onClick={() => {
-          soundOnIconRef.current.style.display = "none";
-          soundOffIconRef.current.style.display = "block";
+          soundOnIconRef.current.style.display = 'none';
+          soundOffIconRef.current.style.display = 'block';
           Howler.mute(true);
         }}
       />
       <img
         ref={soundOffIconRef}
         src={soundOffIcon}
-        style={{ display: "none" }}
+        style={{ display: 'none' }}
         className="volume-controller"
         alt="Sound down button"
         onClick={() => {
-          soundOffIconRef.current.style.display = "none";
-          soundOnIconRef.current.style.display = "block";
+          soundOffIconRef.current.style.display = 'none';
+          soundOnIconRef.current.style.display = 'block';
           Howler.mute(false);
         }}
       />
@@ -122,7 +114,7 @@ const App = () => {
           far: 200,
         }}
         gl={{
-          powerPreference: "high-performance",
+          powerPreference: 'high-performance',
           antialias: true,
           toneMapping: THREE.LinearToneMapping,
         }}
@@ -147,18 +139,18 @@ const App = () => {
             <div
               ref={startExperienceRef}
               className="container"
-              style={{ pointerEvents: "auto" }}
+              style={{ pointerEvents: 'auto' }}
             >
               <button
-                className={"start-experience"}
+                className={'start-experience'}
                 onClick={initiateExperience}
                 onMouseEnter={() =>
                   (hoverAnimation = gsap.to(
-                    sceneRevealerRef.current?.uniforms.get("progress"),
+                    sceneRevealerRef.current?.uniforms.get('progress'),
                     {
                       value: 0.35,
                       duration: 0.5,
-                      ease: "power2.out",
+                      ease: 'power2.out',
                     }
                   ))
                 }
@@ -168,21 +160,11 @@ const App = () => {
               </button>
             </div>
           </ui.In>
-          <EffectComposer enableNormalPass={false} multisampling={0}>
-            <SceneRevealer sceneRevealerRef={sceneRevealerRef} />
-            <BlurPass
-              horizontalBlurPassRef={horizontalBlurPassRef}
-              verticalBlurPassRef={verticalBlurPassRef}
-            />
-            <Bloom
-              mipmapBlur
-              luminanceThreshold={2}
-              luminanceSmoothing={1}
-              intensity={2}
-            />
-            <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
-            <SMAA />
-          </EffectComposer>
+          <EffectComposer
+            sceneRevealerRef={sceneRevealerRef}
+            horizontalBlurPassRef={horizontalBlurPassRef}
+            verticalBlurPassRef={verticalBlurPassRef}
+          />
 
           <Bvh firstHitOnly>
             <Experience />

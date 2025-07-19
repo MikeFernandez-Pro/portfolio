@@ -1,35 +1,33 @@
-import { useEffect, useMemo, useRef } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
-import gsap from "gsap";
-import { useTexture } from "@react-three/drei";
-import * as THREE from "three";
-import { Effect } from "postprocessing";
+import { useEffect, useMemo, useRef } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
+import gsap from 'gsap';
+import { useTexture } from '@react-three/drei';
+import * as THREE from 'three';
+import { Effect } from 'postprocessing';
 
-import sceneRevealerFragmentShader from "/shaders/sceneRevealer/fragment.glsl";
+import sceneRevealerFragmentShader from '/shaders/sceneRevealer/fragment.glsl';
 
-import PerlinNoiseImage from "/textures/perlin.png";
+import PerlinNoiseImage from '/textures/perlin.png';
 
 class sceneRevealerEffect extends Effect {
   constructor(aspectRatio, perlinNoiseTexture) {
-    super("sceneRevealerEffect", sceneRevealerFragmentShader, {
+    super('sceneRevealerEffect', sceneRevealerFragmentShader, {
       uniforms: new Map([
-        ["progress", new THREE.Uniform(0.25)],
-        ["size", new THREE.Uniform(5)],
-        ["aspectRatio", new THREE.Uniform(aspectRatio)],
-        ["uTime", new THREE.Uniform(0)],
-        ["uPerlinNoiseTexture", new THREE.Uniform(perlinNoiseTexture)],
+        ['progress', new THREE.Uniform(0.25)],
+        ['size', new THREE.Uniform(5)],
+        ['aspectRatio', new THREE.Uniform(aspectRatio)],
+        ['uTime', new THREE.Uniform(0)],
+        ['uPerlinNoiseTexture', new THREE.Uniform(perlinNoiseTexture)],
       ]),
     });
   }
 }
-const SceneRevealer = (props) => {
+const SceneRevealer = props => {
   const { sceneRevealerRef } = props;
 
-  const sceneRevealerAnimationRef = useRef(null);
+  const aspectRatio = useThree(state => state.viewport.aspect);
 
-  const aspectRatio = useThree((state) => state.viewport.aspect);
-
-  const perlinNoiseTexture = useTexture(PerlinNoiseImage, (texture) => {
+  const perlinNoiseTexture = useTexture(PerlinNoiseImage, texture => {
     texture.colorSpace = THREE.NoColorSpace;
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
@@ -41,28 +39,28 @@ const SceneRevealer = (props) => {
   );
 
   useEffect(() => {
-    sceneRevealerAnimationRef.current = gsap.to(
-      sceneRevealerRef.current?.uniforms.get("progress"),
+    let sceneRevealerAnimation = gsap.to(
+      sceneRevealerRef.current?.uniforms.get('progress'),
       {
         value: 0.25,
         duration: 1,
         delay: 0.5,
-        ease: "circ.out",
+        ease: 'circ.out',
       }
     );
 
     return () => {
-      sceneRevealerAnimationRef.current.kill();
-      sceneRevealerAnimationRef.current = null;
+      sceneRevealerAnimation.kill();
+      sceneRevealerAnimation = null;
     };
   }, []);
 
   useFrame(({ clock }) => {
-    sceneRevealerRef.current.uniforms.get("uTime").value = clock.elapsedTime;
-    sceneRevealerRef.current.uniforms.get("aspectRatio").value = aspectRatio;
+    sceneRevealerRef.current.uniforms.get('uTime').value = clock.elapsedTime;
+    sceneRevealerRef.current.uniforms.get('aspectRatio').value = aspectRatio;
   });
 
   return <primitive ref={sceneRevealerRef} object={effect} />;
 };
 
-export default SceneRevealer;
+export { SceneRevealer };

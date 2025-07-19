@@ -4,7 +4,6 @@ import * as THREE from 'three';
 
 import gsap from 'gsap';
 import { useStore } from '../store/ZustandStorage.jsx';
-import MagicLetters from './MagicLetters';
 import SleepText from './SleepText';
 import { useFrame } from '@react-three/fiber';
 import { Howl } from 'howler';
@@ -15,9 +14,10 @@ import { LanternsAndHome } from './Island/LanternsAndHome';
 import { Well } from './Island/Well';
 import { MagicBooks } from './Island/MagicBooks';
 import Forge from './Island/Forge';
+import { MagicGlyphs } from './sorceryArea/MagicGlyphs';
+import { FloatingSkills } from './FloatingSkills';
 
 const ISLAND_POSITION = new THREE.Vector3(-1.35, 2.25, -15);
-const MAGIC_GLYPH_SOUND_VOLUME = 0.15;
 
 /**
  * Sounds Effects
@@ -28,15 +28,7 @@ var pressurePlatesSoundEffect = new Howl({
   volume: 0.09,
 });
 
-var magicGlyphSoundEffect = new Howl({
-  src: ['/sounds/magicGlyphSoundEffect.mp3'],
-  autoplay: false,
-  volume: 0.15,
-});
-
 const Island = () => {
-  const magicGlyphActivationRef = useRef(false);
-
   //   /**
   //    * Island initialization
   //    */
@@ -64,19 +56,12 @@ const Island = () => {
     island.scene.children[0].children[3].rotation.y += delta * 0.5;
     // Margic Portal Bone
     island.scene.children[0].children[4].rotation.y += delta * 0.15;
-    if (magicGlyphActivationRef.current) {
-      // Magic Glyphs Bones
-      island.scene.children[0].children[5].rotation.y += delta;
-      island.scene.children[0].children[6].rotation.y -= delta;
-    }
   });
 
   const islandAnimations = useAnimations(island.animations, island.scene);
 
   // useLayoutEffect(() => {
   island.materials.islandTexture.aoMapIntensity = 1;
-  island.materials.magicPortal.emissive = new THREE.Color('#E1754B');
-  island.materials.magicPortal.emissiveIntensity = 0;
 
   // island.materials.portalPlate.emissiveIntensity = portalPlate.emissiveIntensity;
   island.materials.portalPlate.emissive = new THREE.Color('#68CFF2');
@@ -123,30 +108,9 @@ const Island = () => {
       }
     );
 
-    // Subscribe to magicGlyphActivation zustand store state
-    const unsubMagicGlyphActivation = useStore.subscribe(
-      state => state.magicGlyphActivation,
-      magicGlyphActivation => {
-        // Magic Glyphs Rotation
-        magicGlyphActivationRef.current = true;
-
-        // Sound Effect
-        magicGlyphSoundEffect.play();
-        magicGlyphSoundEffect.fade(0, MAGIC_GLYPH_SOUND_VOLUME, 500);
-
-        // Magic Glyphs Animation
-        gsap.fromTo(
-          island.materials.magicPortal,
-          { emissiveIntensity: 0 },
-          { duration: 1, emissiveIntensity: 4.7 }
-        );
-      }
-    );
-
     // Clear animations, interval and subscriptions on unmount
     return () => {
       unsubActivePlate();
-      unsubMagicGlyphActivation();
     };
   }, []);
 
@@ -162,17 +126,13 @@ const Island = () => {
         cauldron={island.scene.children[0].children[0].children[7]}
       /> */}
       <Well island={island} />
-      <MagicBooks
-        magicBooks={island.scene.children[0].children[0].children[9]}
-      />
-      <MagicLetters
-        magicLetters={island.scene.children[0].children[0].children[10]}
-        island={island.scene.children[0].children[0].children[0]}
-      />
+      <MagicBooks island={island} />
+      <FloatingSkills island={island} />
       <CountriesFlags island={island} />
       <SleepText />
       <LanternsAndHome island={island} />
       <Forge islandAnimations={islandAnimations} />
+      <MagicGlyphs island={island} />
     </>
   );
 };

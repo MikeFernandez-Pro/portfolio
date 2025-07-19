@@ -1,18 +1,18 @@
-import { Howl } from "howler";
-import { useEffect, useMemo } from "react";
-import { useRef } from "react";
-import { useStore } from "../../store/ZustandStorage.jsx";
-import * as THREE from "three";
-import gsap from "gsap";
+import { Howl } from 'howler';
+import { useEffect, useMemo } from 'react';
+import { useRef } from 'react';
+import { useStore } from '../../store/ZustandStorage.jsx';
+import * as THREE from 'three';
+import gsap from 'gsap';
 
-import ForgeSparks from "../ForgeSparks.jsx";
+import ForgeSparks from '../ForgeSparks.jsx';
 
-import hammerAudio from "/sounds/hammerSoundEffect.mp3";
+import hammerAudio from '/sounds/hammerSoundEffect.mp3';
 
 const HAMMER_POSITION = new THREE.Vector3(-5.8, 1.8, -10.8);
 const HAMMER_MAX_DISTANCE = 17;
 
-const Forge = (props) => {
+const Forge = props => {
   const { islandAnimations } = props;
 
   const forgeHammerAnimationRef = useRef();
@@ -33,15 +33,15 @@ const Forge = (props) => {
     /**
      * Animations
      */
-    islandAnimations.actions["anvilAnimation"].loop = THREE.LoopOnce;
-    islandAnimations.actions["anvilAnimation"].clampWhenFinished = true;
+    islandAnimations.actions['anvilAnimation'].loop = THREE.LoopOnce;
+    islandAnimations.actions['anvilAnimation'].clampWhenFinished = true;
 
     /**
      * Storage Subscriptions
      */
     const unsubExperienceStarted = useStore.subscribe(
-      (state) => state.experienceStarted,
-      (experienceStarted) => {
+      state => state.experienceStarted,
+      experienceStarted => {
         if (experienceStarted) {
           experienceStartedRef.current = true;
         }
@@ -49,8 +49,8 @@ const Forge = (props) => {
     );
 
     const unsubCharacterPosition = useStore.subscribe(
-      (state) => state.characterPosition,
-      (characterPosition) => {
+      state => state.characterPosition,
+      characterPosition => {
         if (characterPosition) {
           hammerSoundEffect.volume(
             HAMMER_POSITION.distanceTo(characterPosition) < HAMMER_MAX_DISTANCE
@@ -70,7 +70,7 @@ const Forge = (props) => {
     // Play forge hammer sound and anvil animation each 2s
 
     const forgeHammerInterval = setInterval(() => {
-      islandAnimations.actions["anvilAnimation"].reset().play();
+      islandAnimations.actions['anvilAnimation'].reset().play();
       forgeHammerAnimationRef.current = gsap.fromTo(
         forgeSparksRef.current.material.uniforms.uProgress,
         { value: 0 },
@@ -78,7 +78,7 @@ const Forge = (props) => {
           value: 1,
           duration: 0.5,
           delay: 0.1,
-          ease: "linear",
+          ease: 'linear',
         }
       );
 
@@ -88,7 +88,7 @@ const Forge = (props) => {
 
     // Clear animations, interval and subscriptions on unmount
     return () => {
-      islandAnimations.actions["anvilAnimation"].stop();
+      islandAnimations.actions['anvilAnimation'].stop();
       // islandAnimations.actions["magicPotAnimation"].getMixer().uncacheAction(islandAnimations.actions["magicPotAnimation"]);
       forgeHammerAnimationRef.current.kill();
       forgeHammerAnimationRef.current = null;

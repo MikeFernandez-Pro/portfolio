@@ -12,7 +12,6 @@ const CountryFlag = ({ flag }) => {
         baseMaterial: flag.material,
         vertexShader: countryFlagVertexShader,
         fragmentShader: countryFlagFragmentShader,
-        silent: true,
         uniforms: {
           uTime: { value: 0.0 },
         },

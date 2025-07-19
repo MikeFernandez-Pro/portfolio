@@ -1,47 +1,48 @@
-import { useGLTF, Image } from "@react-three/drei";
-import { InstancedRigidBodies, RigidBody } from "@react-three/rapier";
-import { useStore } from "../store/ZustandStorage.jsx";
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import gsap from "gsap";
-import { IS_MOBILE_DEVICE } from "../utils/utils.js";
+import { useGLTF, Image, Plane, useTexture } from '@react-three/drei';
+import { InstancedRigidBodies, RigidBody } from '@react-three/rapier';
+import { useStore } from '../store/ZustandStorage.jsx';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import gsap from 'gsap';
+import { IS_MOBILE_DEVICE } from '../utils/utils.js';
+import * as THREE from 'three';
 
-const INTERACTION_PROMPT_URL = "/textures/Enter.webp";
+const INTERACTION_PROMPT_URL = '/textures/Enter.webp';
 
 // Sensor Colliders IDs:
-const MAIL_BOX_ID = "mailBox";
-const LINKED_IN_ID = "linkedIn";
-const VERCEL_ID = "vercel";
-const PORTAL_ID = "portal";
-const STATUE_ID = "statue";
-const MAGIC_GLYPH_ID = "magicGlyph";
-const PORTAL_PLATE_ID = "portalPlate";
-const SEA_PLATE_ID = "seaPlate";
-const HALLOWEEN_PLATE_ID = "halloweenPlate";
+const MAIL_BOX_ID = 'mailBox';
+const LINKED_IN_ID = 'linkedIn';
+const VERCEL_ID = 'vercel';
+const PORTAL_ID = 'portal';
+const STATUE_ID = 'statue';
+const MAGIC_GLYPH_ID = 'magicGlyph';
+const PORTAL_PLATE_ID = 'portalPlate';
+const SEA_PLATE_ID = 'seaPlate';
+const HALLOWEEN_PLATE_ID = 'halloweenPlate';
 
 // Sensor Colliders URLs:
 const LINKED_IN_URL =
-  "https://www.linkedin.com/in/mike-fernandez-front-end-dev/";
-const VERCEL_URL = "https://vercel.com/mikefernandez-pro";
-const PORTAL_PLATE_URL = "https://magic-portal-threejs.vercel.app/";
-const SEA_PLATE_URL = "https://raging-sea-shader-flame.vercel.app/";
-const HALLOWEEN_PLATE_URL = "https://halloween-challenge.vercel.app/";
-const STATUE_URL = "/CV_Portfolio_Mike.pdf";
+  'https://www.linkedin.com/in/mike-fernandez-front-end-dev/';
+const VERCEL_URL = 'https://vercel.com/mikefernandez-pro';
+const PORTAL_PLATE_URL = 'https://magic-portal-threejs.vercel.app/';
+const SEA_PLATE_URL = 'https://raging-sea-shader-flame.vercel.app/';
+const HALLOWEEN_PLATE_URL = 'https://halloween-challenge.vercel.app/';
+const STATUE_URL = '/CV_Portfolio_Mike.pdf';
 
 const IslandColliders = () => {
   const { nodes } = useMemo(
-    () => useGLTF("/models/islandColliders/islandColliders.glb"),
+    () => useGLTF('/models/islandColliders/islandColliders.glb'),
     []
   );
 
   const activePlateRef = useRef(useStore.getState().activePlate);
-  const magicGlyphActivation = useStore((state) => state.magicGlyphActivation);
+  const magicGlyphActivation = useStore(state => state.magicGlyphActivation);
 
   const interactionPromptRef = useRef();
 
   const activeLink = useRef();
 
-  const activateLink = useCallback((link) => {
-    if (link.id === "portal" && !activePlateRef.current) return;
+  const activateLink = useCallback(link => {
+    if (link.id === 'portal' && !activePlateRef.current) return;
     if (activeLink && !activeLink.current && interactionPromptRef.current) {
       activeLink.current = link;
       gsap.to(interactionPromptRef.current.scale, {
@@ -49,7 +50,7 @@ const IslandColliders = () => {
         y: link.textScale,
         z: link.textScale,
         duration: 0.3,
-        ease: "back",
+        ease: 'back',
       });
       interactionPromptRef.current.position.set(...link.textPosition);
       interactionPromptRef.current.rotation.y = link.textRotationY;
@@ -68,10 +69,10 @@ const IslandColliders = () => {
     }
   }, []);
 
-  const activatePlate = useCallback((userData) => {
+  const activatePlate = useCallback(userData => {
     if (userData.id === activePlateRef.current) return;
 
-    useStore.setState((state) => ({
+    useStore.setState(state => ({
       activePlate: userData.id,
     }));
   }, []);
@@ -203,43 +204,45 @@ const IslandColliders = () => {
     []
   );
 
+  const texture = useTexture(INTERACTION_PROMPT_URL, texture => {});
+
   const instances = useMemo(() => {
     const instances = new Array(linksInstancesDatas.length);
 
     for (let i = 0; i < linksInstancesDatas.length; i++) {
       instances[i] = {
-        key: "instance_" + i,
+        key: 'instance_' + i,
         ...linksInstancesDatas[i],
       };
     }
     return instances;
   }, []);
 
-  const startInteraction = useCallback((event) => {
-    if (event.key === "Enter") {
+  const startInteraction = useCallback(event => {
+    if (event.key === 'Enter') {
       if (activeLink) {
-        activeLink.current.id === "mailBox"
-          ? (window.location.href = "mailto:contact@mike-fernandez.dev")
-          : activeLink.current.id === "portal"
-          ? window.open(
-              activeLink.current.href[activePlateRef.current],
-              "_blank"
-            )
-          : window.open(activeLink.current.href, "_blank");
+        activeLink.current.id === 'mailBox'
+          ? (window.location.href = 'mailto:contact@mike-fernandez.dev')
+          : activeLink.current.id === 'portal'
+            ? window.open(
+                activeLink.current.href[activePlateRef.current],
+                '_blank'
+              )
+            : window.open(activeLink.current.href, '_blank');
       }
     }
   }, []);
 
   useEffect(() => {
     nodes.Collider.material.visible = false;
-    window.addEventListener("keydown", startInteraction);
+    window.addEventListener('keydown', startInteraction);
 
     const unsubActivaPlate = useStore.subscribe(
-      (state) => (activePlateRef.current = state.activePlate)
+      state => (activePlateRef.current = state.activePlate)
     );
 
     return () => {
-      window.removeEventListener("keydown", startInteraction);
+      window.removeEventListener('keydown', startInteraction);
       unsubActivaPlate();
     };
   }, []);
@@ -249,14 +252,14 @@ const IslandColliders = () => {
       <InstancedRigidBodies
         instances={instances}
         colliders="cuboid"
-        type={"fixed"}
+        type={'fixed'}
         sensor
-        onIntersectionEnter={(state) =>
+        onIntersectionEnter={state =>
           state.target.rigidBody.userData.startInteraction(
             state.target.rigidBody.userData
           )
         }
-        onIntersectionExit={(state) =>
+        onIntersectionExit={state =>
           state.target.rigidBody.userData.closeInteraction()
         }
       >
@@ -268,7 +271,7 @@ const IslandColliders = () => {
         </instancedMesh>
       </InstancedRigidBodies>
 
-      <RigidBody type={"fixed"} colliders={"trimesh"}>
+      <RigidBody type={'fixed'} colliders={'trimesh'}>
         <mesh
           scale={0.45}
           position={[-1.35, 2.3, -15]}
@@ -277,30 +280,35 @@ const IslandColliders = () => {
         />
       </RigidBody>
 
-      <Image
+      <Plane
+        position={[0, 2, 0]}
         ref={interactionPromptRef}
         url={INTERACTION_PROMPT_URL}
-        scale={0.01}
-        color={[3, 1.5, 1]}
-        transparent
-        toneMapped={false}
         onClick={() => {
           if (activeLink && IS_MOBILE_DEVICE) {
-            activeLink.current.id === "mailBox"
-              ? (window.location.href = "mailto:mike.fernandez.pro@gmail.com")
-              : activeLink.current.id === "portal"
-              ? window.open(
-                  activeLink.current.href[activePlateRef.current],
-                  "_blank"
-                )
-              : window.open(activeLink.current.href, "_blank");
+            activeLink.current.id === 'mailBox'
+              ? (window.location.href = 'mailto:mike.fernandez.pro@gmail.com')
+              : activeLink.current.id === 'portal'
+                ? window.open(
+                    activeLink.current.href[activePlateRef.current],
+                    '_blank'
+                  )
+                : window.open(activeLink.current.href, '_blank');
           }
         }}
-      />
+      >
+        <meshBasicMaterial
+          map={texture}
+          transparent={true}
+          alphaTest={0.5}
+          color={[15, 1.5, 1]}
+          toneMapped={false}
+        />
+      </Plane>
     </>
   );
 };
 
-useGLTF.preload("/models/islandColliders/islandColliders.glb");
+useGLTF.preload('/models/islandColliders/islandColliders.glb');
 
 export default IslandColliders;
