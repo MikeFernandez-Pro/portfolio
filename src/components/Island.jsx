@@ -8,12 +8,12 @@ import SleepText from './SleepText';
 import { useFrame } from '@react-three/fiber';
 import { Howl } from 'howler';
 import { IS_MOBILE_DEVICE } from '../utils/utils.js';
-import { CountriesFlags } from './Island/CountriesFlags';
+import { CountriesFlags } from './island/CountriesFlags';
 import islandModel from '/models/island/island.glb?url';
-import { LanternsAndHome } from './Island/LanternsAndHome';
-import { Well } from './Island/Well';
-import { MagicBooks } from './Island/MagicBooks';
-import Forge from './Island/Forge';
+import { LanternsAndHome } from './island/LanternsAndHome';
+import { Well } from './island/Well';
+import { MagicBooks } from './island/MagicBooks';
+import Forge from './island/Forge';
 import { MagicGlyphs } from './sorceryArea/MagicGlyphs';
 import { FloatingSkills } from './FloatingSkills';
 

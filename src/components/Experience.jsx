@@ -1,16 +1,15 @@
 import { useEffect } from 'react';
 import { Physics } from '@react-three/rapier';
-import { useLoader, useThree } from '@react-three/fiber';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Howl } from 'howler';
 import { useStore } from '../store/ZustandStorage.jsx';
 
 import Joystick from './Joystick.jsx';
 import Island from './Island.jsx';
-import IslandColliders from './IslandColliders.jsx';
 import CharacterController from './CharacterController.jsx';
 import ProjectsPortals from './ProjectsPortals.jsx';
-import Clouds from './Clouds.jsx';
+// import Clouds from './Clouds.jsx';
 import Smoke from './Smoke.jsx';
 import Lights from './Lights.jsx';
 import TorchesSparks from './TorchSparks/TorchesSparks.jsx';
@@ -18,8 +17,10 @@ import FireFlies from './FireFlies.jsx';
 import Sky from './Sky.jsx';
 import { Perf } from 'r3f-perf';
 import { Grass } from './grass/Grass.tsx';
-import { GradientTexture, OrbitControls } from '@react-three/drei';
+import { GradientTexture } from '@react-three/drei';
 import { useControls } from 'leva';
+import { InteractiveElements } from './interactiveElements/InteractiveElements.jsx';
+import { IslandCollider } from './island/IslandCollider.jsx';
 
 var ambientSound = new Howl({
   // Music by Aleksey Chistilin
@@ -79,8 +80,9 @@ const Experience = () => {
         </meshBasicMaterial>
       </mesh>
       <Physics timeStep="vary" gravity={[0, -29.43, 0]}>
-        <IslandColliders />
+        <IslandCollider />
         <CharacterController />
+        <InteractiveElements />
       </Physics>
     </>
   );
