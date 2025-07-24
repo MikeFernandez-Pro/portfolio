@@ -128,7 +128,7 @@ const Island = () => {
       <Well island={island} />
       <MagicBooks island={island} />
       <FloatingSkills island={island} />
-      <CountriesFlags island={island} />
+      {/* <CountriesFlags island={island} /> */}
       <SleepText />
       <LanternsAndHome island={island} />
       <Forge islandAnimations={islandAnimations} />

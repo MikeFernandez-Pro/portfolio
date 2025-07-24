@@ -21,6 +21,7 @@ import { GradientTexture } from '@react-three/drei';
 import { useControls } from 'leva';
 import { InteractiveElements } from './interactiveElements/InteractiveElements.jsx';
 import { IslandCollider } from './island/IslandCollider.jsx';
+import { OrbitControls } from '@react-three/drei';
 
 var ambientSound = new Howl({
   // Music by Aleksey Chistilin

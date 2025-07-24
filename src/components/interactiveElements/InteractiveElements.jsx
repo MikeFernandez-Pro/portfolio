@@ -7,70 +7,62 @@ import { InteractivElementsColliders } from './InteractivElementsColliders.jsx';
 import {
   interactiveElementsIds,
   interactiveElementsLinks,
-} from './interactiveElementsConstants.js';
+  createInteractionAnimation,
+} from './interactiveElementsUtils.js';
 
 const InteractiveElements = () => {
   const activePlateRef = useRef(useStore.getState().activePlate);
   const magicGlyphActivation = useStore(state => state.magicGlyphActivation);
   const interactionPromptRef = useRef();
-  const activeLink = useRef();
-  const gsapContext = useRef();
 
   const activateLink = useCallback(link => {
-    if (link.id === interactiveElementsIds.portal && !activePlateRef.current)
-      return;
-    if (activeLink && !activeLink.current && interactionPromptRef.current) {
-      activeLink.current = link;
-      const child = interactionPromptRef.current.getObjectByName(link.id);
+    if (link && interactionPromptRef.current) {
+      // Do not activate portal if no plate is selected
+      if (
+        link.userData.id === interactiveElementsIds.portal &&
+        !activePlateRef.current
+      )
+        return;
 
-      if (child) {
-        gsapContext.current.add(() => {
-          gsap.to(child.scale, {
-            x: link.textScale,
-            y: link.textScale,
-            z: link.textScale,
-            duration: 0.3,
-            ease: 'back',
-            overwrite: true,
-          });
-        });
-      }
-    }
-  }, []);
-
-  const deactivateLink = useCallback(() => {
-    if (activeLink && activeLink.current && interactionPromptRef.current) {
       const child = interactionPromptRef.current.getObjectByName(
-        activeLink.current.id
+        link.userData.id
       );
-      activeLink.current = undefined;
 
       if (child) {
-        gsapContext.current.add(() => {
-          gsap.to(child.scale, {
-            x: 0,
-            y: 0,
-            z: 0,
-            duration: 0.3,
-            overwrite: true,
-          });
-        });
+        if (!link.userData.interactionAnimation) {
+          link.userData.interactionAnimation =
+            createInteractionAnimation(child);
+        }
+
+        link.userData.interactionAnimation.play();
       }
     }
   }, []);
 
-  const activatePlate = useCallback(userData => {
-    if (userData.id === activePlateRef.current) return;
+  const deactivateLink = useCallback(link => {
+    if (link && interactionPromptRef.current) {
+      const child = interactionPromptRef.current.getObjectByName(
+        link.userData.id
+      );
 
-    useStore.setState(state => ({
-      activePlate: userData.id,
-    }));
+      if (child) {
+        if (link.userData.interactionAnimation) {
+          link.userData.interactionAnimation.reverse();
+        }
+      }
+    }
+  }, []);
+
+  const activatePlate = useCallback(interactiveElementData => {
+    const interactiveElementId = interactiveElementData.userData.id;
+    if (interactiveElementId === activePlateRef.current) return;
+
+    useStore.setState({ activePlate: interactiveElementId });
   }, []);
 
   const linksInstancesDatas = useMemo(
-    () => [
-      {
-        key: interactiveElementsIds.mailBox,
+    () => ({
+      [interactiveElementsIds.mailBox]: {
         userData: {
           id: interactiveElementsIds.mailBox,
           textPosition: [-4.47, 2.45, -8.14],
@@ -83,7 +75,7 @@ const InteractiveElements = () => {
         rotation: [0, 0.49, 0],
         scale: [0.9, 0.9, 0.9],
       },
-      {
+      [interactiveElementsIds.linkedIn]: {
         key: interactiveElementsIds.linkedIn,
         userData: {
           id: interactiveElementsIds.linkedIn,
@@ -98,7 +90,7 @@ const InteractiveElements = () => {
         rotation: [0, 0.49, 0],
         scale: [0.9, 0.9, 0.9],
       },
-      {
+      [interactiveElementsIds.vercel]: {
         key: interactiveElementsIds.vercel,
         userData: {
           id: interactiveElementsIds.vercel,
@@ -113,7 +105,7 @@ const InteractiveElements = () => {
         rotation: [0, 0.48, 0],
         scale: [0.9, 0.9, 0.9],
       },
-      {
+      [interactiveElementsIds.portal]: {
         key: interactiveElementsIds.portal,
         userData: {
           id: interactiveElementsIds.portal,
@@ -128,11 +120,11 @@ const InteractiveElements = () => {
           startInteraction: activateLink,
           closeInteraction: deactivateLink,
         },
-        position: [-16.1, 5.24, -37.49],
+        position: [-16.1, 5.72, -37.26],
         rotation: [0.43, 0, 0],
-        scale: [1.04, 0.97, 3],
+        scale: [1.9, 0.97, 3],
       },
-      {
+      [interactiveElementsIds.statue]: {
         key: interactiveElementsIds.statue,
         userData: {
           id: interactiveElementsIds.statue,
@@ -147,7 +139,7 @@ const InteractiveElements = () => {
         rotation: [0, 0, 0],
         scale: [1.5, 1, 1.5],
       },
-      {
+      [interactiveElementsIds.magicGlyph]: {
         key: interactiveElementsIds.magicGlyph,
         userData: {
           id: interactiveElementsIds.magicGlyph,
@@ -160,7 +152,7 @@ const InteractiveElements = () => {
         rotation: [0, -0.15, 0],
         scale: [2.85, 0.35, 2.85],
       },
-      {
+      [interactiveElementsIds.portalPlate]: {
         key: interactiveElementsIds.portalPlate,
         userData: {
           id: interactiveElementsIds.portalPlate,
@@ -170,7 +162,7 @@ const InteractiveElements = () => {
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       },
-      {
+      [interactiveElementsIds.seaPlate]: {
         key: interactiveElementsIds.seaPlate,
         userData: {
           id: interactiveElementsIds.seaPlate,
@@ -180,7 +172,7 @@ const InteractiveElements = () => {
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       },
-      {
+      [interactiveElementsIds.halloweenPlate]: {
         key: interactiveElementsIds.halloweenPlate,
         userData: {
           id: interactiveElementsIds.halloweenPlate,
@@ -190,37 +182,73 @@ const InteractiveElements = () => {
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
       },
-    ],
+    }),
     []
   );
 
-  const startInteraction = useCallback(event => {
-    if (event.key === 'Enter') {
-      if (activeLink) {
-        activeLink.current.id === interactiveElementsIds.mailBox
-          ? (window.location.href = 'mailto:contact@mike-fernandez.dev')
-          : activeLink.current.id === interactiveElementsIds.portal
-            ? window.open(
-                activeLink.current.href[activePlateRef.current],
-                '_blank'
-              )
-            : window.open(activeLink.current.href, '_blank');
-      }
-    }
-  }, []);
-
   useEffect(() => {
-    gsapContext.current = gsap.context(() => {}, interactionPromptRef);
+    const keyDownHandler = event => {
+      if (event.key === 'Enter') {
+        const activatedInteractiveElement =
+          useStore.getState().activatedInteractiveElement.current;
+        if (activatedInteractiveElement) {
+          const activatedInteractiveElementData =
+            linksInstancesDatas[activatedInteractiveElement];
 
-    window.addEventListener('keydown', startInteraction);
+          activatedInteractiveElement === interactiveElementsIds.mailBox
+            ? (window.location.href = 'mailto:contact@mike-fernandez.dev')
+            : activatedInteractiveElement === interactiveElementsIds.portal
+              ? window.open(
+                  activatedInteractiveElementData.userData.href[
+                    activePlateRef.current
+                  ],
+                  '_blank'
+                )
+              : window.open(
+                  activatedInteractiveElementData.userData.href,
+                  '_blank'
+                );
+        }
+      }
+    };
+
+    window.addEventListener('keydown', keyDownHandler);
+
+    const unsubActiveInteractiveElement = useStore.subscribe(
+      state => state.activatedInteractiveElement,
+      activatedInteractiveElement => {
+        if (activatedInteractiveElement.current) {
+          const activatedInteractiveElementData =
+            linksInstancesDatas[activatedInteractiveElement.current];
+          activatedInteractiveElementData.userData?.startInteraction(
+            activatedInteractiveElementData
+          );
+        }
+
+        if (activatedInteractiveElement.prev) {
+          const activatedInteractiveElementData =
+            linksInstancesDatas[activatedInteractiveElement.prev];
+          activatedInteractiveElementData.userData?.closeInteraction(
+            activatedInteractiveElementData
+          );
+        }
+      }
+    );
 
     const unsubActivaPlate = useStore.subscribe(
       state => (activePlateRef.current = state.activePlate)
     );
 
     return () => {
-      gsapContext.current.revert();
-      window.removeEventListener('keydown', startInteraction);
+      for (const link of Object.values(linksInstancesDatas)) {
+        if (link.userData.interactionAnimation) {
+          link.userData.interactionAnimation?.kill();
+          delete link.userData.interactionAnimation;
+        }
+      }
+
+      window.removeEventListener('keydown', keyDownHandler);
+      unsubActiveInteractiveElement();
       unsubActivaPlate();
     };
   }, []);
@@ -230,7 +258,7 @@ const InteractiveElements = () => {
       <InteractivElementsColliders linksInstancesDatas={linksInstancesDatas} />
 
       <InteractiveLinks
-        activeLink={activeLink}
+        linksInstancesDatas={linksInstancesDatas}
         activePlateRef={activePlateRef}
         interactionPromptRef={interactionPromptRef}
       />

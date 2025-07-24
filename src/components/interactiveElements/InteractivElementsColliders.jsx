@@ -1,39 +1,50 @@
 import { InstancedRigidBodies } from '@react-three/rapier';
 import { useMemo } from 'react';
-import { interactiveElementsCount } from './interactiveElementsConstants.js';
+import { interactiveElementsCount } from './interactiveElementsUtils.js';
+import { useStore } from '../../store/ZustandStorage.jsx';
 
 const InteractivElementsColliders = props => {
   const { linksInstancesDatas } = props;
 
   const instances = useMemo(
     () =>
-      Array.from({ length: interactiveElementsCount }, (_, i) => ({
+      Object.entries(linksInstancesDatas).map(([key, data], i) => ({
         key: `instance_${i}`,
-        ...linksInstancesDatas[i],
+        ...data,
       })),
     [linksInstancesDatas]
   );
 
   return (
-    <InstancedRigidBodies
-      instances={instances}
-      colliders="cuboid"
-      type={'fixed'}
-      sensor
-      onIntersectionEnter={state =>
-        state.target.rigidBody.userData.startInteraction(
-          state.target.rigidBody.userData
-        )
-      }
-      onIntersectionExit={state => {
-        state.target.rigidBody.userData.closeInteraction();
-      }}
-    >
-      <instancedMesh args={[undefined, undefined, interactiveElementsCount]}>
-        <boxGeometry />
-        <meshBasicMaterial visible={false} />
-      </instancedMesh>
-    </InstancedRigidBodies>
+    <>
+      <InstancedRigidBodies
+        instances={instances}
+        colliders="cuboid"
+        type={'fixed'}
+        sensor
+        onIntersectionEnter={state => {
+          useStore.setState({
+            activatedInteractiveElement: {
+              prev: useStore.getState().activatedInteractiveElement.current,
+              current: state.target.rigidBody.userData.id,
+            },
+          });
+        }}
+        onIntersectionExit={() => {
+          useStore.setState({
+            activatedInteractiveElement: {
+              prev: useStore.getState().activatedInteractiveElement.current,
+              current: null,
+            },
+          });
+        }}
+      >
+        <instancedMesh args={[undefined, undefined, interactiveElementsCount]}>
+          <boxGeometry />
+          <meshBasicMaterial visible={false} />
+        </instancedMesh>
+      </InstancedRigidBodies>
+    </>
   );
 };
 
