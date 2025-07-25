@@ -1,29 +1,49 @@
-import { useControls } from "leva";
+import { useControls } from 'leva';
+import * as THREE from 'three';
+import { useEffect, useRef } from 'react';
 
-const isDebugActive = window.location.hash === "#debug";
-
-const LanternsAndHome = (props) => {
+const LanternsAndHome = props => {
   const { island } = props;
+  const lanternsAndHomeRef = useRef(null);
+  const baseColorRef = useRef(new THREE.Color('#ff4646'));
+  const intensityRef = useRef(9.9);
 
-  if (isDebugActive) {
-    useControls("Lanterns", {
-      color: {
-        value: "#f28b8b",
-        onChange: (value) => {
-          island.materials.lanternsAndHomes.color.set(value);
-        },
-      },
-      emissiveIntensity: {
-        value: 5.2,
-        min: 0,
-        max: 10,
-        step: 0.01,
-        onChange: (value) => {
-          island.materials.lanternsAndHomes.emissiveIntensity = value;
-        },
-      },
+  useEffect(() => {
+    const mesh = island.scene.getObjectByName('island_2');
+    mesh.material?.dispose();
+    mesh.material = new THREE.MeshBasicMaterial({
+      color: baseColorRef.current.clone().multiplyScalar(intensityRef.current),
     });
-  }
+    lanternsAndHomeRef.current = mesh;
+  }, [island]);
+
+  useControls('Lanterns', {
+    color: {
+      value: '#ffffff',
+      onChange: value => {
+        baseColorRef.current.set(value);
+        const scaled = baseColorRef.current
+          .clone()
+          .multiplyScalar(intensityRef.current);
+        if (lanternsAndHomeRef.current) {
+          lanternsAndHomeRef.current.material.color.set(scaled);
+        }
+      },
+    },
+    intensity: {
+      value: 1,
+      min: 0,
+      max: 10,
+      step: 0.01,
+      onChange: value => {
+        intensityRef.current = value;
+        const scaled = baseColorRef.current.clone().multiplyScalar(value);
+        if (lanternsAndHomeRef.current) {
+          lanternsAndHomeRef.current.material.color.set(scaled);
+        }
+      },
+    },
+  });
 
   return null;
 };

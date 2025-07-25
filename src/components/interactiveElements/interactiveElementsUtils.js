@@ -1,27 +1,6 @@
 import gsap from 'gsap';
-
-const interactiveElementsIds = {
-  mailBox: 'mailBox',
-  linkedIn: 'linkedIn',
-  vercel: 'vercel',
-  portal: 'portal',
-  statue: 'statue',
-  magicGlyph: 'magicGlyph',
-  portalPlate: 'portalPlate',
-  seaPlate: 'seaPlate',
-  halloweenPlate: 'halloweenPlate',
-};
-
-const interactiveElementsCount = Object.keys(interactiveElementsIds).length;
-
-const interactiveElementsLinks = {
-  linkedIn: 'https://www.linkedin.com/in/mike-fernandez-front-end-dev/',
-  vercel: 'https://vercel.com/mikefernandez-pro',
-  portalPlate: 'https://magic-portal-threejs.vercel.app/',
-  seaPlate: 'https://raging-sea-shader-flame.vercel.app/',
-  halloweenPlate: 'https://halloween-challenge.vercel.app/',
-  statue: '/CV_Portfolio_Mike.pdf',
-};
+import { useStore } from '../../store/ZustandStorage.jsx';
+import { PORTAL_ID, MAIL_BOX_URL } from './interactiveElementsData.js';
 
 const createInteractionAnimation = child => {
   const InteractionIndicatorChild = child.getObjectByName(
@@ -66,9 +45,71 @@ const createInteractionAnimation = child => {
   return tl;
 };
 
+const triggerInteractiveLink = (link, interactionPromptRef, activePlateRef) => {
+  if (link && interactionPromptRef.current) {
+    // Do not activate portal if no plate is selected
+    if (link.userData.id === PORTAL_ID && !activePlateRef.current) return;
+
+    const child = interactionPromptRef.current.getObjectByName(
+      link.userData.id
+    );
+
+    if (child) {
+      if (!link.userData.interactionAnimation) {
+        link.userData.interactionAnimation = createInteractionAnimation(child);
+      }
+
+      link.userData.interactionAnimation.play();
+    }
+  }
+};
+
+const untriggerInteractiveLink = (link, interactionPromptRef) => {
+  if (link && interactionPromptRef.current) {
+    const child = interactionPromptRef.current.getObjectByName(
+      link.userData.id
+    );
+
+    if (child) {
+      if (link.userData.interactionAnimation) {
+        link.userData.interactionAnimation.reverse();
+      }
+    }
+  }
+};
+
+const activateInteractiveElementLink = (url, isMailBox = false) => {
+  const activatedInteractiveElement =
+    useStore.getState().activatedInteractiveElement.current;
+
+  if (activatedInteractiveElement) {
+    if (isMailBox) {
+      window.location.href = MAIL_BOX_URL;
+    } else {
+      window.open(url, '_blank');
+    }
+  }
+};
+
+const activateMagicGlyph = () => {
+  const magicGlyphActivation = useStore.getState().magicGlyphActivation;
+
+  if (!magicGlyphActivation) {
+    useStore.setState({ magicGlyphActivation: true });
+  }
+};
+
+const activatePortalPlate = (interactiveElementData, activePlateRef) => {
+  const interactiveElementId = interactiveElementData.userData.id;
+  if (interactiveElementId === activePlateRef.current) return;
+
+  useStore.setState({ activePlate: interactiveElementId });
+};
+
 export {
-  interactiveElementsCount,
-  interactiveElementsIds,
-  interactiveElementsLinks,
-  createInteractionAnimation,
+  triggerInteractiveLink,
+  untriggerInteractiveLink,
+  activateInteractiveElementLink,
+  activateMagicGlyph,
+  activatePortalPlate,
 };

@@ -1,18 +1,18 @@
 import { InstancedRigidBodies } from '@react-three/rapier';
 import { useMemo } from 'react';
-import { interactiveElementsCount } from './interactiveElementsUtils.js';
+import { INTERACTIVE_ELEMENTS_COUNT } from './interactiveElementsData.js';
 import { useStore } from '../../store/ZustandStorage.jsx';
 
 const InteractivElementsColliders = props => {
-  const { linksInstancesDatas } = props;
+  const { interactiveElementsData } = props;
 
   const instances = useMemo(
     () =>
-      Object.entries(linksInstancesDatas).map(([key, data], i) => ({
+      Object.entries(interactiveElementsData).map(([key, data], i) => ({
         key: `instance_${i}`,
         ...data,
       })),
-    [linksInstancesDatas]
+    [interactiveElementsData]
   );
 
   return (
@@ -39,7 +39,9 @@ const InteractivElementsColliders = props => {
           });
         }}
       >
-        <instancedMesh args={[undefined, undefined, interactiveElementsCount]}>
+        <instancedMesh
+          args={[undefined, undefined, INTERACTIVE_ELEMENTS_COUNT]}
+        >
           <boxGeometry />
           <meshBasicMaterial visible={false} />
         </instancedMesh>
