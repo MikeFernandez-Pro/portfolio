@@ -3,24 +3,24 @@ import { Physics } from '@react-three/rapier';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Howl } from 'howler';
-import { useStore } from '../store/ZustandStorage.jsx';
+import { useStore } from '#store/ZustandStorage.jsx';
 
-import Joystick from './Joystick.jsx';
-import Island from './Island.jsx';
-import CharacterController from './CharacterController.jsx';
-import ProjectsPortals from './ProjectsPortals.jsx';
-// import Clouds from './Clouds.jsx';
-import Smoke from './Smoke.jsx';
-import Lights from './Lights.jsx';
-import TorchesSparks from './TorchSparks/TorchesSparks.jsx';
-import FireFlies from './FireFlies.jsx';
-import Sky from './Sky.jsx';
+import Joystick from '#controller/Joystick.jsx';
+import Islands from '#islands/Islands.jsx';
+import CharacterController from '#controller/CharacterController.jsx';
+import ProjectsPortals from '#islands/projectsIsland/ProjectsPortals.jsx';
+import Clouds from '#environment/Clouds.jsx';
+import Smoke from '#islands/resumeIsland/Smoke.jsx';
+import Lights from '#environment/Lights.jsx';
+import TorchesSparks from '#islands/common/torchSparks/TorchesSparks.jsx';
+import FireFlies from '#islands/common/FireFlies.jsx';
+import Sky from '#environment/Sky.jsx';
 import { Perf } from 'r3f-perf';
-import { Grass } from './grass/Grass.tsx';
+import { Grass } from '#islands/resumeIsland/grass/Grass.jsx';
 import { GradientTexture } from '@react-three/drei';
 import { useControls } from 'leva';
-import { InteractiveElements } from './interactiveElements/InteractiveElements.jsx';
-import { IslandCollider } from './island/IslandCollider.jsx';
+import { InteractiveElements } from '#islands/contactIsland/interactiveElements/InteractiveElements.jsx';
+import { IslandCollider } from '#islands/common/IslandCollider.jsx';
 import { OrbitControls } from '@react-three/drei';
 
 var ambientSound = new Howl({
@@ -69,7 +69,7 @@ const Experience = () => {
       <TorchesSparks />
       <ProjectsPortals />
       <Grass />
-      <Island />
+      <Islands />
       <mesh>
         <sphereGeometry args={[125]} />
         <meshBasicMaterial side={THREE.BackSide}>

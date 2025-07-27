@@ -3,11 +3,22 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "imports": {
+    "#*": "./src/*",
+    "#components/*": "./src/components/*",
+    "#islands/*": "./src/components/islands/*",
+    "#effectComposer/*": "./src/components/effectComposer/*",
+    "#environment/*": "./src/components/environment/*",
+    "#controller/*": "./src/components/controller/*",
+    "#shaders/*": "./src/shaders/*",
+    "#utils/*": "./src/utils/*",
+    "#store/*": "./src/store/*"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "deploy": "vercel --prod",
-    "lint": "eslint . --ext js,jsx",
+    "lint": "eslint . --fix",
     "lint:fix": "eslint . --ext js,jsx --fix",
     "format": "prettier --write ."
   },

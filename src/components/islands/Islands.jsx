@@ -1,0 +1,142 @@
+import { useGLTF, useAnimations } from '@react-three/drei';
+import React, { useLayoutEffect, useMemo, useRef } from 'react';
+import * as THREE from 'three';
+
+import gsap from 'gsap';
+import { useStore } from '#store/ZustandStorage.jsx';
+import SleepText from '#islands/resumeIsland/SleepText.jsx';
+import { useFrame } from '@react-three/fiber';
+import { Howl } from 'howler';
+import { IS_MOBILE_DEVICE } from '#utils/utils.js';
+import { CountriesFlags } from '#islands/resumeIsland/countryFlags/CountriesFlags';
+import islandModel from '/models/island/island.glb?url';
+import { LanternsAndHome } from '#islands/common/LanternsAndHome';
+import { Well } from '#islands/contactIsland/Well';
+import { MagicBooks } from '#islands/skillsIsland/MagicBooks';
+import Forge from '#islands/contactIsland/forge/Forge';
+import { MagicGlyphs } from '#islands/skillsIsland/MagicGlyphs';
+import { FloatingSkills } from '#islands/skillsIsland/FloatingSkills';
+
+const ISLAND_POSITION = new THREE.Vector3(-1.35, 2.25, -15);
+
+/**
+ * Sounds Effects
+ */
+var pressurePlatesSoundEffect = new Howl({
+  src: ['/sounds/pressurePlatesSoundEffect.mp3'],
+  autoplay: false,
+  volume: 0.09,
+});
+
+const Islands = () => {
+  //   /**
+  //    * Islands initialization
+  //    */
+  const island = useMemo(() => {
+    const island = useGLTF(islandModel);
+
+    island.scene.traverse(child => {
+      if (child.isMesh && child.material.isMeshStandardMaterial) {
+        child.material.name === 'islandTexture' && !IS_MOBILE_DEVICE
+          ? (child.receiveShadow = true)
+          : (child.material.toneMapped = false);
+
+        if (child.material.name === 'islandTexture') {
+          child.material.roughness = 1;
+        }
+        child.material.envMapIntensity = 1;
+      }
+    });
+
+    return island;
+  }, []);
+
+  useFrame((state, delta) => {
+    // Cauldron Bone
+    island.scene.children[0].children[3].rotation.y += delta * 0.5;
+    // Margic Portal Bone
+    island.scene.children[0].children[4].rotation.y += delta * 0.15;
+  });
+
+  const islandAnimations = useAnimations(island.animations, island.scene);
+
+  // useLayoutEffect(() => {
+  island.materials.islandTexture.aoMapIntensity = 1;
+
+  // island.materials.portalPlate.emissiveIntensity = portalPlate.emissiveIntensity;
+  island.materials.portalPlate.emissive = new THREE.Color('#68CFF2');
+  island.materials.portalPlate.emissiveIntensity = 0;
+  island.materials.seaPlate.emissive = new THREE.Color('#68CFF2');
+  island.materials.seaPlate.emissiveIntensity = 0;
+  island.materials.halloweenPlate.emissive = new THREE.Color('#68CFF2');
+  island.materials.halloweenPlate.emissiveIntensity = 0;
+
+  if (IS_MOBILE_DEVICE) island.materials.controls.opacity = 0;
+
+  /**
+   * Islands Animations Activation
+   */
+  useLayoutEffect(() => {
+    /**
+     * Animations
+     */
+
+    islandAnimations.actions['details'].play();
+
+    /**
+     * Storage Subscriptions
+     */
+
+    // Subscribe to activePlate zustand store state
+    const unsubActivePlate = useStore.subscribe(
+      state => state.activePlate,
+      (activePlate, prevPlate) => {
+        // plate emissive intensity animation
+        gsap.to(island.materials[activePlate], {
+          duration: 0.2,
+          emissiveIntensity: 3,
+        });
+        if (prevPlate)
+          gsap.to(island.materials[prevPlate], {
+            duration: 0,
+            emissiveIntensity: 0,
+          });
+
+        // plate sound effect
+        pressurePlatesSoundEffect.seek(0);
+        pressurePlatesSoundEffect.play();
+      }
+    );
+
+    // Clear animations, interval and subscriptions on unmount
+    return () => {
+      unsubActivePlate();
+    };
+  }, []);
+
+  return (
+    <>
+      <primitive
+        object={island.scene}
+        scale={0.45}
+        position={ISLAND_POSITION}
+      />
+      {/* <LiquidsShaders
+        well={island.scene.children[0].children[0].children[6]}
+        cauldron={island.scene.children[0].children[0].children[7]}
+      /> */}
+      <Well island={island} />
+      <MagicBooks island={island} />
+      <FloatingSkills island={island} />
+      {/* <CountriesFlags island={island} /> */}
+      <SleepText />
+      <LanternsAndHome island={island} />
+      <Forge islandAnimations={islandAnimations} />
+      <MagicGlyphs island={island} />
+    </>
+  );
+};
+
+useGLTF.preload(islandModel);
+
+export default Islands;

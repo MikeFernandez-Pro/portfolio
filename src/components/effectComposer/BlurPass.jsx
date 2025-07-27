@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { useControls } from 'leva';
 import { Effect } from 'postprocessing';
 
-import blurPassFragmentShader from '/shaders/blurPass/fragment.glsl';
+import blurPassFragmentShader from '#shaders/blurPass/fragment.glsl';
 
 class blurPassEffect extends Effect {
   constructor(isHorizontal) {
