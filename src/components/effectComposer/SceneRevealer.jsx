@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import gsap from 'gsap';
 import { useTexture } from '@react-three/drei';
-import * as THREE from 'three';
 import { Effect } from 'postprocessing';
+import gsap from 'gsap';
+import * as THREE from 'three';
 
-import sceneRevealerFragmentShader from '/shaders/sceneRevealer/fragment.glsl';
+import sceneRevealerFragmentShader from '#shaders/sceneRevealer/fragment.glsl';
 
-import PerlinNoiseImage from '/textures/perlin.png';
+import PerlinNoiseImage from '#assets/textures/perlin.png';
 
 class sceneRevealerEffect extends Effect {
   constructor(aspectRatio, perlinNoiseTexture) {
@@ -62,5 +62,7 @@ const SceneRevealer = props => {
 
   return <primitive ref={sceneRevealerRef} object={effect} />;
 };
+
+useTexture.preload(PerlinNoiseImage);
 
 export { SceneRevealer };

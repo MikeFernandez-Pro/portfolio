@@ -1,10 +1,11 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import { useHelper } from '@react-three/drei';
-import * as THREE from 'three';
-import { IS_MOBILE_DEVICE } from '#utils/utils.js';
 import { useControls } from 'leva';
+import * as THREE from 'three';
+
 import { useStore } from '#store/ZustandStorage.jsx';
+import { IS_MOBILE_DEVICE } from '#utils/utils.js';
 
 const Lights = () => {
   const characterLightRef = useRef(null);

@@ -1,29 +1,28 @@
-import { useGLTF, useAnimations } from '@react-three/drei';
 import React, { useLayoutEffect, useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import { useGLTF, useAnimations } from '@react-three/drei';
+import { Howl } from 'howler';
+import gsap from 'gsap';
 import * as THREE from 'three';
 
-import gsap from 'gsap';
-import { useStore } from '#store/ZustandStorage.jsx';
-import SleepText from '#islands/resumeIsland/SleepText.jsx';
-import { useFrame } from '@react-three/fiber';
-import { Howl } from 'howler';
-import { IS_MOBILE_DEVICE } from '#utils/utils.js';
-import { CountriesFlags } from '#islands/resumeIsland/countryFlags/CountriesFlags';
-import islandModel from '/models/island/island.glb?url';
 import { LanternsAndHome } from '#islands/common/LanternsAndHome';
-import { Well } from '#islands/contactIsland/Well';
-import { MagicBooks } from '#islands/skillsIsland/MagicBooks';
-import Forge from '#islands/contactIsland/forge/Forge';
-import { MagicGlyphs } from '#islands/skillsIsland/MagicGlyphs';
-import { FloatingSkills } from '#islands/skillsIsland/FloatingSkills';
+import { ContactIsland } from '#islands/contactIsland/ContactIsland';
+import { SkillsIsland } from '#islands/skillsIsland/SkillsIsland';
+import { ResumeIsland } from '#islands/resumeIsland/ResumeIsland';
+import { useStore } from '#store/ZustandStorage.jsx';
+import { IS_MOBILE_DEVICE } from '#utils/utils.js';
+
+import PressurePlateSoundEffect from '#assets/sounds/pressure-plate.mp3';
+
+import islandModel from '#assets/models/island/island.glb?url';
 
 const ISLAND_POSITION = new THREE.Vector3(-1.35, 2.25, -15);
 
 /**
  * Sounds Effects
  */
-var pressurePlatesSoundEffect = new Howl({
-  src: ['/sounds/pressurePlatesSoundEffect.mp3'],
+var pressurePlateSoundEffect = new Howl({
+  src: [PressurePlateSoundEffect],
   autoplay: false,
   volume: 0.09,
 });
@@ -103,8 +102,8 @@ const Islands = () => {
           });
 
         // plate sound effect
-        pressurePlatesSoundEffect.seek(0);
-        pressurePlatesSoundEffect.play();
+        pressurePlateSoundEffect.seek(0);
+        pressurePlateSoundEffect.play();
       }
     );
 
@@ -121,18 +120,11 @@ const Islands = () => {
         scale={0.45}
         position={ISLAND_POSITION}
       />
-      {/* <LiquidsShaders
-        well={island.scene.children[0].children[0].children[6]}
-        cauldron={island.scene.children[0].children[0].children[7]}
-      /> */}
-      <Well island={island} />
-      <MagicBooks island={island} />
-      <FloatingSkills island={island} />
-      {/* <CountriesFlags island={island} /> */}
-      <SleepText />
       <LanternsAndHome island={island} />
-      <Forge islandAnimations={islandAnimations} />
-      <MagicGlyphs island={island} />
+
+      <ContactIsland island={island} islandAnimations={islandAnimations} />
+      <SkillsIsland island={island} />
+      <ResumeIsland island={island} />
     </>
   );
 };

@@ -1,9 +1,9 @@
-import { useAnimations, useGLTF } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import { useAnimations, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
-import butterflyModel from '/models/island/butterfly.glb?url';
+import butterflyModel from '#assets/models/island/butterfly.glb?url';
 
 const Butterfly = props => {
   const { position, scale, color } = props;

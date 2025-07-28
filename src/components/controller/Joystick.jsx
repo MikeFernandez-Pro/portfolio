@@ -1,7 +1,8 @@
-import { useStore } from '#store/ZustandStorage.jsx';
 import { useEffect } from 'react';
 import nipplejs from 'nipplejs';
 import gsap from 'gsap';
+
+import { useStore } from '#store/ZustandStorage.jsx';
 import { IS_MOBILE_DEVICE } from '#utils/utils.js';
 
 // ScreenOrientation constants

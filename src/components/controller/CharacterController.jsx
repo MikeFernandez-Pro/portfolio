@@ -1,12 +1,17 @@
-import { useGLTF, useAnimations } from '@react-three/drei';
-import { useFrame, useThree } from '@react-three/fiber';
-import { CapsuleCollider, RigidBody } from '@react-three/rapier';
 import { useRef, useMemo, useCallback, useLayoutEffect } from 'react';
-import * as THREE from 'three';
-import { useStore } from '#store/ZustandStorage.jsx';
-import gsap from 'gsap';
+import { useFrame, useThree } from '@react-three/fiber';
+import { useGLTF, useAnimations } from '@react-three/drei';
+import { CapsuleCollider, RigidBody } from '@react-three/rapier';
 import { Howl } from 'howler';
+import gsap from 'gsap';
+import * as THREE from 'three';
+
+import { useStore } from '#store/ZustandStorage.jsx';
 import { IS_MOBILE_DEVICE } from '#utils/utils.js';
+
+import CharacterModel from '#assets/models/character/character.glb';
+import IslandSensorsModel from '#assets/models/islandSensors/islandSensors.glb';
+import RunningSoundEffect from '#assets/sounds/running.mp3';
 
 const directionOffset = (
   { forward, backward, leftward, rightward },
@@ -51,7 +56,7 @@ let characterJumping = false;
 let characterSprinting = false;
 
 let runningSoundEffect = new Howl({
-  src: ['/sounds/runningSoundEffect.mp3'],
+  src: [RunningSoundEffect],
   autoplay: false,
   loop: true,
   volume: 0.4,
@@ -110,10 +115,7 @@ const CharacterController = () => {
   const characterMesh = useRef();
 
   // Character Model and animations loaders
-  const { scene, animations } = useMemo(
-    () => useGLTF('/models/character/character.glb'),
-    []
-  );
+  const { scene, animations } = useMemo(() => useGLTF(CharacterModel), []);
   const characterAnimations = useAnimations(animations, scene);
 
   const updateCharacterAnimation = useCallback(newAnimation => {
@@ -186,10 +188,7 @@ const CharacterController = () => {
   let direction;
   let characterPosition;
 
-  const { nodes } = useMemo(
-    () => useGLTF('/models/islandSensors/islandSensors.glb'),
-    []
-  );
+  const { nodes } = useMemo(() => useGLTF(IslandSensorsModel), []);
   nodes.Sensor.material.visible = false;
 
   useFrame((state, delta) => {
@@ -395,7 +394,7 @@ const CharacterController = () => {
   );
 };
 
-useGLTF.preload('/models/character/character.glb');
-useGLTF.preload('/models/islandSensors/islandSensors.glb');
+useGLTF.preload(CharacterModel);
+useGLTF.preload(IslandSensorsModel);
 
 export default CharacterController;

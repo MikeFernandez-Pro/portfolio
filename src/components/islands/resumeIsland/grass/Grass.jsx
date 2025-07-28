@@ -1,15 +1,16 @@
-import { useTexture } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
-import { useControls } from 'leva';
 import { useEffect, useMemo, useRef } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
+import { useTexture } from '@react-three/drei';
+import { useControls } from 'leva';
 import * as THREE from 'three';
 
 import { Butterfly } from './Butterfly.jsx';
+
 import grassFragmentShader from '#shaders/grass/fragment.glsl';
 import grassVertexShader from '#shaders/grass/vertex.glsl';
-import grassHeightTextureAsset from '/textures/grassHeightMap7.png';
-import perlinNoiseImage from '/textures/perlin.png';
-import { useThree } from '@react-three/fiber';
+
+import grassHeightTextureAsset from '#assets/textures/grass-height-map.webp';
+import perlinNoiseImage from '#assets/textures/perlin.png';
 
 const Grass = () => {
   const grassRef = useRef(null);
@@ -172,3 +173,4 @@ const Grass = () => {
 export { Grass };
 
 useTexture.preload(grassHeightTextureAsset);
+useTexture.preload(perlinNoiseImage);

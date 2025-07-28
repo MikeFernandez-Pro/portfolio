@@ -1,5 +1,6 @@
-import { InstancedRigidBodies } from '@react-three/rapier';
 import { useMemo } from 'react';
+import { InstancedRigidBodies } from '@react-three/rapier';
+
 import { INTERACTIVE_ELEMENTS_COUNT } from './interactiveElementsData.js';
 import { useStore } from '#store/ZustandStorage.jsx';
 

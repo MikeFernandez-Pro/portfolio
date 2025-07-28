@@ -1,4 +1,5 @@
 import gsap from 'gsap';
+
 import { useStore } from '#store/ZustandStorage.jsx';
 import { PORTAL_ID, MAIL_BOX_URL } from './interactiveElementsData.js';
 

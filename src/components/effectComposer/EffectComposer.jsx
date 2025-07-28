@@ -5,8 +5,9 @@ import {
   N8AO,
   ToneMapping,
 } from '@react-three/postprocessing';
-import { useControls } from 'leva';
 import { ToneMappingMode } from 'postprocessing';
+import { useControls } from 'leva';
+
 import { BlurPass } from './BlurPass.jsx';
 import { SceneRevealer } from './SceneRevealer.jsx';
 

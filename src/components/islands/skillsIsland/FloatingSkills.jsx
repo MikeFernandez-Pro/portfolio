@@ -1,8 +1,9 @@
 import { useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useStore } from '#store/ZustandStorage.jsx';
-import * as THREE from 'three';
 import gsap from 'gsap';
+import * as THREE from 'three';
+
+import { useStore } from '#store/ZustandStorage.jsx';
 
 import floatingSkillsVertexShader from '#shaders/floatingSkills/vertex.glsl';
 import floatingSkillsFragmentShader from '#shaders/floatingSkills/fragment.glsl';

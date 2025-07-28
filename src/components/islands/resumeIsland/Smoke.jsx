@@ -1,6 +1,6 @@
-import { shaderMaterial } from '@react-three/drei';
-import { extend, useFrame } from '@react-three/fiber';
 import { useRef } from 'react';
+import { extend, useFrame } from '@react-three/fiber';
+import { shaderMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 
 import smokeVertexShader from '#shaders/smoke/vertex.glsl';

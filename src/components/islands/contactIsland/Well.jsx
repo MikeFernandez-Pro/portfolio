@@ -1,27 +1,16 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
-import {
-  useGLTF,
-  useTexture,
-  useAnimations,
-  Instances,
-  Instance,
-} from '@react-three/drei';
-import { useControls } from 'leva';
+import { useGLTF, useTexture, Instances, Instance } from '@react-three/drei';
 import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
-
-import perlinNoiseImage from '/textures/perlin.png';
+import { useControls } from 'leva';
+import * as THREE from 'three';
 
 import wellVertexShader from '#shaders/well/vertex.glsl';
 import wellFragmentShader from '#shaders/well/fragment.glsl';
 
-// Animated Fish Pack by Quaternius
-// https://quaternius.com/packs/animatedfish.html
-// CC0 1.0 Universal (CC0 1.0)
-// Public Domain Dedication
-// https://creativecommons.org/publicdomain/zero/1.0/
-import fishModel from '/models/island/fish.glb?url';
+import perlinNoiseImage from '#assets/textures/perlin.png';
+
+import fishModel from '#assets/models/island/fish.glb?url';
 
 const isDebugActive = window.location.hash === '#debug';
 
@@ -159,5 +148,6 @@ const Well = props => {
 };
 
 useGLTF.preload(fishModel);
+useTexture.preload(perlinNoiseImage);
 
 export { Well };

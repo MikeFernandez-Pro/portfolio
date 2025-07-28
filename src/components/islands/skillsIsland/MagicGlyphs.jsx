@@ -1,10 +1,13 @@
-import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef, useEffect } from 'react';
-import { useStore } from '#store/ZustandStorage.jsx';
-import gsap from 'gsap';
-import { Howl } from 'howler';
-import * as THREE from 'three';
+import { useFrame } from '@react-three/fiber';
 import { useControls } from 'leva';
+import { Howl } from 'howler';
+import gsap from 'gsap';
+import * as THREE from 'three';
+
+import { useStore } from '#store/ZustandStorage.jsx';
+
+import MagicGlyphSoundEffect from '#assets/sounds/magic-glyph.mp3';
 
 const MAGIC_GLYPH_SOUND_VOLUME = 0.15;
 
@@ -25,7 +28,7 @@ const MagicGlyphs = props => {
   const magicGlyphSoundEffect = useMemo(
     () =>
       new Howl({
-        src: ['/sounds/magicGlyphSoundEffect.mp3'],
+        src: [MagicGlyphSoundEffect],
         autoplay: false,
         volume: MAGIC_GLYPH_SOUND_VOLUME,
       }),

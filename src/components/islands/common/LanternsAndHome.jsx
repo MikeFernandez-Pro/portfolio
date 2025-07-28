@@ -1,6 +1,6 @@
+import { useEffect, useRef } from 'react';
 import { useControls } from 'leva';
 import * as THREE from 'three';
-import { useEffect, useRef } from 'react';
 
 const LanternsAndHome = props => {
   const { island } = props;

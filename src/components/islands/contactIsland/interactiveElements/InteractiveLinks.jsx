@@ -1,11 +1,10 @@
 import { useMemo } from 'react';
-import { Merged } from '@react-three/drei';
-import { useTexture } from '@react-three/drei';
+import { Merged, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
-import InteractiveLinkImage from '/textures/intertactive-link.webp';
-
 import { IS_MOBILE_DEVICE } from '#utils/utils.js';
+
+import InteractiveLinkImage from '#assets/textures/intertactive-link.webp';
 
 const INTERACTIVE_LINK_COLOR = new THREE.Color(10, 1.5, 1.0);
 

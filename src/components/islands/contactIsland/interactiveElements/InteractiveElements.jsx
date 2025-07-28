@@ -1,9 +1,9 @@
-import { useStore } from '#store/ZustandStorage.jsx';
 import { useEffect, useRef } from 'react';
 
 import { InteractiveLinks } from './InteractiveLinks.jsx';
 import { InteractivElementsColliders } from './InteractivElementsColliders.jsx';
 import { interactiveElementsData } from './interactiveElementsData.js';
+import { useStore } from '#store/ZustandStorage.jsx';
 
 const InteractiveElements = () => {
   const activePlateRef = useRef(useStore.getState().activePlate);

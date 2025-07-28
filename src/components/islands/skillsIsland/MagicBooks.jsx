@@ -1,7 +1,8 @@
+import { useEffect } from 'react';
 import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
-import * as THREE from 'three';
-import { useEffect, useMemo, useRef } from 'react';
 import gsap from 'gsap';
+import * as THREE from 'three';
+
 import { useStore } from '#store/ZustandStorage.jsx';
 
 import magicBooksVertexShader from '#shaders/magicBooks/vertex.glsl';

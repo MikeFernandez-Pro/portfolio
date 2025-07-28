@@ -1,11 +1,13 @@
 import { useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import * as THREE from 'three';
 import { useTexture } from '@react-three/drei';
 import { useControls } from 'leva';
+import * as THREE from 'three';
 
 import starsVertexShader from '#shaders/stars/vertex.glsl';
 import starsFragmentShader from '#shaders/stars/fragment.glsl';
+
+import FireWorkTexture from '#assets/textures/star.png';
 
 const SKY_RADIUS = 120;
 
@@ -58,7 +60,7 @@ const Experience = () => {
     },
   });
 
-  const fireWorkTexture = useTexture('/textures/star.png', texture => {
+  const fireWorkTexture = useTexture(FireWorkTexture, texture => {
     texture.colorSpace = THREE.NoColorSpace;
     texture.flipY = false;
   });
@@ -143,5 +145,7 @@ const Experience = () => {
     />
   );
 };
+
+useTexture.preload(FireWorkTexture);
 
 export default Experience;

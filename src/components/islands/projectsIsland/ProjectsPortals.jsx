@@ -1,19 +1,20 @@
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useFrame, useLoader } from '@react-three/fiber';
 import { Circle, useTexture } from '@react-three/drei';
-import { useStore } from '#store/ZustandStorage.jsx';
 import gsap from 'gsap';
 import * as THREE from 'three';
+
+import { useStore } from '#store/ZustandStorage.jsx';
 
 import portalVertexShader from '#shaders/portal/vertex.glsl';
 import portalFragmentShader from '#shaders/portal/fragment.glsl';
 
-import portalSound from '/sounds/portalSoundEffect.mp3';
+import PortalSoundEffect from '#assets/sounds/portal.mp3';
 
-import portalProjectImage from '/textures/portalProjectTexture.webp';
-import seaProjectImage from '/textures/seaProjectTexture.webp';
-import halloweenProjectImage from '/textures/halloweenProjectTexture.webp';
-import perlinNoiseImage from '/textures/perlin.png';
+import portalProjectImage from '#assets/textures/portal-project.webp';
+import seaProjectImage from '#assets/textures/sea-project.webp';
+import halloweenProjectImage from '#assets/textures/halloween-project.webp';
+import perlinNoiseImage from '#assets/textures/perlin.png';
 
 const PORTAL_POSITION = new THREE.Vector3(-16.12, 6.95, -37.7);
 
@@ -22,12 +23,12 @@ const ProjectsPortals = () => {
   const portalSoundEffect = useMemo(
     () =>
       new Howl({
-        src: [portalSound],
+        src: [PortalSoundEffect],
         autoplay: false,
         loop: true,
         volume: 0,
       }),
-    [portalSound]
+    [PortalSoundEffect]
   );
 
   // Textures
@@ -135,5 +136,10 @@ const ProjectsPortals = () => {
     />
   );
 };
+
+useTexture.preload(portalProjectImage);
+useTexture.preload(seaProjectImage);
+useTexture.preload(halloweenProjectImage);
+useTexture.preload(perlinNoiseImage);
 
 export default ProjectsPortals;

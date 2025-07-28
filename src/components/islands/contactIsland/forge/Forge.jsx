@@ -1,13 +1,12 @@
+import { useEffect, useMemo, useRef } from 'react';
 import { Howl } from 'howler';
-import { useEffect, useMemo } from 'react';
-import { useRef } from 'react';
-import { useStore } from '#store/ZustandStorage.jsx';
-import * as THREE from 'three';
 import gsap from 'gsap';
+import * as THREE from 'three';
 
 import ForgeSparks from './ForgeSparks.jsx';
+import { useStore } from '#store/ZustandStorage.jsx';
 
-import hammerAudio from '/sounds/hammerSoundEffect.mp3';
+import HammerSoundEffect from '#assets/sounds/hammer.mp3';
 
 const HAMMER_POSITION = new THREE.Vector3(-5.8, 1.8, -10.8);
 const HAMMER_MAX_DISTANCE = 17;
@@ -22,7 +21,7 @@ const Forge = props => {
   const hammerSoundEffect = useMemo(
     () =>
       new Howl({
-        src: [hammerAudio],
+        src: [HammerSoundEffect],
         autoplay: false,
         volume: 0,
       }),
@@ -102,4 +101,4 @@ const Forge = props => {
   return <ForgeSparks ref={forgeSparksRef} />;
 };
 
-export default Forge;
+export { Forge };

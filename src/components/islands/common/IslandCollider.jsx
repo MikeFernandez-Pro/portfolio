@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useGLTF } from '@react-three/drei';
 import { RigidBody } from '@react-three/rapier';
 
-import islandColliderModel from '/models/islandColliders/islandColliders.glb?url';
+import islandColliderModel from '#assets/models/islandColliders/island-colliders.glb?url';
 
 const IslandCollider = () => {
   const { nodes } = useGLTF(islandColliderModel);

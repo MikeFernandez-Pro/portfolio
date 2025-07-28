@@ -1,9 +1,10 @@
+import { useMemo } from 'react';
+import { extend } from '@react-three/fiber';
 import { shaderMaterial } from '@react-three/drei';
-import { extend, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+
 import sparksVertexShader from '#shaders/sparks/vertex.glsl';
 import sparksFragmentShader from '#shaders/sparks/fragment.glsl';
-import { useMemo } from 'react';
 
 const SPEED = 6;
 const COLOR = '#f85f3d';
