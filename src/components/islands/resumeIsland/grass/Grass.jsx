@@ -5,6 +5,7 @@ import { useControls } from 'leva';
 import * as THREE from 'three';
 
 import { Butterfly } from './Butterfly.jsx';
+import { useStore } from '#store/ZustandStorage.jsx';
 
 import grassFragmentShader from '#shaders/grass/fragment.glsl';
 import grassVertexShader from '#shaders/grass/vertex.glsl';
@@ -16,23 +17,31 @@ const Grass = () => {
   const grassRef = useRef(null);
 
   // Controls
-  const controls = useControls('Grass', {
-    colorBase: '#297a25',
-    colorTop: '#4cf288',
-    count: { value: 16 * 5000, min: 0, max: 16 * 50000, step: 1 },
-    segmentsCount: { value: 3, min: 1, max: 10, step: 1 },
-    patchSize: { value: 11.7, min: 11, max: 13, step: 0.001 },
-    width: { value: 0.08, min: 0, max: 0.2, step: 0.001 },
-    height: { value: 0.36, min: 0, max: 1, step: 0.001 },
-    squared: false,
-    position: { value: [-8.88, 6.83, -52.98], step: 0.001 },
-  });
+  const controls = useControls(
+    'Grass',
+    {
+      colorBase: '#297a25',
+      colorTop: '#4cf288',
+      count: { value: 16 * 5000, min: 0, max: 16 * 50000, step: 1 },
+      segmentsCount: { value: 3, min: 1, max: 10, step: 1 },
+      patchSize: { value: 11.7, min: 11, max: 13, step: 0.001 },
+      width: { value: 0.08, min: 0, max: 0.2, step: 0.001 },
+      height: { value: 0.36, min: 0, max: 1, step: 0.001 },
+      squared: false,
+      position: { value: [-8.88, 6.83, -52.98], step: 0.001 },
+    },
+    { collapsed: true }
+  );
 
-  const windControls = useControls('Wind', {
-    scale: { value: 0.04, min: 0, max: 0.2, step: 0.001 },
-    strength: { value: 1.0, min: -5, max: 5, step: 0.01 },
-    speed: { value: 0.13, min: 0, max: 5, step: 0.01 },
-  });
+  const windControls = useControls(
+    'Wind',
+    {
+      scale: { value: 0.04, min: 0, max: 0.2, step: 0.001 },
+      strength: { value: 1.0, min: -5, max: 5, step: 0.01 },
+      speed: { value: 0.13, min: 0, max: 5, step: 0.01 },
+    },
+    { collapsed: true }
+  );
 
   // Geometry
   const grassGeometry = useMemo(() => {
@@ -102,6 +111,7 @@ const Grass = () => {
           uSquareShape: { value: controls.squared },
           uPositionX: { value: 0 },
           uPositionZ: { value: 0 },
+          uPlayerPosition: { value: new THREE.Vector3(0, 0, 0) },
 
           uWindScale: { value: windControls.scale },
           uWindStrength: { value: windControls.strength },
@@ -134,6 +144,25 @@ const Grass = () => {
     grassMaterial.uniforms.uPositionX.value = controls.position[0];
     grassMaterial.uniforms.uPositionZ.value = controls.position[2];
   }, [controls, windControls, grassHeightTexture, grassMaterial]);
+
+  useEffect(() => {
+    const unsubCharacterPosition = useStore.subscribe(
+      state => [state.characterPosition, state.isCharacterMoving],
+      ([characterPosition, isCharacterMoving]) => {
+        if (characterPosition && isCharacterMoving) {
+          grassMaterial.uniforms.uPlayerPosition.value = characterPosition;
+        }
+      }
+    );
+
+    return () => {
+      unsubCharacterPosition();
+    };
+  }, [grassMaterial]);
+
+  useFrame(({ clock }) => {
+    grassMaterial.uniforms.uTime.value = clock.elapsedTime;
+  });
 
   // Update time for grass
   useFrame(({ clock }) => {

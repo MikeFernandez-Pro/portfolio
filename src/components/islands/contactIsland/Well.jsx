@@ -27,45 +27,49 @@ const Well = props => {
 
   const { nodes } = useGLTF(fishModel);
 
-  const controls = useControls('Well', {
-    foamColor: {
-      value: '#61bdff',
-      onChange: value => {
-        if (wellShaderMaterial.uniforms) {
-          wellShaderMaterial.uniforms.uFoamColor.value = new THREE.Color(value);
-        }
+  const controls = useControls(
+    'Well',
+    {
+      foamColor: {
+        value: '#61bdff',
+        onChange: value => {
+          if (wellShaderMaterial.uniforms) {
+            wellShaderMaterial.uniforms.uFoamColor.value = new THREE.Color(
+              value
+            );
+          }
+        },
+      },
+      outerWaterColor: {
+        value: '#0b2e46',
+        onChange: value => {
+          if (wellShaderMaterial.uniforms) {
+            wellShaderMaterial.uniforms.uOuterWaterColor.value =
+              new THREE.Color(value);
+          }
+        },
+      },
+      innerWaterColor: {
+        value: '#26b0cf',
+        onChange: value => {
+          if (wellShaderMaterial.uniforms) {
+            wellShaderMaterial.uniforms.uInnerWaterColor.value =
+              new THREE.Color(value);
+          }
+        },
+      },
+      fishColor: {
+        value: '#00f6d0',
+      },
+      fishIntensity: {
+        min: 0,
+        max: 20,
+        step: 0.01,
+        value: 8.7,
       },
     },
-    outerWaterColor: {
-      value: '#0b2e46',
-      onChange: value => {
-        if (wellShaderMaterial.uniforms) {
-          wellShaderMaterial.uniforms.uOuterWaterColor.value = new THREE.Color(
-            value
-          );
-        }
-      },
-    },
-    innerWaterColor: {
-      value: '#26b0cf',
-      onChange: value => {
-        if (wellShaderMaterial.uniforms) {
-          wellShaderMaterial.uniforms.uInnerWaterColor.value = new THREE.Color(
-            value
-          );
-        }
-      },
-    },
-    fishColor: {
-      value: '#00f6d0',
-    },
-    fishIntensity: {
-      min: 0,
-      max: 20,
-      step: 0.01,
-      value: 8.7,
-    },
-  });
+    { collapsed: true }
+  );
 
   const perlinNoiseTexture = useTexture(perlinNoiseImage, texture => {
     texture.colorSpace = THREE.NoColorSpace;

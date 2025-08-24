@@ -17,7 +17,6 @@ import TorchesSparks from '#islands/common/torchSparks/TorchesSparks.jsx';
 import { IslandCollider } from '#islands/common/IslandCollider.jsx';
 import FireFlies from '#islands/common/FireFlies.jsx';
 import { InteractiveElements } from '#islands/contactIsland/interactiveElements/InteractiveElements.jsx';
-import ProjectsPortals from '#islands/projectsIsland/ProjectsPortals.jsx';
 import { Grass } from '#islands/resumeIsland/grass/Grass.jsx';
 import Smoke from '#islands/resumeIsland/Smoke.jsx';
 import { useStore } from '#store/ZustandStorage.jsx';
@@ -36,10 +35,14 @@ var ambientSound = new Howl({
 const Experience = () => {
   const scene = useThree(state => state.scene);
 
-  const controls = useControls({
-    bottomColor: '#203e71',
-    topColor: '#d998fd',
-  });
+  const controls = useControls(
+    'Background',
+    {
+      bottomColor: '#203e71',
+      topColor: '#d998fd',
+    },
+    { collapsed: true }
+  );
 
   useEffect(() => {
     const unsubExperienceStarted = useStore.subscribe(
@@ -68,7 +71,6 @@ const Experience = () => {
       <FireFlies />
       <Smoke />
       <TorchesSparks />
-      <ProjectsPortals />
       <Grass />
       <Islands />
       <mesh>

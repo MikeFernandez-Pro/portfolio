@@ -18,47 +18,51 @@ const Experience = () => {
   }));
 
   // Controls
-  const particlesControls = useControls('Stars', {
-    count: {
-      value: 5000,
-      min: 0,
-      max: 10000,
-    },
-    pointSize: {
-      value: 1.2,
-      min: 0,
-      max: 10,
-      onChange: value => {
-        fireworksMaterial.uniforms.uSize.value = value;
+  const particlesControls = useControls(
+    'Stars',
+    {
+      count: {
+        value: 5000,
+        min: 0,
+        max: 10000,
+      },
+      pointSize: {
+        value: 1.2,
+        min: 0,
+        max: 10,
+        onChange: value => {
+          fireworksMaterial.uniforms.uSize.value = value;
+        },
+      },
+      color1: {
+        value: '#FFD700',
+        onChange: value => {
+          fireworksMaterial.uniforms.uColor1.value = new THREE.Color(value);
+        },
+      },
+      color2: {
+        value: '#3B5BA5 ',
+        onChange: value => {
+          fireworksMaterial.uniforms.uColor2.value = new THREE.Color(value);
+        },
+      },
+      color3: {
+        value: '#A3C1DA',
+        onChange: value => {
+          fireworksMaterial.uniforms.uColor3.value = new THREE.Color(value);
+        },
+      },
+      brightness: {
+        value: 3.3,
+        min: 0,
+        max: 10,
+        onChange: value => {
+          fireworksMaterial.uniforms.uBrightness.value = value;
+        },
       },
     },
-    color1: {
-      value: '#FFD700',
-      onChange: value => {
-        fireworksMaterial.uniforms.uColor1.value = new THREE.Color(value);
-      },
-    },
-    color2: {
-      value: '#3B5BA5 ',
-      onChange: value => {
-        fireworksMaterial.uniforms.uColor2.value = new THREE.Color(value);
-      },
-    },
-    color3: {
-      value: '#A3C1DA',
-      onChange: value => {
-        fireworksMaterial.uniforms.uColor3.value = new THREE.Color(value);
-      },
-    },
-    brightness: {
-      value: 3.3,
-      min: 0,
-      max: 10,
-      onChange: value => {
-        fireworksMaterial.uniforms.uBrightness.value = value;
-      },
-    },
-  });
+    { collapsed: true }
+  );
 
   const fireWorkTexture = useTexture(FireWorkTexture, texture => {
     texture.colorSpace = THREE.NoColorSpace;

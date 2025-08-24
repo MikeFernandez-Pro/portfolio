@@ -30,17 +30,21 @@ const BlurPass = props => {
     dpr: state.viewport.dpr,
   }));
 
-  const controls = useControls('Blur Pass', {
-    uBlurStrength: { value: 1.0, min: 0, max: 10, step: 0.01 },
-    uBlurCenterSize: { value: 0.02, min: 0, max: 1, step: 0.01 },
-    uBlurSmoothness: { value: 1.98, min: 0, max: 10, step: 0.01 },
-    uCenter: {
-      value: new THREE.Vector2(0.5, 0.19),
-      min: 0,
-      max: 1,
-      step: 0.01,
+  const controls = useControls(
+    'Blur Pass',
+    {
+      uBlurStrength: { value: 1.0, min: 0, max: 10, step: 0.01 },
+      uBlurCenterSize: { value: 0.02, min: 0, max: 1, step: 0.01 },
+      uBlurSmoothness: { value: 1.98, min: 0, max: 10, step: 0.01 },
+      uCenter: {
+        value: new THREE.Vector2(0.5, 0.19),
+        min: 0,
+        max: 1,
+        step: 0.01,
+      },
     },
-  });
+    { collapsed: true }
+  );
 
   const horizontalBlurPass = useMemo(
     () => new blurPassEffect(true),

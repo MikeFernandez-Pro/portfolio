@@ -11,7 +11,9 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor)
     vec2 centeredUv = vUv - 0.5;
     centeredUv.y /= aspectRatio;
 
-    float distanceToCenter = length(centeredUv / progress);
+    float scaledProgress = progress / aspectRatio;
+
+    float distanceToCenter = length(centeredUv / scaledProgress);
 
     centeredUv = rotate2d(sin( -uTime * 0.05) * 3.141592) * centeredUv;
 
@@ -19,7 +21,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor)
     vec2 perlinUv = vec2(centeredUv.x * size + uTime * 0.05, centeredUv.y * size + uTime * 0.05);
     float perlinNoise = texture2D(uPerlinNoiseTexture, perlinUv).r; 
 
-    if(distanceToCenter - perlinNoise * 0.5 > progress)
+    if(distanceToCenter - perlinNoise * 0.5 > scaledProgress)
         discard;
 
     outputColor = inputColor;

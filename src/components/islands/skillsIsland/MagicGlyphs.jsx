@@ -35,16 +35,20 @@ const MagicGlyphs = props => {
     []
   );
 
-  const controls = useControls('MagicGlyphs', {
-    emissiveIntensity: {
-      value: 0,
-      min: 0,
-      max: 10,
+  const controls = useControls(
+    'MagicGlyphs',
+    {
+      emissiveIntensity: {
+        value: 0,
+        min: 0,
+        max: 10,
+      },
+      emissiveColor: {
+        value: '#ff6c43',
+      },
     },
-    emissiveColor: {
-      value: '#ff6c43',
-    },
-  });
+    { collapsed: true }
+  );
 
   useEffect(() => {
     island.materials.magicPortal.emissive = new THREE.Color(

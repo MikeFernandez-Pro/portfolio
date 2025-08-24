@@ -7,6 +7,7 @@ uniform sampler2D uPerlinNoiseTexture;
 uniform bool uSquareShape;
 uniform float uPositionX;
 uniform float uPositionZ;
+uniform vec3 uPlayerPosition;
 
 uniform float uWindScale;
 uniform float uWindStrength;
@@ -145,17 +146,27 @@ void main() {
   float zSide = float(zTest);
   float heightPercent = float(vertID - xTest) / (float(GRASS_SEGMENTS) * 2.0);
 
-  // Rnadom height
+
+    // Random height
   float randomHeight = (rand(float(gl_InstanceID + 1000)) * 2.0 - 1.0) * 0.1;
+  
+  // Add player-based height reduction
+  vec3 toPlayer = uPlayerPosition - grassBladeWorldPos;
+  float distanceToPlayer = length(toPlayer);
+  float maxInfluenceDistance = 0.5; // Distance for height influence
+  float heightInfluence = smoothstep(maxInfluenceDistance, 0.0, distanceToPlayer);
+  float heightReduction = heightInfluence * 0.5; // Reduce height by up to 70%
+  
   float width = uSquareShape
     ? GRASS_WIDTH
     : GRASS_WIDTH * easeOut(1.04 - heightPercent, 3.0) * grassHeight;
-  float height = GRASS_HEIGHT * grassHeight + randomHeight;
+  float height = (GRASS_HEIGHT * grassHeight + randomHeight) * (1.0 - heightReduction);
 
   // Calculate the vertex position
   float x = (xSide - 0.5) * width;
   float y = heightPercent * height;
   float z = 0.0;
+
 
   // Grass wind parameters
 float windStrength = texture2D(uPerlinNoiseTexture, 
@@ -172,17 +183,29 @@ float windStrength = texture2D(uPerlinNoiseTexture,
             vec3(-grassBladeWorldPos.x * uWindScale * 1.3, grassBladeWorldPos.z * uWindScale * 1.3, 0.0) + uTime * uWindSpeed * 1.3
         )
     ).r * (windStrength * 0.5 + 0.125);
+    
 
   // Grass lean factor
-  float leanFactor =
+    float leanFactor =
     remap(hashVal.y, -1.0, 1.0, -0.3, 0.3) + randomLeanAnimation;
 
+  // Add player-based lean effect
+  float playerInfluence = smoothstep(maxInfluenceDistance, 0.0, distanceToPlayer);
+  
+  // Calculate lean direction towards player
+  vec3 playerLeanDirection = normalize(vec3(toPlayer.x, 0.0, toPlayer.z));
+  float playerLeanStrength = playerInfluence * 1.0; // Maximum lean strength
+  
+  // Apply player lean to the bezier curve endpoint
+  vec3 playerLean = playerLeanDirection * playerLeanStrength;
+
   // Bend the grass blade
-  vec3 p1 = vec3(0.0);
+  vec3 p1 = vec3(0.0);  
   vec3 p2 = vec3(0.0, 0.33, 0.0);
   vec3 p3 = vec3(0.0, 0.66, 0.0);
-  vec3 p4 = vec3(0.0, cos(leanFactor), sin(leanFactor));
+  vec3 p4 = vec3(playerLean.x, cos(leanFactor), sin(leanFactor) + playerLean.z);
   vec3 curve = bezier(p1, p2, p3, p4, heightPercent);
+
 
   y = curve.y * height; // change Y coord with curve
   z = curve.z * height; // change Z coord with curve

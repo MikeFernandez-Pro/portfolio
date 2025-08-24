@@ -1,6 +1,7 @@
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { useFrame, useLoader } from '@react-three/fiber';
 import { Circle, useTexture } from '@react-three/drei';
+import { Howl } from 'howler';
 import gsap from 'gsap';
 import * as THREE from 'three';
 
@@ -9,7 +10,7 @@ import { useStore } from '#store/ZustandStorage.jsx';
 import portalVertexShader from '#shaders/portal/vertex.glsl';
 import portalFragmentShader from '#shaders/portal/fragment.glsl';
 
-import PortalSoundEffect from '#assets/sounds/portal.mp3';
+import PortalAudio from '#assets/sounds/portal.mp3';
 
 import portalProjectImage from '#assets/textures/portal-project.webp';
 import seaProjectImage from '#assets/textures/sea-project.webp';
@@ -18,17 +19,20 @@ import perlinNoiseImage from '#assets/textures/perlin.png';
 
 const PORTAL_POSITION = new THREE.Vector3(-16.12, 6.95, -37.7);
 
-const ProjectsPortals = () => {
-  // Sound Effect
+const ProjectsPortals = props => {
+  const { island } = props;
+
+  const portal = useMemo(() => island.scene.children[0].children[4], [island]);
+
   const portalSoundEffect = useMemo(
     () =>
       new Howl({
-        src: [PortalSoundEffect],
+        src: [PortalAudio],
         autoplay: false,
         loop: true,
         volume: 0,
       }),
-    [PortalSoundEffect]
+    [PortalAudio]
   );
 
   // Textures
@@ -65,21 +69,18 @@ const ProjectsPortals = () => {
   );
 
   // Animation
-  const portalSizeAnimation = useMemo(
-    () =>
-      gsap.fromTo(
-        portalShaderMaterial.uniforms.uSize,
-        { value: 0 },
-        {
-          value: 0.5,
-          duration: 0.5,
-          paused: true,
-        }
-      ),
-    [portalShaderMaterial]
-  );
 
   useEffect(() => {
+    const portalScaleUpAnimation = gsap.fromTo(
+      portalShaderMaterial.uniforms.uSize,
+      { value: 0 },
+      {
+        value: 0.5,
+        duration: 0.5,
+        paused: true,
+      }
+    );
+
     // Retrieve current activated plate and update shader texture accordingly
     const unsubActivaPlate = useStore.subscribe(
       state => state.activePlate,
@@ -87,8 +88,7 @@ const ProjectsPortals = () => {
         if (activePlate) {
           portalShaderMaterial.uniforms.uTextureMap.value =
             portalsTextures[activePlate];
-          portalSizeAnimation.restart();
-          // Activate Portal Sound Effect Only Once
+          portalScaleUpAnimation.restart();
           portalSoundEffect.play();
         }
       }
@@ -115,16 +115,12 @@ const ProjectsPortals = () => {
     return () => {
       unsubActivaPlate();
       unsubCharacterPosition();
-      portalSizeAnimation?.kill();
+      portalScaleUpAnimation?.kill();
     };
-  }, [
-    portalShaderMaterial,
-    portalSizeAnimation,
-    portalSoundEffect,
-    portalsTextures,
-  ]);
+  }, [portalShaderMaterial, portalSoundEffect, portalsTextures]);
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, delta) => {
+    portal.rotation.y += delta * 0.15;
     portalShaderMaterial.uniforms.uTime.value = clock.elapsedTime;
   });
 
@@ -137,9 +133,11 @@ const ProjectsPortals = () => {
   );
 };
 
-useTexture.preload(portalProjectImage);
-useTexture.preload(seaProjectImage);
-useTexture.preload(halloweenProjectImage);
-useTexture.preload(perlinNoiseImage);
+useTexture.preload({
+  portalProjectImage,
+  seaProjectImage,
+  halloweenProjectImage,
+  perlinNoiseImage,
+});
 
-export default ProjectsPortals;
+export { ProjectsPortals };

@@ -17,27 +17,35 @@ const Lights = () => {
     0
   );
 
-  const directionalLightControls = useControls('directionalLight', {
-    intensity: {
-      value: 18,
-      min: 0,
-      max: 40,
+  const directionalLightControls = useControls(
+    'directionalLight',
+    {
+      intensity: {
+        value: 18,
+        min: 0,
+        max: 40,
+      },
+      color: {
+        value: '#3a62c8',
+      },
     },
-    color: {
-      value: '#3a62c8',
-    },
-  });
+    { collapsed: true }
+  );
 
-  const ambientLightControls = useControls('ambientLight', {
-    intensity: {
-      value: 16,
-      min: 0,
-      max: 20,
+  const ambientLightControls = useControls(
+    'ambientLight',
+    {
+      intensity: {
+        value: 16,
+        min: 0,
+        max: 20,
+      },
+      color: {
+        value: '#526cad',
+      },
     },
-    color: {
-      value: '#526cad',
-    },
-  });
+    { collapsed: true }
+  );
 
   const scene = useThree(state => state.scene);
   const targetObject = useMemo(() => new THREE.Object3D(), []);
