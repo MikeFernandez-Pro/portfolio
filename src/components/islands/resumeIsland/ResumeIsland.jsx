@@ -6,7 +6,7 @@ const ResumeIsland = props => {
 
   return (
     <>
-      {/* <CountriesFlags island={island} /> */}
+      <CountriesFlags island={island} />
       <SleepText />
     </>
   );

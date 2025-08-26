@@ -21,7 +21,7 @@ const Lights = () => {
     'directionalLight',
     {
       intensity: {
-        value: 18,
+        value: 13.6, //18
         min: 0,
         max: 40,
       },
@@ -36,7 +36,7 @@ const Lights = () => {
     'ambientLight',
     {
       intensity: {
-        value: 16,
+        value: 8.8, //16
         min: 0,
         max: 20,
       },

@@ -1,3 +1,7 @@
+#include ../includes/rotate2d.glsl
+
+#define PI 3.1415926
+
 uniform float uTime;
 uniform float uSize;
 uniform sampler2D uTextureMap;
@@ -20,9 +24,10 @@ void main() {
         discard;
     }
   
-    vec2 displacedUv = vUv + noise;
+    vec2 displacedUv = rotate2d(uTime * 0.3 + noise) * vUv ;
     float noise2 = texture2D(uPerlinTexture, displacedUv).r;
     noise2 = step(0.5, noise2);
+
 
     vec4 texColor = texture2D(uTextureMap, vUv);    
     texColor.rgb = mix(texColor.rgb, texColor.rgb *2.0, noise2 * 0.5);

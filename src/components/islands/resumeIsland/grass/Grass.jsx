@@ -20,8 +20,8 @@ const Grass = () => {
   const controls = useControls(
     'Grass',
     {
-      colorBase: '#297a25',
-      colorTop: '#4cf288',
+      colorBase: '#22651e', //297a25
+      colorTop: '#49d57c', //4cf288
       count: { value: 16 * 5000, min: 0, max: 16 * 50000, step: 1 },
       segmentsCount: { value: 3, min: 1, max: 10, step: 1 },
       patchSize: { value: 11.7, min: 11, max: 13, step: 0.001 },
@@ -147,11 +147,9 @@ const Grass = () => {
 
   useEffect(() => {
     const unsubCharacterPosition = useStore.subscribe(
-      state => [state.characterPosition, state.isCharacterMoving],
-      ([characterPosition, isCharacterMoving]) => {
-        if (characterPosition && isCharacterMoving) {
-          grassMaterial.uniforms.uPlayerPosition.value = characterPosition;
-        }
+      state => [state.characterPosition],
+      ([characterPosition]) => {
+        grassMaterial.uniforms.uPlayerPosition.value = characterPosition;
       }
     );
 
