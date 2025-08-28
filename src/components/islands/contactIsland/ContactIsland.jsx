@@ -2,7 +2,7 @@ import { Well } from './Well';
 import { Forge } from './forge/Forge';
 
 const ContactIsland = props => {
-  const { island, islandAnimations } = props;
+  const { islandNodes, islandAnimations } = props;
 
   return (
     <>
@@ -10,7 +10,7 @@ const ContactIsland = props => {
             well={island.scene.children[0].children[0].children[6]}
             cauldron={island.scene.children[0].children[0].children[7]}
           /> */}
-      <Well island={island} />
+      <Well islandNodes={islandNodes} />
       <Forge islandAnimations={islandAnimations} />
     </>
   );

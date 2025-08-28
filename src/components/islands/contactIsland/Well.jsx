@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF, useTexture, Instances, Instance } from '@react-three/drei';
-import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
+import CustomShaderMaterial from 'three-custom-shader-material';
 import { useControls } from 'leva';
 import * as THREE from 'three';
 
@@ -14,58 +14,66 @@ import fishModel from '#assets/models/island/fish.glb?url';
 
 const isDebugActive = window.location.hash === '#debug';
 
-const fishesSpeed = 0.5;
-const bigFishAmplitude = 0.4;
-const smallFishAmplitude = 0.3;
-const smallFishOffset = 3;
+// Water
+const FOAM_COLOR = '#61bdff';
+const OUTER_WATER_COLOR = '#0b2e46';
+const INNER_WATER_COLOR = '#26b0cf';
+
+// Fishes
+const FISHES_COLOR = '#00f6d0';
+const FISHES_INTENSITY = 8.7;
+const FISHES_SPEED = 0.5;
+const BIG_FISH_AMPLITUDE = 0.88;
+const SMALL_FISH_AMPLITUDE = 0.66;
+const SMALL_FISH_OFFSET = 3;
 
 const Well = props => {
-  const { island } = props;
+  const { islandNodes } = props;
 
   const bigFishRef = useRef(null);
   const smallFishRef = useRef(null);
+  const wellShaderMaterialRef = useRef(null);
 
-  const { nodes } = useGLTF(fishModel);
+  const { nodes: fishNodes } = useGLTF(fishModel);
 
   const controls = useControls(
     'Well',
     {
       foamColor: {
-        value: '#61bdff',
+        value: FOAM_COLOR,
         onChange: value => {
-          if (wellShaderMaterial.uniforms) {
-            wellShaderMaterial.uniforms.uFoamColor.value = new THREE.Color(
-              value
-            );
+          if (wellShaderMaterialRef.current.uniforms) {
+            wellShaderMaterialRef.current.uniforms.uFoamColor.value =
+              new THREE.Color(value);
           }
         },
       },
       outerWaterColor: {
-        value: '#0b2e46',
+        value: OUTER_WATER_COLOR,
         onChange: value => {
-          if (wellShaderMaterial.uniforms) {
-            wellShaderMaterial.uniforms.uOuterWaterColor.value =
+          if (wellShaderMaterialRef.current.uniforms) {
+            wellShaderMaterialRef.current.uniforms.uOuterWaterColor.value =
               new THREE.Color(value);
           }
         },
       },
       innerWaterColor: {
-        value: '#26b0cf',
+        value: INNER_WATER_COLOR,
         onChange: value => {
-          if (wellShaderMaterial.uniforms) {
-            wellShaderMaterial.uniforms.uInnerWaterColor.value =
+          if (wellShaderMaterialRef.current.uniforms) {
+            wellShaderMaterialRef.current.uniforms.uInnerWaterColor.value =
               new THREE.Color(value);
           }
         },
       },
       fishColor: {
-        value: '#00f6d0',
+        value: FISHES_COLOR,
       },
       fishIntensity: {
+        value: FISHES_INTENSITY,
         min: 0,
         max: 20,
         step: 0.01,
-        value: 8.7,
       },
     },
     { collapsed: true }
@@ -77,77 +85,70 @@ const Well = props => {
     texture.wrapT = THREE.RepeatWrapping;
   });
 
-  const wellShaderMaterial = useMemo(
-    () =>
-      new CustomShaderMaterial({
-        baseMaterial: THREE.MeshStandardMaterial,
-        vertexShader: wellVertexShader,
-        fragmentShader: wellFragmentShader,
-        uniforms: {
-          uTime: { value: 0 },
-          uPerlinNoise: { value: perlinNoiseTexture },
-          uOuterWaterColor: { value: new THREE.Color('#0b2e46') },
-          uInnerWaterColor: { value: new THREE.Color('#26b0cf') },
-          uFoamColor: { value: new THREE.Color('#61ade4') },
-        },
-        transparent: true,
-      }),
-    []
-  );
-
-  const fishMaterial = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: new THREE.Color(controls.fishColor),
-        emissive: new THREE.Color(controls.fishColor),
-        emissiveIntensity: controls.fishIntensity,
-      }),
-    [controls.fishColor, controls.fishIntensity]
-  );
-
-  useEffect(() => {
-    const well = island.scene.children[0].children[0].children[6];
-
-    well.material?.dispose();
-    well.material = wellShaderMaterial;
-  }, [wellShaderMaterial]);
-
   useFrame(({ clock }) => {
     // Well
-    wellShaderMaterial.uniforms.uTime.value = clock.elapsedTime;
+    wellShaderMaterialRef.current.uniforms.uTime.value = clock.elapsedTime;
 
     // Big fish
     bigFishRef.current.rotation.y =
-      -clock.elapsedTime * fishesSpeed - Math.PI / 2;
+      -clock.elapsedTime * FISHES_SPEED - Math.PI / 2;
     bigFishRef.current.position.x =
-      Math.sin(-clock.elapsedTime * fishesSpeed) * bigFishAmplitude;
+      Math.sin(-clock.elapsedTime * FISHES_SPEED) * BIG_FISH_AMPLITUDE;
     bigFishRef.current.position.z =
-      Math.cos(-clock.elapsedTime * fishesSpeed) * bigFishAmplitude;
+      Math.cos(-clock.elapsedTime * FISHES_SPEED) * BIG_FISH_AMPLITUDE;
 
     // Small fish
     smallFishRef.current.rotation.y =
-      -clock.elapsedTime * fishesSpeed + smallFishOffset - Math.PI / 2;
+      -clock.elapsedTime * FISHES_SPEED + SMALL_FISH_OFFSET - Math.PI / 2;
 
     smallFishRef.current.position.x =
-      Math.sin(-clock.elapsedTime * fishesSpeed + smallFishOffset) *
-      smallFishAmplitude;
+      Math.sin(-clock.elapsedTime * FISHES_SPEED + SMALL_FISH_OFFSET) *
+      SMALL_FISH_AMPLITUDE;
     smallFishRef.current.position.z =
-      Math.cos(-clock.elapsedTime * fishesSpeed + smallFishOffset) *
-      smallFishAmplitude;
+      Math.cos(-clock.elapsedTime * FISHES_SPEED + SMALL_FISH_OFFSET) *
+      SMALL_FISH_AMPLITUDE;
   });
 
   return (
-    <Instances
-      count={2}
-      limit={2}
-      range={2}
-      position={[5.59, 1.3, -9.98]}
-      geometry={nodes.Fish.geometry}
-      material={fishMaterial}
-    >
-      <Instance ref={bigFishRef} scale={0.04} />
-      <Instance ref={smallFishRef} scale={0.03} />
-    </Instances>
+    <>
+      <skinnedMesh
+        name="Well"
+        geometry={islandNodes.island_7.geometry}
+        skeleton={islandNodes.island_7.skeleton}
+        morphTargetDictionary={islandNodes.island_7.morphTargetDictionary}
+        morphTargetInfluences={islandNodes.island_7.morphTargetInfluences}
+      >
+        <CustomShaderMaterial
+          ref={wellShaderMaterialRef}
+          baseMaterial={THREE.MeshStandardMaterial}
+          vertexShader={wellVertexShader}
+          fragmentShader={wellFragmentShader}
+          uniforms={{
+            uTime: { value: 0 },
+            uPerlinNoise: { value: perlinNoiseTexture },
+            uOuterWaterColor: { value: new THREE.Color('#0b2e46') },
+            uInnerWaterColor: { value: new THREE.Color('#26b0cf') },
+            uFoamColor: { value: new THREE.Color('#61ade4') },
+          }}
+          transparent={true}
+        />
+      </skinnedMesh>
+      <Instances
+        count={2}
+        limit={2}
+        range={2}
+        position={[15.42, -2.11, 11.15]}
+        geometry={fishNodes.Fish.geometry}
+      >
+        <meshStandardMaterial
+          color={controls.fishColor}
+          emissive={controls.fishColor}
+          emissiveIntensity={controls.fishIntensity}
+        />
+        <Instance ref={bigFishRef} scale={0.089} />
+        <Instance ref={smallFishRef} scale={0.0667} />
+      </Instances>
+    </>
   );
 };
 

@@ -3,7 +3,7 @@ import { Howl } from 'howler';
 import gsap from 'gsap';
 import * as THREE from 'three';
 
-import ForgeSparks from './ForgeSparks.jsx';
+import { ForgeSparks } from './ForgeSparks.jsx';
 import { useStore } from '#store/ZustandStorage.jsx';
 
 import HammerSoundEffect from '#assets/sounds/hammer.mp3';
@@ -98,7 +98,7 @@ const Forge = props => {
     };
   }, []);
 
-  return <ForgeSparks ref={forgeSparksRef} />;
+  return <ForgeSparks forgeSparksRef={forgeSparksRef} />;
 };
 
 export { Forge };

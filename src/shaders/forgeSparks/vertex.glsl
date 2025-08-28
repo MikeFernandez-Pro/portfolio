@@ -6,15 +6,15 @@ attribute float aSize;
 attribute float aAngle;
 attribute float aSpeed;
 
-#define PI 3.1415926535897932384626433832795
+#define PI 3.1415926
 
 float remap(float value, float originMin, float originMax, float destinationMin, float destinationMax) {
     return destinationMin + (value - originMin) * (destinationMax - destinationMin) / (originMax - originMin);
 }
 
 void main() {
-    float radius = 0.2;
-    float height = 0.3;
+    float radius = 0.44;
+    float height = 0.66;
     float elevation = uProgress == 1.0 ? 0.0 : uProgress;
 
     vec3 randomDirection = normalize(vec3(cos(aAngle), 0, sin(aAngle)));
@@ -36,7 +36,7 @@ void main() {
 
     // Final size
     gl_PointSize = uSize * uResolution.y * aSize;
-    gl_PointSize = min(gl_PointSize, gl_PointSize / (newPosition.y * 10.0));
+    gl_PointSize = min(gl_PointSize, gl_PointSize / (newPosition.y * 4.5));
     gl_PointSize *= 1.0 / -viewPosition.z;
 
 }
