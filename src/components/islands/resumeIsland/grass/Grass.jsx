@@ -12,9 +12,14 @@ import grassVertexShader from '#shaders/grass/vertex.glsl';
 
 import grassHeightTextureAsset from '#assets/textures/grass-height-map.webp';
 import perlinNoiseImage from '#assets/textures/perlin.png';
+import tournesolImage from '#assets/textures/tournesol.png';
 
 const Grass = () => {
   const grassRef = useRef(null);
+
+  const tournesolTexture = useTexture(tournesolImage, texture => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+  });
 
   // Controls
   const controls = useControls(
@@ -107,6 +112,7 @@ const Grass = () => {
           uGrassBaseColor: { value: new THREE.Color(controls.colorBase) },
           uGrassTopColor: { value: new THREE.Color(controls.colorTop) },
           uHeightDataTexture: { value: grassHeightTexture },
+          uTournesolTexture: { value: tournesolTexture },
           uPerlinNoiseTexture: { value: perlinNoiseTexture },
           uSquareShape: { value: controls.squared },
           uPositionX: { value: 0 },

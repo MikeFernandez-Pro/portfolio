@@ -15,6 +15,7 @@ uniform float uWindSpeed;
 
 
 varying vec3 vColor;
+varying vec2 vUv;
 
 // inverseLerp and remap are for remapping values
 float inverseLerp(float v, float minValue, float maxValue) {
@@ -135,6 +136,10 @@ void main() {
   );
   float grassHeight = heightData.x;
 
+    
+
+
+
 
   // Figure out vertex id, > GRASS_VERTICES is other side
   int vertFB_ID = gl_VertexID % (GRASS_VERTICES * 2);
@@ -147,12 +152,18 @@ void main() {
   float zSide = float(zTest);
   float heightPercent = float(vertID - xTest) / (float(GRASS_SEGMENTS) * 2.0);
 
+
+
   // Rnadom height
   float randomHeight = (rand(float(gl_InstanceID + 1000)) * 2.0 - 1.0) * 0.1;
-  float width = uSquareShape
-    ? GRASS_WIDTH
+
+  // Random flowers
+    bool randomFlowers = rand(float(gl_InstanceID + 1000)) > 0.997 ;
+
+  float width = uSquareShape || randomFlowers 
+    ? GRASS_WIDTH + 0.1
     : GRASS_WIDTH * easeOut(1.04 - heightPercent, 3.0) * grassHeight;
-  float height = GRASS_HEIGHT * grassHeight + randomHeight;
+  float height = GRASS_HEIGHT * grassHeight + randomHeight + (randomFlowers ? 0.1 : 0.0);
 
   // Calculate the vertex position
   float x = (xSide - 0.5) * width;
@@ -259,5 +270,11 @@ float windStrength = texture2D(uPerlinNoiseTexture,
 
   // Pass the color to the fragment shader
   vColor = mix(uGrassBaseColor, uGrassTopColor, heightPercent);
+
+  if (randomFlowers) {
+    vUv = vec2(xSide, heightPercent);
+  } else {
+    vUv = vec2(0.0, 0.0);
+  }
   // vColor = vec3(windStrength);
 }
