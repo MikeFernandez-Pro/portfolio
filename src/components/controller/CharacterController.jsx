@@ -6,7 +6,7 @@ import {
   useEffect,
 } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { useGLTF, useAnimations, useTexture } from '@react-three/drei';
+import { useGLTF, useAnimations } from '@react-three/drei';
 import { CapsuleCollider, RigidBody } from '@react-three/rapier';
 import { Howl } from 'howler';
 import gsap from 'gsap';
@@ -16,36 +16,16 @@ import * as THREE from 'three';
 import { useStore } from '#store/ZustandStorage.jsx';
 import { IS_MOBILE_DEVICE } from '#utils/utils.js';
 
-import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
-
 import CharacterModel from '#assets/models/character/character.glb';
 import IslandSensorsModel from '#assets/models/islandSensors/islandSensors.glb';
 import RunningSoundEffect from '#assets/sounds/running.mp3';
 
-import voronoiImage from '#assets/textures/voronoi.jpg';
-import vertexShader from '#shaders/character/vertex.glsl';
-import fragmentShader from '#shaders/character/fragment.glsl';
+import {
+  keysConfigList,
+  directionOffset,
+} from '#controller/CharacterControllerUtils.js';
 
-const directionOffset = (
-  { forward, backward, leftward, rightward },
-  characterBody
-) => {
-  if (!forward && !backward && !leftward && !rightward) return undefined;
-
-  if (characterBody.current.isSleeping()) {
-    characterBody.current.wakeUp();
-  }
-
-  if (forward && leftward) return (7 * Math.PI) / 4;
-  if (forward && rightward) return (5 * Math.PI) / 4;
-  if (backward && leftward) return Math.PI / 4;
-  if (backward && rightward) return (3 * Math.PI) / 4;
-  if (backward) return Math.PI / 2;
-  if (leftward) return 0;
-  if (rightward) return -Math.PI;
-
-  return -Math.PI / 2;
-};
+import { useCharacterMaterial } from '#controller/useCharacterMaterial.js';
 
 /*
  *  Character
@@ -101,16 +81,6 @@ let CAMERA_OFFSET = new THREE.Vector3(-3.5, 17.4, 29.6);
 /*
  *  Keystrokes
  */
-const keysConfigList = {
-  ArrowUp: 'forward',
-  ArrowDown: 'backward',
-  ArrowLeft: 'leftward',
-  ArrowRight: 'rightward',
-  KeyW: 'forward',
-  KeyS: 'backward',
-  KeyA: 'leftward',
-  KeyD: 'rightward',
-};
 
 const eventKeys = {
   forward: false,
@@ -133,6 +103,8 @@ const CharacterController = () => {
   // Character Model and animations loaders
   const { scene, animations } = useMemo(() => useGLTF(CharacterModel), []);
   const characterAnimations = useAnimations(animations, scene);
+
+  useCharacterMaterial(scene);
 
   const updateCharacterAnimation = useCallback(newAnimation => {
     characterAnimations.actions[currentAnimation].fadeOut(0.2);
@@ -207,115 +179,6 @@ const CharacterController = () => {
   const { nodes } = useMemo(() => useGLTF(IslandSensorsModel), []);
   nodes.Sensor.material.visible = false;
 
-  const voronoiTexture = useTexture(voronoiImage, texture => {
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.colorSpace = THREE.NoColorSpace;
-  });
-
-  const characterControls = useControls(
-    'Character',
-    {
-      color: { value: '#ff6500' },
-      intensity: { value: 39.0, min: 0, max: 100 },
-      repeat: { value: 3.2, min: 0, max: 10 },
-      progress: { value: 0.0, min: 0, max: 1 },
-      smoothStepBegin: { value: 0.0, min: 0, max: 1 },
-      smoothStepEnd: { value: 1.0, min: 0, max: 1 },
-      respawn: { value: 0.0, min: 0, max: 1 },
-    },
-    { collapsed: true }
-  );
-
-  const customMaterialRef = useRef();
-
-  useEffect(() => {
-    let characterMaterial = scene.getObjectByName('knight')?.material;
-
-    window.addEventListener('keydown', e => {
-      if (e.key === 'p') {
-        gsap.fromTo(
-          characterControls,
-          { progress: 0 },
-          {
-            progress: 1,
-            duration: 1.5,
-            ease: 'power2.in',
-            onStart: () => {
-              characterControls.respawn = 0;
-            },
-            onComplete: () => {
-              gsap.to(characterControls, {
-                respawn: 1,
-                duration: 0.5,
-                ease: 'power2.out',
-              });
-            },
-          }
-        );
-      }
-    });
-
-    customMaterialRef.current = new CustomShaderMaterial({
-      baseMaterial: characterMaterial,
-      uniforms: {
-        uVoronoiTexture: { value: voronoiTexture },
-        uBoundsMin: { value: boundsMin },
-        uBoundsMax: { value: boundsMax },
-        uColor: {
-          value: new THREE.Color(characterControls.color),
-        },
-        uIntensity: {
-          value: characterControls.intensity,
-        },
-        uRepeat: {
-          value: characterControls.repeat,
-        }, // tiling
-        uProgress: {
-          value: characterControls.progress,
-        },
-        uSmoothStepBegin: {
-          value: characterControls.smoothStepBegin,
-        },
-        uSmoothStepEnd: {
-          value: characterControls.smoothStepEnd,
-        },
-        uRespawn: {
-          value: characterControls.respawn,
-        },
-      },
-      vertexShader: vertexShader,
-      fragmentShader: fragmentShader,
-      transparent: true,
-      tonemapped: false,
-      side: THREE.DoubleSide,
-    });
-
-    scene.traverse(child => {
-      if (child.isMesh) child.material = customMaterialRef.current;
-    });
-  }, []);
-
-  useFrame(() => {
-    if (customMaterialRef.current) {
-      customMaterialRef.current.uniforms.uColor.value = new THREE.Color(
-        characterControls.color
-      );
-      customMaterialRef.current.uniforms.uIntensity.value =
-        characterControls.intensity;
-      customMaterialRef.current.uniforms.uRepeat.value =
-        characterControls.repeat;
-      customMaterialRef.current.uniforms.uProgress.value =
-        characterControls.progress;
-      customMaterialRef.current.uniforms.uSmoothStepBegin.value =
-        characterControls.smoothStepBegin;
-      customMaterialRef.current.uniforms.uSmoothStepEnd.value =
-        characterControls.smoothStepEnd;
-      customMaterialRef.current.uniforms.uRespawn.value =
-        characterControls.respawn;
-    }
-  });
-
   useFrame((state, delta) => {
     /**
      * Camera Controller
@@ -348,9 +211,9 @@ const CharacterController = () => {
      */
     useStore.setState({ characterPosition: characterPosition });
 
-    // CAMERA_POSITION.addVectors(characterPosition, CAMERA_OFFSET);
-    // LERP_CAMERA_POSITION.lerp(CAMERA_POSITION, 5 * delta);
-    // state.camera.position.set(...LERP_CAMERA_POSITION);
+    CAMERA_POSITION.addVectors(characterPosition, CAMERA_OFFSET);
+    LERP_CAMERA_POSITION.lerp(CAMERA_POSITION, 5 * delta);
+    state.camera.position.set(...LERP_CAMERA_POSITION);
 
     /**
      * Character Controller

@@ -3,8 +3,6 @@ uniform float uRepeat;
 uniform vec3 uColor;
 uniform float uIntensity;
 uniform float uProgress;
-uniform float uSmoothStepBegin;
-uniform float uSmoothStepEnd;
 uniform float uRespawn;
 
 varying vec3 vClampedPos;
@@ -28,7 +26,7 @@ vec4 triplanar(sampler2D tex, vec3 p01, vec3 n, float repeat) {
 void main() {
 
     float vTex = triplanar(uVoronoiTexture, vClampedPos, vNormalizedNormal, uRepeat).r;
-    vTex = smoothstep(1.0 - uProgress, uSmoothStepEnd, vTex);
+    vTex = smoothstep(1.0 - uProgress, 1.0, vTex);
 
 
     vec4 lavaColor = vec4(vec3(uIntensity * vTex * uColor), vTex); // or uProgress

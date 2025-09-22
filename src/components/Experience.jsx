@@ -62,7 +62,7 @@ const Experience = () => {
 
   return (
     <>
-      <OrbitControls />
+      {/* <OrbitControls /> */}
       <Perf position="top-left" />
       <Joystick />
       {/* <Clouds /> */}
