@@ -36,6 +36,7 @@ let currentAnimation = IDLE;
 let characterIsMoving = false;
 let characterJumping = false;
 let characterSprinting = false;
+let characterRespawning = false;
 
 // running sound is managed in #controller/audio/runningSound.js
 
@@ -50,8 +51,8 @@ const CharacterController = () => {
   const characterAnimations = useAnimations(animations, scene);
   const animation = useCharacterAnimation(characterAnimations);
 
-  // Define character material
-  useCharacterMaterial(scene);
+  // Character material and respawn effect
+  const { playRespawn } = useCharacterMaterial(scene);
 
   // Adapter: route to animation helper while keeping local state
   const updateCharacterAnimation = useCallback(
@@ -135,11 +136,24 @@ const CharacterController = () => {
 
     characterPosition = characterBody.current.translation();
 
-    if (characterPosition.y < 0) {
-      characterBody.current.setTranslation({
-        x: 0,
-        y: 1.5,
-        z: 0,
+    if (characterPosition.y < 0 && !characterRespawning) {
+      characterRespawning = true;
+      runningSoundEffect.stop();
+      characterBody.current.setBodyType(FIXED);
+      characterBody.current.setTranslation({ x: 0, y: 0.6, z: 0 }, true);
+      // Reset visual orientation to default
+      if (characterMesh.current) {
+        characterMesh.current.rotation.set(0, Math.PI, 0);
+      }
+      playRespawn({
+        onStart: () => {
+          // ensure idle animation while respawning
+          if (currentAnimation !== IDLE) updateCharacterAnimation(IDLE);
+        },
+        onComplete: () => {
+          characterRespawning = false;
+          characterBody.current.setBodyType(DYNAMIC);
+        },
       });
     }
     // Camera follow is managed by useThirdPersonCamera
@@ -147,6 +161,20 @@ const CharacterController = () => {
     /**
      * Character Controller
      */
+    // Block movement while respawning
+    if (characterRespawning) {
+      runningSoundEffect.stop();
+      if (currentAnimation !== IDLE && !characterJumping) {
+        updateCharacterAnimation(IDLE);
+        useStore.setState({ isCharacterMoving: false });
+      }
+      characterBody.current.setLinvel(
+        { x: 0, y: characterBody.current.linvel().y, z: 0 },
+        true
+      );
+      return;
+    }
+
     // Update character velocity and orientation
     if (
       (direction === undefined && !IS_MOBILE_DEVICE) ||

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
 import { useTexture } from '@react-three/drei';
@@ -14,6 +14,7 @@ const BOUNDS_MAX = new THREE.Vector3(3.34, 5.94, 0.73);
 
 const useCharacterMaterial = characterScene => {
   const respawnTimelineRef = useRef(null);
+  const characterMeshRef = useRef(null);
 
   const voronoiTexture = useTexture(voronoiImage, texture => {
     texture.wrapS = THREE.RepeatWrapping;
@@ -34,6 +35,8 @@ const useCharacterMaterial = characterScene => {
       return;
     }
 
+    characterMeshRef.current = characterMesh;
+
     new CustomShaderMaterial({
       baseMaterial: characterMesh.material,
       uniforms: {
@@ -43,8 +46,8 @@ const useCharacterMaterial = characterScene => {
         uColor: { value: new THREE.Color('#ff6500') },
         uIntensity: { value: 39.0 },
         uRepeat: { value: 3.2 },
-        uProgress: { value: 1.0 },
-        uRespawn: { value: 0.5 },
+        uProgress: { value: 0 },
+        uRespawn: { value: 1 },
       },
       vertexShader,
       fragmentShader,
@@ -53,35 +56,40 @@ const useCharacterMaterial = characterScene => {
       side: THREE.DoubleSide,
     });
 
-    const respawnHandler = e => {
-      if (e.key === 'p') {
-        const tl = gsap.timeline();
-        tl.set(characterMesh.material.uniforms.uRespawn, { value: 0 });
-        tl.fromTo(
-          characterMesh.material.uniforms.uProgress,
-          { value: 0 },
-          { value: 1, duration: 1.5, ease: 'power2.in' }
-        );
-        tl.to(characterMesh.material.uniforms.uRespawn, {
-          value: 1,
-          duration: 0.5,
-          ease: 'power2.out',
-        });
-
-        respawnTimelineRef.current = tl;
-      }
-    };
-
-    window.addEventListener('keydown', respawnHandler);
-
     return () => {
       if (respawnTimelineRef.current) {
         respawnTimelineRef.current.kill();
         respawnTimelineRef.current = null;
       }
-      window.removeEventListener('keydown', respawnHandler);
     };
   }, [characterScene, voronoiTexture]);
+
+  const playRespawn = useCallback(({ onStart, onComplete } = {}) => {
+    const mesh = characterMeshRef.current;
+    if (!mesh) return;
+
+    if (respawnTimelineRef.current) {
+      respawnTimelineRef.current.kill();
+      respawnTimelineRef.current = null;
+    }
+
+    const tl = gsap.timeline({ onStart, onComplete });
+    tl.set(mesh.material.uniforms.uRespawn, { value: 0 });
+    tl.fromTo(
+      mesh.material.uniforms.uProgress,
+      { value: 0 },
+      { value: 1, duration: 1, ease: 'power2.out' }
+    );
+    tl.to(mesh.material.uniforms.uRespawn, {
+      value: 1,
+      duration: 0.5,
+      ease: 'power2.in',
+    });
+
+    respawnTimelineRef.current = tl;
+  }, []);
+
+  return { playRespawn };
 };
 
 export { useCharacterMaterial };
