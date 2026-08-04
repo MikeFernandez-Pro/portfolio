@@ -15,7 +15,7 @@ const DEFAULT_CONFIGURATION = {
   dynamicPage: true,
   follow: false,
   restOpacity: 0.5,
-  maxNumberOfNipples: 1,
+  maxNumberOfJoysticks: 1,
 };
 
 // Joystick events constants
@@ -37,13 +37,13 @@ const createJoystick = orientationType => {
 };
 
 const setupJoystickEvents = joystick => {
-  joystick.on('move', function (evt, data) {
-    if (data.angle.radian !== Math.PI) {
-      useStore.setState({ joystickAngle: data.angle.radian });
+  joystick.on('move', function (evt) {
+    if (evt.data.angle.radian !== Math.PI) {
+      useStore.setState({ joystickAngle: evt.data.angle.radian });
     }
   });
 
-  joystick.on('end', function (evt, data) {
+  joystick.on('end', function () {
     useStore.setState({ joystickAngle: undefined });
   });
 };
@@ -79,7 +79,10 @@ const Joystick = () => {
           setupJoystickEvents(joystick);
 
           // Fade Joystick opacity
-          gsap.to(joystick[0].ui.el.style, { opacity: 1, duration: 1 });
+          const joystickInstance = joystick.all.values().next().value;
+          if (joystickInstance) {
+            gsap.to(joystickInstance.ui.el.style, { opacity: 1, duration: 1 });
+          }
 
           // Trigger screen rotation and update joystick size and position
           screen.orientation.addEventListener(

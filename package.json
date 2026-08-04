@@ -25,43 +25,36 @@
     "sort-imports": "eslint --fix src/**/*.{js,jsx,ts,tsx}"
   },
   "devDependencies": {
-    "@eslint/js": "^9.31.0",
-    "@vitejs/plugin-react": "4.7.0",
-    "eslint": "^9.31.0",
-    "eslint-config-prettier": "^10.1.5",
+    "@eslint/js": "^9.39.5",
+    "@vitejs/plugin-react": "6.0.5",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.5",
-    "globals": "^16.3.0",
-    "prettier": "^3.6.2",
-    "vite": "^7.0.5"
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "globals": "^17.9.0",
+    "prettier": "^3.9.6",
+    "vite": "^8.2.0"
   },
   "dependencies": {
-    "@react-three/drei": "^10.5.1",
-    "@react-three/fiber": "^9.0.2",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.7.0",
     "@react-three/postprocessing": "3.0.4",
-    "@react-three/rapier": "2.1.0",
-    "gsap": "3.13.0",
+    "@react-three/rapier": "2.2.0",
+    "gsap": "3.15.0",
     "howler": "^2.2.4",
-    "leva": "0.10.0",
-    "nipplejs": "^0.10.2",
-    "postprocessing": "6.37.6",
+    "leva": "0.10.1",
+    "nipplejs": "^1.0.4",
+    "postprocessing": "6.39.4",
     "r3f-perf": "7.2.3",
-    "react": "19.1",
-    "react-dom": "19.1",
-    "three": "0.178.0",
-    "three-custom-shader-material": "6.3.7",
+    "react": "~19.2.8",
+    "react-dom": "~19.2.8",
+    "three": "0.185.1",
+    "three-custom-shader-material": "6.4.0",
     "tunnel-rat": "^0.1.2",
-    "vercel": "^44.5.0",
-    "vite-plugin-glsl": "^1.5.1",
-    "zustand": "5.0.6"
-  },
-  "overrides": {
-    "react-nipple": {
-      "react": "^18.2.0",
-      "react-dom": "^18.2.0",
-      "typescript": "^5.2.2"
-    }
+    "vercel": "^58.5.1",
+    "vite-plugin-glsl": "^1.6.1",
+    "zustand": "5.0.14"
   }
 }
