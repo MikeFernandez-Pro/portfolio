@@ -19,12 +19,15 @@ const createInteractionAnimation = child => {
     ease: 'power2.in',
   });
 
+  // Scale down to an epsilon instead of 0: three r185 Matrix4.decompose
+  // returns scale (1,1,1) for zero-determinant matrices, which makes
+  // drei <Merged> instances reappear at full size
   tl.to(
     InteractionIndicatorChild.scale,
     {
-      x: 0,
-      y: 0,
-      z: 0,
+      x: 0.001,
+      y: 0.001,
+      z: 0.001,
       duration: 0.15,
       ease: 'power2.out',
     },

@@ -1,4 +1,5 @@
 uniform vec3 uColor;
+uniform float uIntensity;
 uniform float uTime;
 
 varying float vPosY;
@@ -9,7 +10,7 @@ void main() {
     strength = step(0.5, strength);
     strength = 1.0 - strength;
 
-    vec3 gradientColor = uColor / (max(0.1, vPosY) * 255.0);
+    vec3 gradientColor = uColor * uIntensity / (max(0.1, vPosY) * 255.0);
 
     vec3 color = mix(vec3(0.0), gradientColor, strength);
     gl_FragColor = vec4(color, 1.0) * min((10.0), max(0.1, 1.0 / (vPosY)));

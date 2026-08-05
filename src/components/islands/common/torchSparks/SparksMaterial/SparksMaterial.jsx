@@ -8,8 +8,9 @@ import sparksFragmentShader from '#shaders/sparks/fragment.glsl';
 
 const SPEED = 6;
 const COLOR = '#f85f3d';
+const INTENSITY = 0.78;
 
-const SparksMaterial = ({ size }) => {
+const SparksMaterial = ({ size, color = COLOR, intensity = INTENSITY }) => {
   const SparksShaderMaterial = useMemo(
     () =>
       shaderMaterial(
@@ -18,18 +19,22 @@ const SparksMaterial = ({ size }) => {
           uSize: size,
           uSpeed: SPEED,
           uColor: new THREE.Color(COLOR),
+          uIntensity: INTENSITY,
           uResolution: new THREE.Vector2(),
         },
         sparksVertexShader,
         sparksFragmentShader
       ),
-    [size]
+    []
   );
 
   extend({ SparksShaderMaterial });
 
   return (
     <sparksShaderMaterial
+      uSize={size}
+      uColor={color}
+      uIntensity={intensity}
       depthWrite={false}
       blending={THREE.AdditiveBlending}
       vertexColors={true}
@@ -39,3 +44,4 @@ const SparksMaterial = ({ size }) => {
 };
 
 export default SparksMaterial;
+export { COLOR as SPARKS_COLOR, INTENSITY as SPARKS_INTENSITY };

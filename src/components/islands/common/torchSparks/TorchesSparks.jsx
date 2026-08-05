@@ -1,4 +1,10 @@
+import { useControls } from 'leva';
+
 import TorchSparks from './TorchSparks/TorchSparks';
+import {
+  SPARKS_COLOR,
+  SPARKS_INTENSITY,
+} from './SparksMaterial/SparksMaterial';
 
 /*
  *   Config
@@ -50,19 +56,50 @@ const TORCHES_POSITIONS = [
 ];
 
 const TorchesSparks = () => {
+  const controls = useControls(
+    'TorchesSparks',
+    {
+      color: {
+        value: SPARKS_COLOR,
+      },
+      intensity: {
+        value: SPARKS_INTENSITY,
+        min: 0,
+        max: 10,
+        step: 0.01,
+      },
+      sizeScale: {
+        value: 2.12,
+        min: 0,
+        max: 3,
+        step: 0.01,
+      },
+    },
+    { collapsed: true }
+  );
+
   return (
     <>
       <TorchSparks
         particlesCount={PARTICLES_COUNT}
         config={SMALL_TORCHES_SPARKS}
+        color={controls.color}
+        intensity={controls.intensity}
+        sizeScale={controls.sizeScale}
       />
       <TorchSparks
         particlesCount={PARTICLES_COUNT}
         config={MEDIUM_TORCHES_SPARKS}
+        color={controls.color}
+        intensity={controls.intensity}
+        sizeScale={controls.sizeScale}
       />
       <TorchSparks
         particlesCount={PARTICLES_COUNT}
         config={LARGE_TORCHES_SPARKS}
+        color={controls.color}
+        intensity={controls.intensity}
+        sizeScale={controls.sizeScale}
       />
     </>
   );

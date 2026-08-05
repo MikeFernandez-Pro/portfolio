@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { useControls } from 'leva';
 import * as THREE from 'three';
 import gsap from 'gsap';
 import { Howl } from 'howler';
@@ -7,19 +8,26 @@ import { useStore } from '#store/ZustandStorage.jsx';
 
 import PressurePlateAudio from '#assets/sounds/pressure-plate.mp3';
 
+// Shared by reference across all plate materials, so mutating it updates every plate
 const PLATE_EMISSIVE_COLOR = new THREE.Color('#68CFF2');
-const PLATE_EMISSIVE_INTENSITY = 0;
+let plateActiveIntensity = 3.56;
 
-const createPlateAnimation = (plate, pressurePlateSoundEffect) =>
-  gsap.to(plate.material, {
+const createPlateAnimation = (material, pressurePlateSoundEffect) => {
+  const progress = { value: 0 };
+
+  return gsap.to(progress, {
     duration: 0.2,
-    emissiveIntensity: 3,
+    value: 1,
     paused: true,
     onStart: () => {
       pressurePlateSoundEffect.seek(0);
       pressurePlateSoundEffect.play();
     },
+    onUpdate: () => {
+      material.emissiveIntensity = progress.value * plateActiveIntensity;
+    },
   });
+};
 
 const PressurePlates = props => {
   const { island } = props;
@@ -34,30 +42,50 @@ const PressurePlates = props => {
     []
   );
 
+  useControls(
+    'PressurePlates',
+    {
+      emissiveColor: {
+        value: `#${PLATE_EMISSIVE_COLOR.getHexString()}`,
+        onChange: value => {
+          PLATE_EMISSIVE_COLOR.set(value);
+        },
+      },
+      activeIntensity: {
+        value: plateActiveIntensity,
+        min: 0,
+        max: 20,
+        step: 0.01,
+        onChange: value => {
+          plateActiveIntensity = value;
+
+          // Reflect the new intensity on the currently activated plate
+          const activePlate = useStore.getState().activePlate;
+          if (activePlate && island.materials[activePlate]) {
+            island.materials[activePlate].emissiveIntensity = value;
+          }
+        },
+      },
+    },
+    { collapsed: true }
+  );
+
   useEffect(() => {
+    // Plate ids match the GLB material names
     const plates = {
-      seaPlate: {
-        mesh: island.scene.getObjectByName('island_12'),
-      },
-      halloweenPlate: {
-        mesh: island.scene.getObjectByName('island_13'),
-      },
-      portalPlate: {
-        mesh: island.scene.getObjectByName('island_14'),
-      },
+      seaPlate: { material: island.materials.seaPlate },
+      halloweenPlate: { material: island.materials.halloweenPlate },
+      portalPlate: { material: island.materials.portalPlate },
     };
 
     for (const plate in plates) {
-      if (plates[plate].mesh) {
-        plates[plate].mesh.material.emissive = PLATE_EMISSIVE_COLOR;
-        plates[plate].mesh.material.emissiveIntensity =
-          PLATE_EMISSIVE_INTENSITY;
+      plates[plate].material.emissive = PLATE_EMISSIVE_COLOR;
+      plates[plate].material.emissiveIntensity = 0;
 
-        plates[plate].animation = createPlateAnimation(
-          plates[plate].mesh,
-          pressurePlateSoundEffect
-        );
-      }
+      plates[plate].animation = createPlateAnimation(
+        plates[plate].material,
+        pressurePlateSoundEffect
+      );
     }
 
     const unsubActivePlate = useStore.subscribe(

@@ -16,14 +16,8 @@ const MagicGlyphs = props => {
 
   const magicGlyphActivationRef = useRef(false);
 
-  const majorGlyph = useMemo(
-    () => island.scene.children[0].children[5],
-    [island]
-  );
-  const minorGlyph = useMemo(
-    () => island.scene.children[0].children[6],
-    [island]
-  );
+  const majorGlyph = island.nodes.glyph;
+  const minorGlyph = island.nodes.smallGlyph;
 
   const magicGlyphSoundEffect = useMemo(
     () =>

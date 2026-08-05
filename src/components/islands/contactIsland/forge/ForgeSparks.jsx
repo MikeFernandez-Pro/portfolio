@@ -1,11 +1,15 @@
 import { useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
+import { useControls } from 'leva';
 import * as THREE from 'three';
 
 import forgeSparksVertexShader from '#shaders/forgeSparks/vertex.glsl';
 import forgeSparksFragmentShader from '#shaders/forgeSparks/fragment.glsl';
 
 const COUNT = 100;
+const FORGE_SPARKS_COLOR = '#ff8080';
+const FORGE_SPARKS_INTENSITY = 2;
+const FORGE_SPARKS_SIZE = 0.07;
 
 const positions = new Float32Array(COUNT * 3);
 const sizes = new Float32Array(COUNT);
@@ -37,11 +41,13 @@ const ForgeSparks = props => {
     () =>
       new THREE.ShaderMaterial({
         uniforms: {
-          uSize: { value: 0.06 },
+          uSize: { value: FORGE_SPARKS_SIZE },
           uResolution: {
             value: new THREE.Vector2(width * pixelRatio, height * pixelRatio),
           },
           uProgress: { value: 0 },
+          uColor: { value: new THREE.Color(FORGE_SPARKS_COLOR) },
+          uIntensity: { value: FORGE_SPARKS_INTENSITY },
         },
         vertexShader: forgeSparksVertexShader,
         fragmentShader: forgeSparksFragmentShader,
@@ -50,6 +56,37 @@ const ForgeSparks = props => {
         blending: THREE.AdditiveBlending,
       }),
     []
+  );
+
+  useControls(
+    'ForgeSparks',
+    {
+      color: {
+        value: FORGE_SPARKS_COLOR,
+        onChange: value => {
+          forgeSparksMaterial.uniforms.uColor.value.set(value);
+        },
+      },
+      intensity: {
+        value: FORGE_SPARKS_INTENSITY,
+        min: 0,
+        max: 20,
+        step: 0.01,
+        onChange: value => {
+          forgeSparksMaterial.uniforms.uIntensity.value = value;
+        },
+      },
+      size: {
+        value: FORGE_SPARKS_SIZE,
+        min: 0,
+        max: 0.5,
+        step: 0.001,
+        onChange: value => {
+          forgeSparksMaterial.uniforms.uSize.value = value;
+        },
+      },
+    },
+    { collapsed: true }
   );
 
   useFrame(() => {

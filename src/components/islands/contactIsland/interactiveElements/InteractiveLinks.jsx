@@ -71,9 +71,12 @@ const InteractiveLinks = props => {
                   key={linkInstanceData.userData.id}
                 >
                   <InteractionIndicatorMesh name="InteractionIndicatorMesh" />
+                  {/* Scale must never be exactly 0: three r185 Matrix4.decompose
+                      returns scale (1,1,1) for zero-determinant matrices, which
+                      makes drei <Merged> instances reappear at full size */}
                   <ActivationIndicatorMesh
                     name="ActivationIndicatorMesh"
-                    scale={0}
+                    scale={0.001}
                     onClick={() => {
                       // Only activate click trigger on mobile devices
                       if (!IS_MOBILE_DEVICE) {

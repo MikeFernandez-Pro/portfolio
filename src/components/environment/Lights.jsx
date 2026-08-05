@@ -36,7 +36,7 @@ const Lights = () => {
     'ambientLight',
     {
       intensity: {
-        value: 8.8, //16
+        value: 13,
         min: 0,
         max: 20,
       },

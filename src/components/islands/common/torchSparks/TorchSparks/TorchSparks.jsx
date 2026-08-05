@@ -4,7 +4,7 @@ import * as THREE from 'three';
 
 import SparksMaterial from '../SparksMaterial/SparksMaterial';
 
-const TorchSparks = ({ particlesCount, config }) => {
+const TorchSparks = ({ particlesCount, config, color, intensity, sizeScale = 1 }) => {
   const sparksRef = useRef();
 
   const count = useMemo(() => particlesCount * config.offsets.length, []);
@@ -79,7 +79,11 @@ const TorchSparks = ({ particlesCount, config }) => {
           itemSize={3}
         />
       </bufferGeometry>
-      <SparksMaterial size={config.size} />
+      <SparksMaterial
+        size={config.size * sizeScale}
+        color={color}
+        intensity={intensity}
+      />
     </points>
   );
 };

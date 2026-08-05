@@ -1,6 +1,7 @@
 import { useRef, useMemo } from 'react';
 import { extend, useFrame, useThree } from '@react-three/fiber';
 import { shaderMaterial } from '@react-three/drei';
+import { useControls } from 'leva';
 import * as THREE from 'three';
 
 import firefliesVertexShader from '#shaders/fireflies/vertex.glsl';
@@ -24,6 +25,9 @@ const FIREFLIES_POSITIONS = [
 ];
 
 const FIREFLIES_PER_LAMP = 20;
+const FIREFLIES_COLOR = '#d58e6b';
+const FIREFLIES_INTENSITY = 8.34;
+const FIREFLIES_SIZE = 0.03;
 const TOTAL_FIREFLIES_COUNT = FIREFLIES_POSITIONS.length * FIREFLIES_PER_LAMP;
 
 const POSITIONS_ARRAY = new Float32Array(TOTAL_FIREFLIES_COUNT * 3);
@@ -55,16 +59,38 @@ const FireFlies = () => {
 
   const firefliesRef = useRef();
 
+  const controls = useControls(
+    'FireFlies',
+    {
+      color: {
+        value: FIREFLIES_COLOR,
+      },
+      intensity: {
+        value: FIREFLIES_INTENSITY,
+        min: 0,
+        max: 20,
+        step: 0.01,
+      },
+      size: {
+        value: FIREFLIES_SIZE,
+        min: 0,
+        max: 0.2,
+        step: 0.001,
+      },
+    },
+    { collapsed: true }
+  );
+
   const FirefliesShaderMaterial = useMemo(
     () =>
       shaderMaterial(
         {
           uResolution: resolution,
-          uSize: 0.02,
+          uSize: FIREFLIES_SIZE,
           uTime: 0,
           uVelocity: 0.17,
-          uColor: new THREE.Color('#ffcaaf'),
-          uIntensity: 8,
+          uColor: new THREE.Color(FIREFLIES_COLOR),
+          uIntensity: FIREFLIES_INTENSITY,
         },
         firefliesVertexShader,
         firefliesFragmentShader
@@ -97,6 +123,9 @@ const FireFlies = () => {
       </bufferGeometry>
       <firefliesShaderMaterial
         ref={firefliesRef}
+        uColor={controls.color}
+        uIntensity={controls.intensity}
+        uSize={controls.size}
         transparent
         blending={THREE.AdditiveBlending}
         depthWrite={false}

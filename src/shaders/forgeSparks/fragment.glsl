@@ -1,4 +1,6 @@
 uniform float uProgress;
+uniform vec3 uColor;
+uniform float uIntensity;
 
 void main() {
     vec2 uv = gl_PointCoord;
@@ -8,8 +10,8 @@ void main() {
         discard;
 
     // Final color
-    gl_FragColor = vec4(1.0, 0.5, 0.5, 1.0);
-    gl_FragColor.rgb *= 2.0 * (1.0 - uProgress);
+    gl_FragColor = vec4(uColor, 1.0);
+    gl_FragColor.rgb *= uIntensity * (1.0 - uProgress);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
 }

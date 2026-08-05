@@ -22,7 +22,7 @@ const PORTAL_POSITION = new THREE.Vector3(-16.12, 6.95, -37.7);
 const ProjectsPortals = props => {
   const { island } = props;
 
-  const portal = useMemo(() => island.scene.children[0].children[4], [island]);
+  const portal = island.nodes.portal;
 
   const portalSoundEffect = useMemo(
     () =>

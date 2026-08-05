@@ -1,5 +1,6 @@
 import { useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { useControls } from 'leva';
 import gsap from 'gsap';
 import * as THREE from 'three';
 
@@ -8,36 +9,56 @@ import { useStore } from '#store/ZustandStorage.jsx';
 import floatingSkillsVertexShader from '#shaders/floatingSkills/vertex.glsl';
 import floatingSkillsFragmentShader from '#shaders/floatingSkills/fragment.glsl';
 
+const FLOATING_SKILLS_COLOR = '#e1754b';
+const FLOATING_SKILLS_INTENSITY = 11.34;
+
 const FloatingSkills = props => {
   const { island } = props;
 
-  const floatingSkills = useMemo(
-    () => island.scene.children[0].children[0].children[10],
+  const floatingSkillsShaderMaterial = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        uniforms: {
+          uTime: { value: 0 },
+          uOpacity: { value: 0 },
+          uTexture: { value: island.materials.magicLetters.map },
+          uColor: { value: new THREE.Color(FLOATING_SKILLS_COLOR) },
+          uIntensity: { value: FLOATING_SKILLS_INTENSITY },
+        },
+        vertexShader: floatingSkillsVertexShader,
+        fragmentShader: floatingSkillsFragmentShader,
+        side: THREE.DoubleSide,
+        transparent: true,
+        toneMapped: false,
+      }),
     [island]
   );
 
-  useEffect(() => {
-    const floatingSkillsShaderMaterial = new THREE.ShaderMaterial({
-      uniforms: {
-        uTime: { value: 0 },
-        uOpacity: { value: 0 },
-        uTexture: { value: floatingSkills.material.map },
-        uColor: { value: new THREE.Color('#e1754b') },
-        uIntensity: { value: 6.8 },
+  useControls(
+    'FloatingSkills',
+    {
+      color: {
+        value: FLOATING_SKILLS_COLOR,
+        onChange: value => {
+          floatingSkillsShaderMaterial.uniforms.uColor.value.set(value);
+        },
       },
-      vertexShader: floatingSkillsVertexShader,
-      fragmentShader: floatingSkillsFragmentShader,
-      side: THREE.DoubleSide,
-      transparent: true,
-      toneMapped: false,
-    });
+      intensity: {
+        value: FLOATING_SKILLS_INTENSITY,
+        min: 0,
+        max: 20,
+        step: 0.01,
+        onChange: value => {
+          floatingSkillsShaderMaterial.uniforms.uIntensity.value = value;
+        },
+      },
+    },
+    { collapsed: true }
+  );
 
-    // Replace magicLetters default material with new shader material
-    floatingSkills.material.dispose();
-    floatingSkills.material = floatingSkillsShaderMaterial;
-
+  useEffect(() => {
     let floatingSkillsActivation = gsap.to(
-      floatingSkills.material.uniforms.uOpacity,
+      floatingSkillsShaderMaterial.uniforms.uOpacity,
       {
         duration: 1,
         delay: 1,
@@ -66,7 +87,19 @@ const FloatingSkills = props => {
   // Update shader material uTime uniforms value over time
   useFrame(
     state =>
-      (floatingSkills.material.uniforms.uTime.value = state.clock.elapsedTime)
+      (floatingSkillsShaderMaterial.uniforms.uTime.value =
+        state.clock.elapsedTime)
+  );
+
+  return (
+    <skinnedMesh
+      name="island_11"
+      geometry={island.nodes.island_11.geometry}
+      material={floatingSkillsShaderMaterial}
+      skeleton={island.nodes.island_11.skeleton}
+      morphTargetDictionary={island.nodes.island_11.morphTargetDictionary}
+      morphTargetInfluences={island.nodes.island_11.morphTargetInfluences}
+    />
   );
 };
 

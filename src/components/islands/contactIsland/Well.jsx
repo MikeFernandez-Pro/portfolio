@@ -21,7 +21,7 @@ const INNER_WATER_COLOR = '#26b0cf';
 
 // Fishes
 const FISHES_COLOR = '#00f6d0';
-const FISHES_INTENSITY = 8.7;
+const FISHES_INTENSITY = 12.61;
 const FISHES_SPEED = 0.5;
 const BIG_FISH_AMPLITUDE = 0.88;
 const SMALL_FISH_AMPLITUDE = 0.66;

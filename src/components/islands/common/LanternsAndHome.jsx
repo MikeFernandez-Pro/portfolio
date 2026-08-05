@@ -1,51 +1,38 @@
-import { useEffect, useRef, useMemo } from 'react';
+import { useLayoutEffect } from 'react';
 import { useControls } from 'leva';
-import * as THREE from 'three';
 
-const LANTERNS_COLOR = new THREE.Color('#ff5245');
-let lanternsIntensity = 8.53;
+const LANTERNS_EMISSIVE_COLOR = '#ff7e7e';
+const LANTERNS_EMISSIVE_INTENSITY = 6.22;
 
 const LanternsAndHome = props => {
   const { island } = props;
 
-  const lanternsMesh = useMemo(
-    () => island.scene.getObjectByName('island_2'),
-    [island]
-  );
+  // Lanterns and house windows share this single GLB material
+  const lanternsMaterial = island.materials.lanternsAndHomes;
 
-  useEffect(() => {
-    lanternsMesh.material?.dispose();
-    lanternsMesh.material = new THREE.MeshBasicMaterial({
-      color: LANTERNS_COLOR,
-      toneMapped: false,
-    });
-  }, [lanternsMesh]);
+  useLayoutEffect(() => {
+    lanternsMaterial.color.set(LANTERNS_EMISSIVE_COLOR);
+    lanternsMaterial.emissive.set(LANTERNS_EMISSIVE_COLOR);
+    lanternsMaterial.emissiveIntensity = LANTERNS_EMISSIVE_INTENSITY;
+  }, [lanternsMaterial]);
 
   useControls(
     'Lanterns',
     {
-      color: {
-        value: '#ff4646',
+      emissiveColor: {
+        value: LANTERNS_EMISSIVE_COLOR,
         onChange: value => {
-          LANTERNS_COLOR.set(value);
-          const scaled =
-            LANTERNS_COLOR.clone().multiplyScalar(lanternsIntensity);
-          if (lanternsMesh) {
-            lanternsMesh.material.color.set(scaled);
-          }
+          lanternsMaterial.color.set(value);
+          lanternsMaterial.emissive.set(value);
         },
       },
-      intensity: {
-        value: 10,
-        min: 1,
-        max: 10,
+      emissiveIntensity: {
+        value: LANTERNS_EMISSIVE_INTENSITY,
+        min: 0,
+        max: 20,
         step: 0.01,
         onChange: value => {
-          lanternsIntensity = value;
-          const scaled = LANTERNS_COLOR.clone().multiplyScalar(value);
-          if (lanternsMesh) {
-            lanternsMesh.material.color.set(scaled);
-          }
+          lanternsMaterial.emissiveIntensity = value;
         },
       },
     },

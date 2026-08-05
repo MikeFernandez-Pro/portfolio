@@ -35,25 +35,25 @@ const Experience = () => {
         },
       },
       color1: {
-        value: '#FFD700',
+        value: '#ffd700',
         onChange: value => {
           fireworksMaterial.uniforms.uColor1.value = new THREE.Color(value);
         },
       },
       color2: {
-        value: '#3B5BA5 ',
+        value: '#3b5ba5',
         onChange: value => {
           fireworksMaterial.uniforms.uColor2.value = new THREE.Color(value);
         },
       },
       color3: {
-        value: '#A3C1DA',
+        value: '#a3c1da',
         onChange: value => {
           fireworksMaterial.uniforms.uColor3.value = new THREE.Color(value);
         },
       },
       brightness: {
-        value: 3.3,
+        value: 10,
         min: 0,
         max: 10,
         onChange: value => {
