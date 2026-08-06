@@ -11,6 +11,8 @@ import CharacterController from '#controller/CharacterController.jsx';
 import Sky from '#environment/Sky.jsx';
 import Lights from '#environment/Lights.jsx';
 import Clouds from '#environment/Clouds.jsx';
+import { CloudShadows } from '#environment/CloudShadows.jsx';
+import { WindLines } from '#environment/WindLines.jsx';
 import Islands from '#islands/Islands.jsx';
 import TorchesSparks from '#islands/common/torchSparks/TorchesSparks.jsx';
 import { IslandCollider } from '#islands/common/IslandCollider.jsx';
@@ -67,6 +69,8 @@ const Experience = () => {
       {/* <Clouds /> */}
       <Sky />
       <Lights />
+      <CloudShadows />
+      <WindLines />
       <FireFlies />
       <Smoke />
       <TorchesSparks />

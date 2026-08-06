@@ -1,9 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
 
 import { IS_MOBILE_DEVICE } from '#utils/utils.js';
 
+import { patchCloudShadows } from '#environment/CloudShadows.jsx';
 import { LanternsAndHome } from '#islands/common/LanternsAndHome';
 import { IslandMaterialsControls } from '#islands/common/IslandMaterialsControls';
 import { ContactIsland } from '#islands/contactIsland/ContactIsland';
@@ -24,7 +25,18 @@ const Islands = () => {
 
   const { nodes, materials, animations } = island;
 
-  const islandAnimations = useAnimations(animations, islandRef);
+  // The GLB clips animate island_7, which is intentionally not mounted —
+  // drop those tracks so the mixer doesn't warn about a missing node
+  const filteredAnimations = useMemo(() => {
+    animations.forEach(clip => {
+      clip.tracks = clip.tracks.filter(
+        track => !track.name.startsWith('island_7.')
+      );
+    });
+    return animations;
+  }, [animations]);
+
+  const islandAnimations = useAnimations(filteredAnimations, islandRef);
 
   useEffect(() => {
     const islandMesh = island.scene.getObjectByName('island_1');
@@ -34,7 +46,7 @@ const Islands = () => {
       islandMesh.receiveShadow = !IS_MOBILE_DEVICE;
       islandMesh.material.aoMap = null;
       islandMesh.material.roughness = 1;
-      islandMesh.material.needsUpdate = true;
+      patchCloudShadows(islandMesh.material);
     }
 
     // Hide keyboard controls on mobile

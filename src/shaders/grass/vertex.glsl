@@ -24,6 +24,7 @@ uniform float uRepulseSquash; // extra height shortening at full influence (0-1)
 
 varying vec3 vColor;
 varying vec2 vUv;
+varying vec3 vWorldPosition;
 
 // inverseLerp and remap are for remapping values
 float inverseLerp(float v, float minValue, float maxValue) {
@@ -135,6 +136,8 @@ void main() {
   // Generate hash for lean value for the grass blade
   vec3 grassBladeWorldPos = (modelMatrix * vec4(grassOffset, 1.0)).xyz; // get the world position of the grass blade
   vec3 hashVal = hash(grassBladeWorldPos); // generate hash value from the world position
+
+  vWorldPosition = grassBladeWorldPos; // for cloud shadows (per blade is enough)
 
   // Height data texture
   vec4 heightData = texture2D(

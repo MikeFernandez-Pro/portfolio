@@ -5,6 +5,7 @@ import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
 
 import { Butterfly } from './Butterfly.jsx';
+import { cloudShadowUniforms } from '#environment/CloudShadows.jsx';
 import { useStore } from '#store/ZustandStorage.jsx';
 
 import grassFragmentShader from '#shaders/grass/fragment.glsl';
@@ -142,6 +143,9 @@ const Grass = () => {
           uRepulseStrength: { value: repulseControls.strength },
           uRepulseFalloff: { value: repulseControls.falloff },
           uRepulseSquash: { value: repulseControls.squash },
+
+          // Shared with the island material so the clouds line up
+          ...cloudShadowUniforms,
         },
         vertexShader: grassVertexShader,
         fragmentShader: grassFragmentShader,
