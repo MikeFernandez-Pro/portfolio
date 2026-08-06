@@ -14,6 +14,8 @@ import tunnel from 'tunnel-rat';
 import { Howler } from 'howler';
 import * as THREE from 'three';
 
+import { IS_MOBILE_DEVICE } from '#utils/utils.js';
+
 import soundOnIcon from '/icons/sound-on.svg';
 import soundOffIcon from '/icons/sound-off.svg';
 import { EffectComposer } from './components/effectComposer/EffectComposer.jsx';
@@ -103,7 +105,7 @@ const App = () => {
         }}
       />
       <Canvas
-        shadows={THREE.VSMShadowMap}
+        shadows={IS_MOBILE_DEVICE ? false : THREE.VSMShadowMap}
         dpr={dpr}
         performance={{ min: 0.5 }}
         camera={{

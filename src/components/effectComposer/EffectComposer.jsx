@@ -11,6 +11,7 @@ import { useControls } from '#utils/useControls.jsx';
 
 import { BlurPass } from './BlurPass.jsx';
 import { SceneRevealer } from './SceneRevealer.jsx';
+import { IS_MOBILE_DEVICE } from '#utils/utils.js';
 
 const EffectComposer = props => {
   const { sceneRevealerRef, horizontalBlurPassRef, verticalBlurPassRef } =
@@ -42,11 +43,16 @@ const EffectComposer = props => {
     <EffectComposerR3F enableNormalPass={false} multisampling={0}>
       <SceneRevealer sceneRevealerRef={sceneRevealerRef} />
       <Vignette />
-      <BlurPass
-        horizontalBlurPassRef={horizontalBlurPassRef}
-        verticalBlurPassRef={verticalBlurPassRef}
-      />
-      <N8AO {...controls} quality={controls.quality} />
+      {/* AO and blur are too expensive on mobile GPUs */}
+      {!IS_MOBILE_DEVICE && (
+        <BlurPass
+          horizontalBlurPassRef={horizontalBlurPassRef}
+          verticalBlurPassRef={verticalBlurPassRef}
+        />
+      )}
+      {!IS_MOBILE_DEVICE && (
+        <N8AO {...controls} quality={controls.quality} />
+      )}
       <Bloom
         mipmapBlur
         luminanceThreshold={2}
