@@ -12,14 +12,9 @@ import grassVertexShader from '#shaders/grass/vertex.glsl';
 
 import grassHeightTextureAsset from '#assets/textures/grass-height-map.webp';
 import perlinNoiseImage from '#assets/textures/perlin.png';
-import tournesolImage from '#assets/textures/tournesol.png';
 
 const Grass = () => {
   const grassRef = useRef(null);
-
-  const tournesolTexture = useTexture(tournesolImage, texture => {
-    texture.colorSpace = THREE.SRGBColorSpace;
-  });
 
   // Controls
   const controls = useControls(
@@ -27,6 +22,11 @@ const Grass = () => {
     {
       colorBase: '#22651e', //297a25
       colorTop: '#49d57c', //4cf288
+      redTipColor: '#ee3055',
+      redTipLength: { value: 0.3, min: 0, max: 1, step: 0.01 },
+      flowerAmount: { value: 0.0035, min: 0, max: 0.05, step: 0.0001 },
+      flowerHeight: { value: 0.447, min: 0, max: 1.5, step: 0.001 },
+      flowerWidth: { value: 0.106, min: 0, max: 0.5, step: 0.001 },
       count: { value: 16 * 5000, min: 0, max: 16 * 50000, step: 1 },
       segmentsCount: { value: 3, min: 1, max: 10, step: 1 },
       patchSize: { value: 11.7, min: 11, max: 13, step: 0.001 },
@@ -111,8 +111,12 @@ const Grass = () => {
           },
           uGrassBaseColor: { value: new THREE.Color(controls.colorBase) },
           uGrassTopColor: { value: new THREE.Color(controls.colorTop) },
+          uRedTipColor: { value: new THREE.Color(controls.redTipColor) },
+          uRedTipLength: { value: controls.redTipLength },
+          uFlowerAmount: { value: controls.flowerAmount },
+          uFlowerHeight: { value: controls.flowerHeight },
+          uFlowerWidth: { value: controls.flowerWidth },
           uHeightDataTexture: { value: grassHeightTexture },
-          uTournesolTexture: { value: tournesolTexture },
           uPerlinNoiseTexture: { value: perlinNoiseTexture },
           uSquareShape: { value: controls.squared },
           uPositionX: { value: 0 },
@@ -138,6 +142,13 @@ const Grass = () => {
     grassMaterial.uniforms.uGrassTopColor.value = new THREE.Color(
       controls.colorTop
     );
+    grassMaterial.uniforms.uRedTipColor.value = new THREE.Color(
+      controls.redTipColor
+    );
+    grassMaterial.uniforms.uRedTipLength.value = controls.redTipLength;
+    grassMaterial.uniforms.uFlowerAmount.value = controls.flowerAmount;
+    grassMaterial.uniforms.uFlowerHeight.value = controls.flowerHeight;
+    grassMaterial.uniforms.uFlowerWidth.value = controls.flowerWidth;
     grassMaterial.uniforms.uHeightDataTexture.value = grassHeightTexture;
     grassMaterial.uniforms.uGrassParameters.value.x = controls.segmentsCount;
     grassMaterial.uniforms.uGrassParameters.value.y = controls.patchSize;

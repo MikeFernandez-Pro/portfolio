@@ -13,6 +13,9 @@ uniform float uWindScale;
 uniform float uWindStrength;
 uniform float uWindSpeed;
 
+uniform float uFlowerAmount;
+uniform float uFlowerHeight;
+uniform float uFlowerWidth;
 
 varying vec3 vColor;
 varying vec2 vUv;
@@ -157,13 +160,23 @@ void main() {
   // Rnadom height
   float randomHeight = (rand(float(gl_InstanceID + 1000)) * 2.0 - 1.0) * 0.1;
 
-  // Random flowers
-    bool randomFlowers = rand(float(gl_InstanceID + 1000)) > 0.997 ;
+  // Random squared "flower" blades with a colored tip
+  bool randomFlowers = rand(float(gl_InstanceID + 1000)) > 1.0 - uFlowerAmount;
 
-  float width = uSquareShape || randomFlowers 
-    ? GRASS_WIDTH + 0.1
-    : GRASS_WIDTH * easeOut(1.04 - heightPercent, 3.0) * grassHeight;
-  float height = GRASS_HEIGHT * grassHeight + randomHeight + (randomFlowers ? 0.1 : 0.0);
+  float width;
+  if (randomFlowers) {
+    width = uFlowerWidth * grassHeight; // squared: constant width, no taper
+  } else if (uSquareShape) {
+    width = GRASS_WIDTH + 0.1;
+  } else {
+    width = GRASS_WIDTH * easeOut(1.04 - heightPercent, 3.0) * grassHeight;
+  }
+
+  // Flowers grow around their own average height; grassHeight and
+  // randomHeight keep each one a different size
+  float height = randomFlowers
+    ? uFlowerHeight * grassHeight + randomHeight
+    : GRASS_HEIGHT * grassHeight + randomHeight;
 
   // Calculate the vertex position
   float x = (xSide - 0.5) * width;
@@ -271,10 +284,7 @@ float windStrength = texture2D(uPerlinNoiseTexture,
   // Pass the color to the fragment shader
   vColor = mix(uGrassBaseColor, uGrassTopColor, heightPercent);
 
-  if (randomFlowers) {
-    vUv = vec2(xSide, heightPercent);
-  } else {
-    vUv = vec2(0.0, 0.0);
-  }
+  // x: flower flag, y: height percent along the blade
+  vUv = vec2(randomFlowers ? 1.0 : 0.0, heightPercent);
   // vColor = vec3(windStrength);
 }

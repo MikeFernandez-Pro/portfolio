@@ -1,26 +1,16 @@
-uniform sampler2D uTournesolTexture;
+uniform vec3 uRedTipColor;
+uniform float uRedTipLength; // portion of the blade covered by the red tip (0-1)
 
 varying vec3 vColor;
-varying vec2 vUv;
+varying vec2 vUv; // x: flower flag, y: height percent along the blade
 
 void main() {
+  vec3 color = vColor;
 
-
-  vec4 tournesolColor = texture2D(uTournesolTexture, vUv);
-  tournesolColor.rgb = mix(tournesolColor.rgb, vec3(0.0), 1.0 - vUv.y) ;
-
-  if (vUv.x == 0.0 && vUv.y == 0.0) {
-    gl_FragColor = vec4(vColor, 1.0);
-  } else {
-
-    if (tournesolColor.a < 0.9) {
-      discard;
-    } else {
-      gl_FragColor = vec4(tournesolColor);
-    }
-    
-    
+  // Flower blades fade to red towards the tip
+  if (vUv.x > 0.5) {
+    color = mix(color, uRedTipColor, smoothstep(1.0 - uRedTipLength, 1.0, vUv.y));
   }
 
-
+  gl_FragColor = vec4(color, 1.0);
 }
