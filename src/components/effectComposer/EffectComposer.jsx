@@ -19,9 +19,9 @@ const EffectComposer = props => {
   const controls = useControls(
     'Ambient Occlusion',
     {
-      aoRadius: 5,
-      distanceFalloff: 1,
-      intensity: { value: 3.3, min: 0.01, max: 1.5, step: 0.01 },
+      aoRadius: 1,
+      distanceFalloff: 3,
+      intensity: { value: 1.5, min: 0.01, max: 1.5, step: 0.01 },
       quality: {
         value: 'performance',
         options: ['performance', 'low', 'medium', 'high', 'ultra'],
@@ -29,7 +29,7 @@ const EffectComposer = props => {
       aoSamples: { value: 16, min: 1, max: 16, step: 1 },
       denoiseSamples: { value: 4, min: 1, max: 4, step: 1 },
       denoiseRadius: { value: 12, min: 1, max: 12, step: 1 },
-      color: { value: '#00f3ff' },
+      color: { value: '#bce3ff' },
       halfRes: true,
       depthAwareUpsampling: false,
       screenSpaceRadius: false,

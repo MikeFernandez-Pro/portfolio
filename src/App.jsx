@@ -103,7 +103,7 @@ const App = () => {
         }}
       />
       <Canvas
-        shadows
+        shadows={THREE.VSMShadowMap}
         dpr={dpr}
         performance={{ min: 0.5 }}
         camera={{

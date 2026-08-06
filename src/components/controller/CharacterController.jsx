@@ -220,8 +220,12 @@ const CharacterController = () => {
 
   useLayoutEffect(() => {
     if (!IS_MOBILE_DEVICE) {
-      const mesh = scene.getObjectByName('knight');
-      mesh.castShadow = true;
+      scene.traverse(object => {
+        if (object.isMesh || object.isSkinnedMesh) {
+          object.castShadow = true;
+          object.receiveShadow = true;
+        }
+      });
     }
 
     // JoyStick subscriber

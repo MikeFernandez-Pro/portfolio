@@ -12,7 +12,7 @@ import { ProjectIsland } from '#islands/projectsIsland/ProjectIsland';
 import { ResumeIsland } from '#islands/resumeIsland/ResumeIsland';
 import { CountriesFlags } from '#islands/resumeIsland/countryFlags/CountriesFlags';
 
-import islandModel from '#assets/models/island/island.glb?url';
+import islandModel from '#assets/models/island/island-no-ao.glb?url';
 
 const ISLAND_POSITION = new THREE.Vector3(-1.35, 2.25, -15);
 
@@ -29,8 +29,11 @@ const Islands = () => {
     const islandMesh = island.scene.getObjectByName('island_1');
 
     if (islandMesh) {
+      islandMesh.castShadow = !IS_MOBILE_DEVICE;
       islandMesh.receiveShadow = !IS_MOBILE_DEVICE;
+      islandMesh.material.aoMap = null;
       islandMesh.material.roughness = 1;
+      islandMesh.material.needsUpdate = true;
     }
 
     // Hide keyboard controls on mobile
@@ -57,6 +60,8 @@ const Islands = () => {
             skeleton={nodes.island_1.skeleton}
             morphTargetDictionary={nodes.island_1.morphTargetDictionary}
             morphTargetInfluences={nodes.island_1.morphTargetInfluences}
+            castShadow={!IS_MOBILE_DEVICE}
+            receiveShadow={!IS_MOBILE_DEVICE}
           />
           <skinnedMesh
             name="island_2"

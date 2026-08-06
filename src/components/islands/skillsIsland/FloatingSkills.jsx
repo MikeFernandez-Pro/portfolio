@@ -30,6 +30,9 @@ const FloatingSkills = props => {
         side: THREE.DoubleSide,
         transparent: true,
         toneMapped: false,
+        // Keep the letters out of the depth buffer so N8AO (which samples
+        // depth) doesn't darken around them while they are transparent
+        depthWrite: false,
       }),
     [island]
   );
