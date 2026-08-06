@@ -10,7 +10,7 @@ import floatingSkillsVertexShader from '#shaders/floatingSkills/vertex.glsl';
 import floatingSkillsFragmentShader from '#shaders/floatingSkills/fragment.glsl';
 
 const FLOATING_SKILLS_COLOR = '#e1754b';
-const FLOATING_SKILLS_INTENSITY = 11.34;
+const FLOATING_SKILLS_INTENSITY = 9.87;
 
 const FloatingSkills = props => {
   const { island } = props;

@@ -9,7 +9,7 @@ const MATERIAL_DEFAULTS = {
   EmailSign: {
     color: '#c67757',
     emissiveColor: '#c67757',
-    emissiveIntensity: 10.4,
+    emissiveIntensity: 9.2,
   },
   ForgeSword: {
     color: '#ff6347',
@@ -25,11 +25,6 @@ const MATERIAL_DEFAULTS = {
     color: '#ffaf67',
     emissiveColor: '#ffaf67',
     emissiveIntensity: 20,
-  },
-  ForgeLava: {
-    color: '#f47053',
-    emissiveColor: '#f47053',
-    emissiveIntensity: 9.81,
   },
 };
 
@@ -92,21 +87,15 @@ const IslandMaterialsControls = props => {
     materials.candles,
     MATERIAL_DEFAULTS.Candles
   );
-  useMaterialControls(
-    'ForgeLava',
-    materials.lava,
-    MATERIAL_DEFAULTS.ForgeLava
-  );
-
   useLayoutEffect(() => {
-    materials.controls.emissiveIntensity = 6.06;
+    materials.controls.emissiveIntensity = 5.2;
   }, [materials.controls]);
 
   useControls(
     'Controls',
     {
       emissiveIntensity: {
-        value: 6.06,
+        value: 5.2,
         min: 0,
         max: 20,
         step: 0.01,

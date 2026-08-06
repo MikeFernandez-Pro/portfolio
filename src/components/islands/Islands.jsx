@@ -7,6 +7,7 @@ import { IS_MOBILE_DEVICE } from '#utils/utils.js';
 import { LanternsAndHome } from '#islands/common/LanternsAndHome';
 import { IslandMaterialsControls } from '#islands/common/IslandMaterialsControls';
 import { ContactIsland } from '#islands/contactIsland/ContactIsland';
+import { ForgeLavaPlane } from '#islands/contactIsland/forge/ForgeLavaPlane.jsx';
 import { SkillsIsland } from '#islands/skillsIsland/SkillsIsland';
 import { ProjectIsland } from '#islands/projectsIsland/ProjectIsland';
 import { ResumeIsland } from '#islands/resumeIsland/ResumeIsland';
@@ -97,6 +98,7 @@ const Islands = () => {
           />
           <skinnedMesh
             name="island_6"
+            visible={false}
             geometry={nodes.island_6.geometry}
             material={materials.lava}
             skeleton={nodes.island_6.skeleton}
@@ -162,6 +164,7 @@ const Islands = () => {
       </group>
       <LanternsAndHome island={island} />
       <IslandMaterialsControls materials={materials} />
+      <ForgeLavaPlane />
       <ProjectIsland island={island} />
       <ResumeIsland />
     </>

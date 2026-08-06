@@ -1,8 +1,7 @@
 import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
-import { GradientTexture, OrbitControls } from '@react-three/drei';
+import { GradientTexture, OrbitControls, StatsGl } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
-import { Perf } from 'r3f-perf';
 import { Howl } from 'howler';
 import { useControls } from 'leva';
 import * as THREE from 'three';
@@ -63,7 +62,7 @@ const Experience = () => {
   return (
     <>
       {/* <OrbitControls /> */}
-      <Perf position="top-left" />
+      <StatsGl />
       <Joystick />
       {/* <Clouds /> */}
       <Sky />

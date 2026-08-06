@@ -36,7 +36,9 @@ export function useKeyboardControls({
         onSpaceDown && onSpaceDown();
       }
 
-      // Shift sprint toggles
+      // Shift sprint toggles — leave browser shortcuts (e.g. Ctrl+Shift+C) untouched
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+
       if (event.code === 'ShiftLeft' && event.type === 'keydown') {
         event.preventDefault();
         onShiftDown && onShiftDown(event);

@@ -113,7 +113,7 @@ const Lights = () => {
     'directionalLight',
     {
       intensity: {
-        value: 13.6,
+        value: 17.0,
         min: 0,
         max: 40,
       },
@@ -133,7 +133,7 @@ const Lights = () => {
         step: 0.001,
       },
       radius: {
-        value: 3.5,
+        value: 6.5,
         min: 0,
         max: 25,
         step: 0.1,
@@ -145,7 +145,7 @@ const Lights = () => {
   const shadowCameraControls = useControls(
     'Shadow Camera',
     {
-      debugHelpers: true,
+      debugHelpers: false,
       near: {
         value: -5,
         min: -10,
@@ -183,14 +183,14 @@ const Lights = () => {
         step: 1,
       },
     },
-    { collapsed: false }
+    { collapsed: true }
   );
 
   const ambientLightControls = useControls(
     'ambientLight',
     {
       intensity: {
-        value: 10,
+        value: 7.5,
         min: 0,
         max: 20,
       },
