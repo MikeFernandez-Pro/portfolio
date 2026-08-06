@@ -16,6 +16,7 @@ uniform float uWindSpeed;
 uniform float uFlowerAmount;
 uniform float uFlowerHeight;
 uniform float uFlowerWidth;
+uniform vec3 uFlowerStemColor;
 
 uniform float uRepulseRadius; // effect size (world units)
 uniform float uRepulseStrength; // max tilt angle in radians (PI/2 = flat on the ground)
@@ -276,8 +277,12 @@ float windStrength = texture2D(uPerlinNoiseTexture,
         return;
     }
 
-  // Pass the color to the fragment shader
-  vColor = mix(uGrassBaseColor, uGrassTopColor, heightPercent);
+  // Pass the color to the fragment shader; flowers use their own green
+  vColor = mix(
+    uGrassBaseColor,
+    randomFlowers ? uFlowerStemColor : uGrassTopColor,
+    heightPercent
+  );
 
   // x: flower flag, y: height percent along the blade
   vUv = vec2(randomFlowers ? 1.0 : 0.0, heightPercent);

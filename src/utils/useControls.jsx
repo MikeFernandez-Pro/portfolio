@@ -19,6 +19,10 @@ const getPane = () => {
     const root = pane.element.parentElement;
     if (root) {
       root.style.zIndex = '1000';
+      // Keep the panel usable when folders overflow the viewport
+      root.style.maxHeight = 'calc(100vh - 16px)';
+      root.style.overflowY = 'auto';
+      root.style.overscrollBehavior = 'contain';
     }
     globalThis.__debugPane = pane;
   }

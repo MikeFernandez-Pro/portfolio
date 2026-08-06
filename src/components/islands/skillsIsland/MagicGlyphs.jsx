@@ -54,7 +54,7 @@ const MagicGlyphs = props => {
     let magicGlyphEmissiveAnimation = gsap.fromTo(
       island.materials.magicPortal,
       { emissiveIntensity: 0 },
-      { duration: 1, emissiveIntensity: 6.6, paused: true }
+      { duration: 1, emissiveIntensity: 9, paused: true }
     );
     /**
      * Storage Subscriptions

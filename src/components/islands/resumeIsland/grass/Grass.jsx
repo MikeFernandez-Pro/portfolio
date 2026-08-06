@@ -28,6 +28,7 @@ const Grass = () => {
       flowerAmount: { value: 0.0035, min: 0, max: 0.05, step: 0.0001 },
       flowerHeight: { value: 0.447, min: 0, max: 1.5, step: 0.001 },
       flowerWidth: { value: 0.1, min: 0, max: 0.5, step: 0.001 },
+      flowerStemColor: '#49d57c',
       count: { value: 16 * 5000, min: 0, max: 16 * 50000, step: 1 },
       segmentsCount: { value: 3, min: 1, max: 10, step: 1 },
       patchSize: { value: 11.7, min: 11, max: 13, step: 0.001 },
@@ -128,6 +129,9 @@ const Grass = () => {
           uFlowerAmount: { value: controls.flowerAmount },
           uFlowerHeight: { value: controls.flowerHeight },
           uFlowerWidth: { value: controls.flowerWidth },
+          uFlowerStemColor: {
+            value: new THREE.Color(controls.flowerStemColor),
+          },
           uHeightDataTexture: { value: grassHeightTexture },
           uPerlinNoiseTexture: { value: perlinNoiseTexture },
           uSquareShape: { value: controls.squared },
@@ -169,6 +173,9 @@ const Grass = () => {
     grassMaterial.uniforms.uFlowerAmount.value = controls.flowerAmount;
     grassMaterial.uniforms.uFlowerHeight.value = controls.flowerHeight;
     grassMaterial.uniforms.uFlowerWidth.value = controls.flowerWidth;
+    grassMaterial.uniforms.uFlowerStemColor.value = new THREE.Color(
+      controls.flowerStemColor
+    );
     grassMaterial.uniforms.uHeightDataTexture.value = grassHeightTexture;
     grassMaterial.uniforms.uGrassParameters.value.x = controls.segmentsCount;
     grassMaterial.uniforms.uGrassParameters.value.y = controls.patchSize;
