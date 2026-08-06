@@ -26,7 +26,7 @@ const Grass = () => {
       redTipLength: { value: 0.3, min: 0, max: 1, step: 0.01 },
       flowerAmount: { value: 0.0035, min: 0, max: 0.05, step: 0.0001 },
       flowerHeight: { value: 0.447, min: 0, max: 1.5, step: 0.001 },
-      flowerWidth: { value: 0.106, min: 0, max: 0.5, step: 0.001 },
+      flowerWidth: { value: 0.1, min: 0, max: 0.5, step: 0.001 },
       count: { value: 16 * 5000, min: 0, max: 16 * 50000, step: 1 },
       segmentsCount: { value: 3, min: 1, max: 10, step: 1 },
       patchSize: { value: 11.7, min: 11, max: 13, step: 0.001 },
@@ -41,9 +41,20 @@ const Grass = () => {
   const windControls = useControls(
     'Wind',
     {
-      scale: { value: 0.04, min: 0, max: 0.2, step: 0.001 },
-      strength: { value: 1.0, min: -5, max: 5, step: 0.01 },
-      speed: { value: 0.13, min: 0, max: 5, step: 0.01 },
+      scale: { value: 0.044, min: 0, max: 0.2, step: 0.001 },
+      strength: { value: 1.02, min: -5, max: 5, step: 0.01 },
+      speed: { value: 0.08, min: 0, max: 5, step: 0.01 },
+    },
+    { collapsed: true }
+  );
+
+  const repulseControls = useControls(
+    'Repulse',
+    {
+      radius: { value: 1.29, min: 0, max: 3, step: 0.01 },
+      strength: { value: 0.4, min: 0, max: 2, step: 0.01 }, // radians of tilt
+      falloff: { value: 4.0, min: 0.1, max: 5, step: 0.1 },
+      squash: { value: 0.08, min: 0, max: 1, step: 0.01 },
     },
     { collapsed: true }
   );
@@ -126,12 +137,17 @@ const Grass = () => {
           uWindScale: { value: windControls.scale },
           uWindStrength: { value: windControls.strength },
           uWindSpeed: { value: windControls.speed },
+
+          uRepulseRadius: { value: repulseControls.radius },
+          uRepulseStrength: { value: repulseControls.strength },
+          uRepulseFalloff: { value: repulseControls.falloff },
+          uRepulseSquash: { value: repulseControls.squash },
         },
         vertexShader: grassVertexShader,
         fragmentShader: grassFragmentShader,
         side: THREE.FrontSide,
       }),
-    [controls, windControls, grassHeightTexture]
+    [controls, windControls, repulseControls, grassHeightTexture]
   );
 
   // Update material uniforms from Leva controls - Can remove when controls are removed
@@ -158,9 +174,13 @@ const Grass = () => {
     grassMaterial.uniforms.uWindScale.value = windControls.scale;
     grassMaterial.uniforms.uWindStrength.value = windControls.strength;
     grassMaterial.uniforms.uWindSpeed.value = windControls.speed;
+    grassMaterial.uniforms.uRepulseRadius.value = repulseControls.radius;
+    grassMaterial.uniforms.uRepulseStrength.value = repulseControls.strength;
+    grassMaterial.uniforms.uRepulseFalloff.value = repulseControls.falloff;
+    grassMaterial.uniforms.uRepulseSquash.value = repulseControls.squash;
     grassMaterial.uniforms.uPositionX.value = controls.position[0];
     grassMaterial.uniforms.uPositionZ.value = controls.position[2];
-  }, [controls, windControls, grassHeightTexture, grassMaterial]);
+  }, [controls, windControls, repulseControls, grassHeightTexture, grassMaterial]);
 
   useEffect(() => {
     const unsubCharacterPosition = useStore.subscribe(

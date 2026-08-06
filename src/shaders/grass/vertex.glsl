@@ -17,6 +17,11 @@ uniform float uFlowerAmount;
 uniform float uFlowerHeight;
 uniform float uFlowerWidth;
 
+uniform float uRepulseRadius; // effect size (world units)
+uniform float uRepulseStrength; // max tilt angle in radians (PI/2 = flat on the ground)
+uniform float uRepulseFalloff; // falloff curve exponent (1 = linear, >1 = tighter around player)
+uniform float uRepulseSquash; // extra height shortening at full influence (0-1)
+
 varying vec3 vColor;
 varying vec2 vUv;
 
@@ -207,43 +212,25 @@ float windStrength = texture2D(uPerlinNoiseTexture,
   float angle = remap(hashVal.x, -1.0, 1.0, -PI / 4.0, PI / 4.0); // randomize blades initial rotation
 
 
-// Player proximity leaning effect
-  // float playerDistance = distance(grassOffset, uPlayerPosition);
-  float playerDistance = distance(grassBladeWorldPos, uPlayerPosition);
-  float playerInfluenceRadius = 0.5; // Radius of player influence on grass
-  float playerLeanStrength = 0.5; // How much the player affects grass leaning
+  // Radial repulsion: blades are crushed away from the player
+  float playerDistance = distance(grassBladeWorldPos, uPlayerPosition); // 3D so jumping above weakens the effect
+  float repulseInfluence = pow(1.0 - smoothstep(0.0, uRepulseRadius, playerDistance), uRepulseFalloff);
 
-  if (playerDistance < playerInfluenceRadius) {
-    // Calculate direction from grass to player   
-    vec3 toPlayer = normalize(uPlayerPosition - grassBladeWorldPos);
+  vec3 crushAxis = vec3(1.0, 0.0, 0.0);
+  if (repulseInfluence > 0.001) {
+    vec2 awayXZ = grassBladeWorldPos.xz - uPlayerPosition.xz;
+    // Degenerate case: player exactly on the blade -> push in the blade's hashed direction
+    vec3 awayDir = length(awayXZ) < 1e-4
+      ? normalize(vec3(hashVal.x, 0.0, hashVal.z))
+      : normalize(vec3(awayXZ.x, 0.0, awayXZ.y));
 
-    // Get the grass blade's forward direction (considering its rotation)
-    vec3 grassForward = vec3(sin(angle), 0.0, cos(angle));
-    
-    // Calculate how much the player direction aligns with grass forward direction
-    float alignment = dot(toPlayer, grassForward);
-    
-    // Apply lean based on player direction, distance, and grass orientation
-    float playerLeanFactor = (1.0 - playerDistance / playerInfluenceRadius) * playerLeanStrength;
-    
-    // Lean away from player by considering grass rotation
-    // When alignment is positive (player in front), lean backward
-    // When alignment is negative (player behind), lean forward
-    leanFactor += -alignment * playerLeanFactor * heightPercent;
+    // rotateAxis() rotates clockwise around the axis, so cross(awayDir, up)
+    // tilts the blade away from the player
+    crushAxis = normalize(cross(awayDir, vec3(0.0, 1.0, 0.0)));
 
-       // Additional height scaling effect for more dramatic interaction
-    float heightInfluenceRadius = 0.8; // Smaller radius for height effect
-    if (playerDistance < heightInfluenceRadius) {
-      float minHeightScale = 0.1; // Minimum height scale
-      float distanceRatio = playerDistance / heightInfluenceRadius;
-      float baseScale = mix(minHeightScale, 1.0, distanceRatio);
-
-      // Scale the squash by the actual effect intensity
-      float intensity = clamp(playerLeanFactor, 0.0, 1.0);
-      height *= mix(1.0, baseScale, intensity);
-    }
+    height *= 1.0 - repulseInfluence * uRepulseSquash; // crushed blades also compress a bit
   }
-  
+
   // Bend the grass blade
   vec3 p1 = vec3(0.0);
   vec3 p2 = vec3(0.0, 0.33, 0.0);
@@ -256,7 +243,12 @@ float windStrength = texture2D(uPerlinNoiseTexture,
 
   // Generate grass matrix for rotation
   mat3 grassMat = rotateAxis(windAxis, windLeanAngle) * rotateY(angle);
-  
+
+  // Crush the whole (already bent) blade away from the player
+  if (repulseInfluence > 0.001) {
+    grassMat = rotateAxis(crushAxis, repulseInfluence * uRepulseStrength) * grassMat;
+  }
+
 
   // Calculate the final position
   vec3 grassLocalPosition = grassMat * vec3(x, y, z) + grassOffset; // change initial XYZ coords with offset and rotation matrix
