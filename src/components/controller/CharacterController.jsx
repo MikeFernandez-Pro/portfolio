@@ -37,6 +37,7 @@ let characterIsMoving = false;
 let characterJumping = false;
 let characterSprinting = false;
 let characterRespawning = false;
+let groundedFramesCount = 0;
 
 // running sound is managed in #controller/audio/runningSound.js
 
@@ -82,6 +83,8 @@ const CharacterController = () => {
   const characterJumpEvent = () => {
     if (canJump) {
       characterJumping = true;
+      canJump = false;
+      groundedFramesCount = 0;
       characterBody.current.applyImpulse({ x: 0, y: 1.2, z: 0 });
       updateCharacterAnimation(JUMP);
     }
@@ -135,6 +138,22 @@ const CharacterController = () => {
     }
 
     characterPosition = characterBody.current.translation();
+
+    // Grounded fallback: intersection events from the ground sensor can be
+    // missed (thin trimesh + variable timestep), which leaves the jump
+    // animation stuck and jumping disabled. A few consecutive frames of
+    // ~zero vertical velocity means we are standing on something again.
+    if (!canJump || characterJumping) {
+      if (Math.abs(characterBody.current.linvel().y) < 0.02) {
+        groundedFramesCount++;
+        if (groundedFramesCount >= 3) {
+          canJump = true;
+          characterJumping = false;
+        }
+      } else {
+        groundedFramesCount = 0;
+      }
+    }
 
     if (characterPosition.y < 0 && !characterRespawning) {
       characterRespawning = true;
@@ -256,10 +275,15 @@ const CharacterController = () => {
     <>
       <SensorCollider
         onEnter={state => {
+          // Only the character should toggle the grounded state
+          if (state.other.rigidBody !== characterBody.current) return;
           canJump = true;
           characterJumping = false;
         }}
-        onExit={state => (canJump = false)}
+        onExit={state => {
+          if (state.other.rigidBody !== characterBody.current) return;
+          canJump = false;
+        }}
       />
       <RigidBody
         type={'fixed'}
