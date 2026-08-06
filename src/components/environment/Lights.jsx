@@ -2,7 +2,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { PerspectiveCamera } from '@react-three/drei';
 import { OrbitControls as OrbitControlsImpl } from 'three/examples/jsm/controls/OrbitControls.js';
-import { useControls } from 'leva';
+import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
 
 import { useStore } from '#store/ZustandStorage.jsx';

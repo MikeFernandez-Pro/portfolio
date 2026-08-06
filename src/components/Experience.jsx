@@ -3,7 +3,7 @@ import { useThree } from '@react-three/fiber';
 import { GradientTexture, OrbitControls, StatsGl } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
 import { Howl } from 'howler';
-import { useControls } from 'leva';
+import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
 
 import Joystick from '#controller/Joystick.jsx';

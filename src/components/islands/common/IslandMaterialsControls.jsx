@@ -1,5 +1,5 @@
 import { useLayoutEffect } from 'react';
-import { useControls } from 'leva';
+import { useControls } from '#utils/useControls.jsx';
 
 /**
  * Leva controls for the emissive GLB island materials.

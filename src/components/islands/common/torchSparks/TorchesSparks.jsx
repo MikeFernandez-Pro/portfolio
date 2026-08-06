@@ -1,4 +1,4 @@
-import { useControls } from 'leva';
+import { useControls } from '#utils/useControls.jsx';
 
 import TorchSparks from './TorchSparks/TorchSparks';
 import {

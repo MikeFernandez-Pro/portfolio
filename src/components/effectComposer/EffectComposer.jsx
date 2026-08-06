@@ -7,7 +7,7 @@ import {
   Vignette,
 } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
-import { useControls } from 'leva';
+import { useControls } from '#utils/useControls.jsx';
 
 import { BlurPass } from './BlurPass.jsx';
 import { SceneRevealer } from './SceneRevealer.jsx';

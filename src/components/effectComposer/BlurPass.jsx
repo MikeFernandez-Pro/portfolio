@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Effect } from 'postprocessing';
-import { useControls } from 'leva';
+import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
 
 import blurPassFragmentShader from '#shaders/blurPass/fragment.glsl';

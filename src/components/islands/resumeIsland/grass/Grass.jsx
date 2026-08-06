@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
-import { useControls } from 'leva';
+import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
 
 import { Butterfly } from './Butterfly.jsx';

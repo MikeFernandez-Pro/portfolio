@@ -1,6 +1,6 @@
 import { useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useControls } from 'leva';
+import { useControls } from '#utils/useControls.jsx';
 import gsap from 'gsap';
 import * as THREE from 'three';
 

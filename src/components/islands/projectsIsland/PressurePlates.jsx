@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { useControls } from 'leva';
+import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
 import gsap from 'gsap';
 import { Howl } from 'howler';

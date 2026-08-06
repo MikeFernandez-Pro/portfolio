@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF, useTexture, Instances, Instance } from '@react-three/drei';
 import CustomShaderMaterial from 'three-custom-shader-material';
-import { useControls } from 'leva';
+import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
 
 import wellVertexShader from '#shaders/well/vertex.glsl';

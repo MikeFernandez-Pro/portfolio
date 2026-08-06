@@ -1,7 +1,7 @@
 import { useRef, useMemo } from 'react';
 import { extend, useFrame, useThree } from '@react-three/fiber';
 import { shaderMaterial } from '@react-three/drei';
-import { useControls } from 'leva';
+import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
 
 import firefliesVertexShader from '#shaders/fireflies/vertex.glsl';
