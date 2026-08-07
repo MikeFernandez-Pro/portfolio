@@ -4,7 +4,7 @@ import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
 import { useTexture } from '@react-three/drei';
 import gsap from 'gsap';
 
-import voronoiImage from '#assets/textures/voronoi.jpg';
+import voronoiImage from '#assets/textures/customVoronoi.png';
 import vertexShader from '#shaders/character/vertex.glsl';
 import fragmentShader from '#shaders/character/fragment.glsl';
 
