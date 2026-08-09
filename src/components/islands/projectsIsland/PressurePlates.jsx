@@ -5,6 +5,7 @@ import gsap from 'gsap';
 import { Howl } from 'howler';
 
 import { useStore } from '#store/ZustandStorage.jsx';
+import { SOUND_VOLUMES } from '#utils/soundVolumes.js';
 
 import PressurePlateAudio from '#assets/sounds/pressure-plate.mp3';
 
@@ -20,6 +21,7 @@ const createPlateAnimation = (material, pressurePlateSoundEffect) => {
     value: 1,
     paused: true,
     onStart: () => {
+      pressurePlateSoundEffect.volume(SOUND_VOLUMES.pressurePlate);
       pressurePlateSoundEffect.seek(0);
       pressurePlateSoundEffect.play();
     },
@@ -37,7 +39,7 @@ const PressurePlates = props => {
       new Howl({
         src: [PressurePlateAudio],
         autoplay: false,
-        volume: 0.09,
+        volume: SOUND_VOLUMES.pressurePlate,
       }),
     []
   );

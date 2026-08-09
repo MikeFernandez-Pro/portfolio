@@ -176,7 +176,9 @@ const Islands = () => {
       </group>
       <LanternsAndHome island={island} />
       <IslandMaterialsControls materials={materials} />
-      <ForgeLavaPlane />
+      {/* Shares island_1's morphTargetInfluences array with the mounted mesh,
+          so the lava reads the mixer-animated blowerClosed weight live */}
+      <ForgeLavaPlane blowerMesh={nodes.island_1} />
       <ProjectIsland island={island} />
       <ResumeIsland />
     </>

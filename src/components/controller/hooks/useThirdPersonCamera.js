@@ -41,8 +41,16 @@ export function useThirdPersonCamera(characterBodyRef) {
       lastStoreUpdateRef.current = 0;
     }
 
+    // Free debug camera: OrbitControls owns the camera; track its position so
+    // switching back eases from wherever the user left it instead of jumping
+    if (useStore.getState().freeCameraActive) {
+      LERP_CAMERA_POSITION.copy(state.camera.position);
+      return;
+    }
+
     CAMERA_POSITION.addVectors(characterPosition, CAMERA_OFFSET);
-    LERP_CAMERA_POSITION.lerp(CAMERA_POSITION, 5 * delta);
+    // Exact exp-damp alpha: same smoothing rate at any fps, never exceeds 1
+    LERP_CAMERA_POSITION.lerp(CAMERA_POSITION, 1 - Math.exp(-5 * delta));
     state.camera.position.set(...LERP_CAMERA_POSITION);
   });
 

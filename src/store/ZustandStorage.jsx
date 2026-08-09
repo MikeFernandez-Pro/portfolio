@@ -17,5 +17,8 @@ export const useStore = create(
 
     characterPosition: undefined,
     isCharacterMoving: false,
+
+    // Debug: free OrbitControls camera (pauses the third-person follow)
+    freeCameraActive: false,
   }))
 );

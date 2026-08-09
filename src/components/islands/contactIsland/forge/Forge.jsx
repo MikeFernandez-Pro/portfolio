@@ -5,6 +5,7 @@ import * as THREE from 'three';
 
 import { ForgeSparks } from './ForgeSparks.jsx';
 import { useStore } from '#store/ZustandStorage.jsx';
+import { SOUND_VOLUMES } from '#utils/soundVolumes.js';
 
 import HammerSoundEffect from '#assets/sounds/hammer.mp3';
 
@@ -56,7 +57,7 @@ const Forge = props => {
               ? Math.min(
                   1 / HAMMER_POSITION.distanceTo(characterPosition),
                   0.2
-                ) * 0.5
+                ) * SOUND_VOLUMES.hammer
               : 0
           );
         }

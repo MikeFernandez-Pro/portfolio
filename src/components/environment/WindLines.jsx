@@ -19,7 +19,7 @@ const WIND_LINES_DEFAULTS = {
   heightVariation: 7,
   width: 0.11,
   speed: 0.76,
-  alphaMultiplier: 0.17,
+  alphaMultiplier: 0.11,
   lengthMultiplier: 1.75,
   // Field bounds covering the archipelago
   centerX: -6,

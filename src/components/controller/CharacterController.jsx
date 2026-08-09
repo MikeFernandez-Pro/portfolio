@@ -37,7 +37,11 @@ let characterIsMoving = false;
 let characterJumping = false;
 let characterSprinting = false;
 let characterRespawning = false;
-let groundedFramesCount = 0;
+let groundedTime = 0;
+
+// Seconds of ~zero vertical velocity before the grounded fallback re-enables
+// jumping (was 3 frames at 60fps)
+const GROUNDED_TIME_THRESHOLD = 0.05;
 
 // running sound is managed in #controller/audio/runningSound.js
 
@@ -84,7 +88,7 @@ const CharacterController = () => {
     if (canJump) {
       characterJumping = true;
       canJump = false;
-      groundedFramesCount = 0;
+      groundedTime = 0;
       characterBody.current.applyImpulse({ x: 0, y: 1.2, z: 0 });
       updateCharacterAnimation(JUMP);
     }
@@ -141,17 +145,17 @@ const CharacterController = () => {
 
     // Grounded fallback: intersection events from the ground sensor can be
     // missed (thin trimesh + variable timestep), which leaves the jump
-    // animation stuck and jumping disabled. A few consecutive frames of
-    // ~zero vertical velocity means we are standing on something again.
+    // animation stuck and jumping disabled. A short stretch of ~zero
+    // vertical velocity means we are standing on something again.
     if (!canJump || characterJumping) {
       if (Math.abs(characterBody.current.linvel().y) < 0.02) {
-        groundedFramesCount++;
-        if (groundedFramesCount >= 3) {
+        groundedTime += delta;
+        if (groundedTime >= GROUNDED_TIME_THRESHOLD) {
           canJump = true;
           characterJumping = false;
         }
       } else {
-        groundedFramesCount = 0;
+        groundedTime = 0;
       }
     }
 

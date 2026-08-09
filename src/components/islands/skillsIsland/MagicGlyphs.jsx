@@ -6,10 +6,9 @@ import gsap from 'gsap';
 import * as THREE from 'three';
 
 import { useStore } from '#store/ZustandStorage.jsx';
+import { SOUND_VOLUMES } from '#utils/soundVolumes.js';
 
 import MagicGlyphSoundEffect from '#assets/sounds/magic-glyph.mp3';
-
-const MAGIC_GLYPH_SOUND_VOLUME = 0.15;
 
 const MagicGlyphs = props => {
   const { island } = props;
@@ -24,7 +23,7 @@ const MagicGlyphs = props => {
       new Howl({
         src: [MagicGlyphSoundEffect],
         autoplay: false,
-        volume: MAGIC_GLYPH_SOUND_VOLUME,
+        volume: SOUND_VOLUMES.magicGlyph,
       }),
     []
   );
@@ -68,7 +67,7 @@ const MagicGlyphs = props => {
 
         // Sound Effect
         magicGlyphSoundEffect.play();
-        magicGlyphSoundEffect.fade(0, MAGIC_GLYPH_SOUND_VOLUME, 500);
+        magicGlyphSoundEffect.fade(0, SOUND_VOLUMES.magicGlyph, 500);
       }
     );
 

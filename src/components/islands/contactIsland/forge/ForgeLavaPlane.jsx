@@ -17,23 +17,33 @@ const LAVA_DEFAULTS = {
   rotationY: -0.74,
   scaleX: 0.9,
   scaleY: 0.7,
-  size: 1,
+  size: 1.75,
   speed: 0.06,  
   crustColor: '#290d07',
   glowColor: '#f47053',
-  intensity: 17.58,
+  intensity: 10,
   contrast: 1.5,
   borderThicknessX: 0.05,
   borderThicknessY: 0.09,
-  perlinNoiseStrength: 0.07,
+  perlinNoiseStrength: 0.22,
+  gaspPeakIntensity: 40,
 };
 
 /**
  * Standalone lava plane replacing the GLB lava mesh (island_6, hidden).
  * Flat by default (rotated -90° on X), spun around Y via the Leva control.
  */
-const ForgeLavaPlane = () => {
+const ForgeLavaPlane = ({ blowerMesh }) => {
   const uniformsRef = useRef(null);
+  const gaspParamsRef = useRef({
+    base: LAVA_DEFAULTS.intensity,
+    peak: LAVA_DEFAULTS.gaspPeakIntensity,
+  });
+
+  // Gasp: uIntensity is driven each frame by the blowerClosed morph weight
+  // (animated by the 'details' clip on the island mixer), so the glow can
+  // never drift out of sync with the bellows
+  const blowerIndex = blowerMesh?.morphTargetDictionary?.blowerClosed;
 
   const [voronoiTexture, perlinNoiseTexture] = useTexture(
     [voronoiImage, perlinNoiseImage],
@@ -147,7 +157,16 @@ const ForgeLavaPlane = () => {
         max: 30,
         step: 0.01,
         onChange: value => {
-          if (uniformsRef.current) uniformsRef.current.uIntensity.value = value;
+          gaspParamsRef.current.base = value;
+        },
+      },
+      gaspPeakIntensity: {
+        value: LAVA_DEFAULTS.gaspPeakIntensity,
+        min: 0,
+        max: 60,
+        step: 0.01,
+        onChange: value => {
+          gaspParamsRef.current.peak = value;
         },
       },
       contrast: {
@@ -194,8 +213,16 @@ const ForgeLavaPlane = () => {
   );
 
   useFrame((_, delta) => {
-    if (uniformsRef.current) {
-      uniformsRef.current.uTime.value += delta;
+    if (!uniformsRef.current) return;
+
+    uniformsRef.current.uTime.value += delta;
+
+    const influences = blowerMesh?.morphTargetInfluences;
+
+    if (influences && blowerIndex !== undefined) {
+      const { base, peak } = gaspParamsRef.current;
+      uniformsRef.current.uIntensity.value =
+        base + (peak - base) * influences[blowerIndex];
     }
   });
 

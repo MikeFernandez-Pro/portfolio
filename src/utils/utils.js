@@ -34,3 +34,7 @@ export const getDeviceType = () => {
 };
 
 export const IS_MOBILE_DEVICE = getDeviceType() === "mobile";
+
+// Photo mode (localhost/...#photo): bare three.js scene with a free camera —
+// no debug pane, no stats, no sound/intro UI, audio muted
+export const IS_PHOTO_MODE = window.location.hash === "#photo";

@@ -14,7 +14,7 @@ import tunnel from 'tunnel-rat';
 import { Howler } from 'howler';
 import * as THREE from 'three';
 
-import { IS_MOBILE_DEVICE } from '#utils/utils.js';
+import { IS_MOBILE_DEVICE, IS_PHOTO_MODE } from '#utils/utils.js';
 
 import soundOnIcon from '/icons/sound-on.svg';
 import soundOffIcon from '/icons/sound-off.svg';
@@ -72,6 +72,12 @@ const App = () => {
   useEffect(() => {
     document.addEventListener('visibilitychange', visibilityChangeHandler);
 
+    // Photo mode: no intro/sound UI is rendered, so start silently right away
+    if (IS_PHOTO_MODE) {
+      Howler.mute(true);
+      useStore.setState({ experienceStarted: true });
+    }
+
     return () => {
       removeEventListener('visibilitychange', visibilityChangeHandler);
     };
@@ -80,6 +86,8 @@ const App = () => {
   return (
     <>
       <ui.Out />
+      {!IS_PHOTO_MODE && (
+      <>
       <img
         ref={soundOnIconRef}
         src={soundOnIcon}
@@ -104,6 +112,8 @@ const App = () => {
           Howler.mute(false);
         }}
       />
+      </>
+      )}
       <Canvas
         shadows={IS_MOBILE_DEVICE ? false : THREE.VSMShadowMap}
         dpr={dpr}
@@ -128,15 +138,18 @@ const App = () => {
         <AdaptiveDpr pixelated />
         <Suspense
           fallback={
-            <ui.In>
-              <div className="container">
-                <p className="loader">
-                  {Math.ceil((loaded / MODELS_AMOUNT) * 100)}
-                </p>
-              </div>
-            </ui.In>
+            IS_PHOTO_MODE ? null : (
+              <ui.In>
+                <div className="container">
+                  <p className="loader">
+                    {Math.ceil((loaded / MODELS_AMOUNT) * 100)}
+                  </p>
+                </div>
+              </ui.In>
+            )
           }
         >
+          {!IS_PHOTO_MODE && (
           <ui.In>
             <div
               ref={startExperienceRef}
@@ -162,6 +175,7 @@ const App = () => {
               </button>
             </div>
           </ui.In>
+          )}
           <EffectComposer
             sceneRevealerRef={sceneRevealerRef}
             horizontalBlurPassRef={horizontalBlurPassRef}

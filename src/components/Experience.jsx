@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import { GradientTexture, OrbitControls, StatsGl } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
@@ -21,6 +21,9 @@ import { InteractiveElements } from '#islands/contactIsland/interactiveElements/
 import { Grass } from '#islands/resumeIsland/grass/Grass.jsx';
 import Smoke from '#islands/resumeIsland/Smoke.jsx';
 import { useStore } from '#store/ZustandStorage.jsx';
+import { IS_PHOTO_MODE } from '#utils/utils.js';
+import { SOUND_VOLUMES } from '#utils/soundVolumes.js';
+import runningSoundEffect from '#controller/audio/runningSound.js';
 
 import AmbientSoundEffect from '#assets/sounds/ambient.mp3';
 
@@ -30,11 +33,13 @@ var ambientSound = new Howl({
   src: [AmbientSoundEffect],
   autoplay: false,
   loop: true,
-  volume: 0.09,
+  volume: SOUND_VOLUMES.ambient,
 });
 
 const Experience = () => {
   const scene = useThree(state => state.scene);
+  const camera = useThree(state => state.camera);
+  const gameplayCameraRotationRef = useRef(null);
 
   const controls = useControls(
     'Background',
@@ -45,13 +50,101 @@ const Experience = () => {
     { collapsed: true }
   );
 
+  const { freeCamera } = useControls(
+    'Camera',
+    {
+      // Full free-fly OrbitControls; the third-person follow pauses while on
+      freeCamera: IS_PHOTO_MODE,
+    },
+    { collapsed: true }
+  );
+
+  useControls(
+    'Sounds',
+    {
+      // Looping sounds get their volume applied live; one-shots (glyph,
+      // pressure plate) and the distance-attenuated ones (portal, hammer)
+      // read SOUND_VOLUMES on their next play / character move
+      ambient: {
+        value: SOUND_VOLUMES.ambient,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        onChange: value => {
+          SOUND_VOLUMES.ambient = value;
+          ambientSound.volume(value);
+        },
+      },
+      running: {
+        value: SOUND_VOLUMES.running,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        onChange: value => {
+          SOUND_VOLUMES.running = value;
+          runningSoundEffect.volume(value);
+        },
+      },
+      magicGlyph: {
+        value: SOUND_VOLUMES.magicGlyph,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        onChange: value => {
+          SOUND_VOLUMES.magicGlyph = value;
+        },
+      },
+      pressurePlate: {
+        value: SOUND_VOLUMES.pressurePlate,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        onChange: value => {
+          SOUND_VOLUMES.pressurePlate = value;
+        },
+      },
+      portal: {
+        value: SOUND_VOLUMES.portal,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        onChange: value => {
+          SOUND_VOLUMES.portal = value;
+        },
+      },
+      hammer: {
+        value: SOUND_VOLUMES.hammer,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        onChange: value => {
+          SOUND_VOLUMES.hammer = value;
+        },
+      },
+    },
+    { collapsed: true }
+  );
+
+  useEffect(() => {
+    useStore.setState({ freeCameraActive: freeCamera });
+
+    // OrbitControls rotates the camera; the follow only drives its position,
+    // so the gameplay orientation must be saved and restored around free mode
+    if (freeCamera) {
+      gameplayCameraRotationRef.current = camera.rotation.clone();
+    } else if (gameplayCameraRotationRef.current) {
+      camera.rotation.copy(gameplayCameraRotationRef.current);
+      gameplayCameraRotationRef.current = null;
+    }
+  }, [freeCamera, camera]);
+
   useEffect(() => {
     const unsubExperienceStarted = useStore.subscribe(
       state => state.experienceStarted,
       experienceStarted => {
         if (experienceStarted) {
           ambientSound.play();
-          ambientSound.fade(0, 0.09, 2000);
+          ambientSound.fade(0, SOUND_VOLUMES.ambient, 2000);
         }
       }
     );
@@ -63,10 +156,13 @@ const Experience = () => {
 
   return (
     <>
-      {/* <OrbitControls /> */}
-      <StatsGl />
-      <Joystick />
-      {/* <Clouds /> */}
+      {freeCamera && (
+        // In photo mode orbit around the islands instead of the world origin
+        <OrbitControls target={IS_PHOTO_MODE ? [-1.35, 5, -15] : undefined} />
+      )}
+      {!IS_PHOTO_MODE && <StatsGl />}
+      {!IS_PHOTO_MODE && <Joystick />}
+      <Clouds />
       <Sky />
       <Lights />
       <CloudShadows />

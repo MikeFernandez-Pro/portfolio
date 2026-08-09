@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pane } from 'tweakpane';
 
+import { IS_PHOTO_MODE } from '#utils/utils.js';
+
 /**
  * Drop-in replacement for leva's `useControls(folderName, schema, options)`,
  * backed by Tweakpane. Mirrors the leva behaviors this codebase relies on:
@@ -17,6 +19,9 @@ const getPane = () => {
   if (!globalThis.__debugPane) {
     const pane = new Pane({ title: 'Debug' });
     const root = pane.element.parentElement;
+    // Controls still register (their initial onChange calls set up uniforms),
+    // the panel is just never shown in photo mode
+    if (root && IS_PHOTO_MODE) root.style.display = 'none';
     if (root) {
       root.style.zIndex = '1000';
       // Keep the panel usable when folders overflow the viewport

@@ -9,7 +9,7 @@ import forgeSparksFragmentShader from '#shaders/forgeSparks/fragment.glsl';
 const COUNT = 100;
 const FORGE_SPARKS_COLOR = '#ff8080';
 const FORGE_SPARKS_INTENSITY = 2;
-const FORGE_SPARKS_SIZE = 0.07;
+const FORGE_SPARKS_SIZE = 0.091;
 
 const positions = new Float32Array(COUNT * 3);
 const sizes = new Float32Array(COUNT);
