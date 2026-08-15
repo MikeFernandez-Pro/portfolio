@@ -14,46 +14,38 @@ import portalFragmentShader from '#shaders/portal/fragment.glsl';
 
 import PortalAudio from '#assets/sounds/portal.mp3';
 
-import portalProjectImage from '#assets/textures/portal-project.webp';
-import seaProjectImage from '#assets/textures/sea-project.webp';
-import halloweenProjectImage from '#assets/textures/halloween-project.webp';
+// Project images are wider than tall on purpose: the portal shows a centered
+// square crop and the spare width feeds the horizontal parallax
+import portalProjectImage from '#assets/textures/santa-clous-fighting.png';
+import seaProjectImage from '#assets/textures/doan-ten-con-.png';
+import halloweenProjectImage from '#assets/textures/halloween-scene.png';
 import perlinNoiseImage from '#assets/textures/perlin.png';
 
 const PORTAL_POSITION = new THREE.Vector3(-16.12, 6.95, -37.7);
-const PORTAL_OPEN_SIZE = 0.33;
+const PORTAL_OPEN_SIZE = 0.36;
 
 // Current visuals, tweakable from the 'ProjectsPortal' debug folder
 const PORTAL_SHADER_DEFAULTS = {
-  noiseScale: 1.58,
+  noiseScale: 1.14,
   noiseSpeed: 0.05,
   deformationStart: 0.3,
-  deformationEnd: 0.395,
-  deformationStrength: 0.285,
-  textureDistortion: 1.63,
+  deformationEnd: 0.41,
+  deformationStrength: 0.18,
+  textureDistortion: 0.42,
+  // Fake window-interior parallax on the project image, driven by the
+  // camera (which follows the character): depth of the virtual image plane
+  // behind the disc. The offset is horizontal only — the images' extra
+  // width is the slide margin, so no zoom inset is needed
+  parallaxDepth: 0.4,
   lighting: 1,
-  saturation: 1.39,
-  sizePulseSpeed: 2.37,
-  sizePulseMin: 0.032,
+  saturation: 1.16,
+  sizePulseSpeed: 2.39,
+  sizePulseMin: 0.063,
   sizePulseMax: 0.1,
-  // Swirl overlay ported from the cauldron potion portal, reduced to the
-  // flat background veil + filaments. backgroundStrength 0.21 matches the
-  // old edge veil (0.26 depth base * 0.8) now that the radial glow is gone.
-  deepColor: '#535353',
-  midColor: '#ffffff',
-  brightColor: '#ffffff',
-  swirlOpacity: 0.19,
-  distortionScale: 2.19,
-  distortionStrength: 0.381,
-  distortionSpeed: 0.1,
-  swirlRotationSpeed: 0.6,
-  backgroundStrength: 0.21,
-  backgroundCloudContrast: 0,
-  filamentStrength: 1.05,
-  filamentCount: 5.5,
-  filamentWidth: 0.045,
-  filamentTwist: 10,
-  filamentSpeed: -0.19,
-  filamentBreakup: 0.37,
+  // Noise flow field that pushes the project texture around
+  distortionScale: 0.78,
+  distortionStrength: 0.382,
+  distortionSpeed: 0.033,
 };
 
 const ProjectsPortals = props => {
@@ -81,6 +73,18 @@ const ProjectsPortals = props => {
     }),
     [portalProjectImage, seaProjectImage, halloweenProjectImage]
   );
+
+  // The project images are sRGB-authored; left on the default NoColorSpace
+  // they'd be sampled as linear and re-encoded by colorspace_fragment on
+  // output, washing the colors out
+  useEffect(() => {
+    Object.values(portalsTextures).forEach(texture => {
+      if (texture.colorSpace !== THREE.SRGBColorSpace) {
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.needsUpdate = true;
+      }
+    });
+  }, [portalsTextures]);
 
   const perlinTexture = useTexture(perlinNoiseImage, texture => {
     texture.colorSpace = THREE.NoColorSpace;
@@ -112,40 +116,15 @@ const ProjectsPortals = props => {
           uTextureDistortion: {
             value: PORTAL_SHADER_DEFAULTS.textureDistortion,
           },
+          uParallaxDepth: { value: PORTAL_SHADER_DEFAULTS.parallaxDepth },
+          uTextureAspect: { value: 1 },
           uLighting: { value: PORTAL_SHADER_DEFAULTS.lighting },
           uSaturation: { value: PORTAL_SHADER_DEFAULTS.saturation },
-          uDeepColor: {
-            value: new THREE.Color(PORTAL_SHADER_DEFAULTS.deepColor),
-          },
-          uMidColor: {
-            value: new THREE.Color(PORTAL_SHADER_DEFAULTS.midColor),
-          },
-          uBrightColor: {
-            value: new THREE.Color(PORTAL_SHADER_DEFAULTS.brightColor),
-          },
-          uSwirlOpacity: { value: PORTAL_SHADER_DEFAULTS.swirlOpacity },
           uDistortionScale: { value: PORTAL_SHADER_DEFAULTS.distortionScale },
           uDistortionStrength: {
             value: PORTAL_SHADER_DEFAULTS.distortionStrength,
           },
           uDistortionSpeed: { value: PORTAL_SHADER_DEFAULTS.distortionSpeed },
-          uSwirlRotationSpeed: {
-            value: PORTAL_SHADER_DEFAULTS.swirlRotationSpeed,
-          },
-          uBackgroundStrength: {
-            value: PORTAL_SHADER_DEFAULTS.backgroundStrength,
-          },
-          uBackgroundCloudContrast: {
-            value: PORTAL_SHADER_DEFAULTS.backgroundCloudContrast,
-          },
-          uFilamentStrength: {
-            value: PORTAL_SHADER_DEFAULTS.filamentStrength,
-          },
-          uFilamentCount: { value: PORTAL_SHADER_DEFAULTS.filamentCount },
-          uFilamentWidth: { value: PORTAL_SHADER_DEFAULTS.filamentWidth },
-          uFilamentTwist: { value: PORTAL_SHADER_DEFAULTS.filamentTwist },
-          uFilamentSpeed: { value: PORTAL_SHADER_DEFAULTS.filamentSpeed },
-          uFilamentBreakup: { value: PORTAL_SHADER_DEFAULTS.filamentBreakup },
         },
         transparent: true,
       }),
@@ -164,13 +143,6 @@ const ProjectsPortals = props => {
     step,
     onChange: v => {
       portalShaderMaterial.uniforms[uniform].value = v;
-    },
-  });
-
-  const colorControl = (uniform, value) => ({
-    value,
-    onChange: v => {
-      portalShaderMaterial.uniforms[uniform].value.set(v);
     },
   });
 
@@ -244,12 +216,15 @@ const ProjectsPortals = props => {
         3,
         0.01
       ),
+      parallaxDepth: numberControl(
+        'uParallaxDepth',
+        d.parallaxDepth,
+        0,
+        0.5,
+        0.005
+      ),
       lighting: numberControl('uLighting', d.lighting, 0, 3, 0.01),
       saturation: numberControl('uSaturation', d.saturation, 0, 2, 0.01),
-      deepColor: colorControl('uDeepColor', d.deepColor),
-      midColor: colorControl('uMidColor', d.midColor),
-      brightColor: colorControl('uBrightColor', d.brightColor),
-      swirlOpacity: numberControl('uSwirlOpacity', d.swirlOpacity, 0, 1, 0.01),
       distortionScale: numberControl(
         'uDistortionScale',
         d.distortionScale,
@@ -271,71 +246,8 @@ const ProjectsPortals = props => {
         0.5,
         0.001
       ),
-      swirlRotationSpeed: numberControl(
-        'uSwirlRotationSpeed',
-        d.swirlRotationSpeed,
-        -3,
-        3,
-        0.01
-      ),
-      backgroundStrength: numberControl(
-        'uBackgroundStrength',
-        d.backgroundStrength,
-        0,
-        4,
-        0.01
-      ),
-      backgroundCloudContrast: numberControl(
-        'uBackgroundCloudContrast',
-        d.backgroundCloudContrast,
-        0,
-        1,
-        0.01
-      ),
-      filamentStrength: numberControl(
-        'uFilamentStrength',
-        d.filamentStrength,
-        0,
-        2,
-        0.01
-      ),
-      filamentCount: numberControl(
-        'uFilamentCount',
-        d.filamentCount,
-        0,
-        30,
-        0.5
-      ),
-      filamentWidth: numberControl(
-        'uFilamentWidth',
-        d.filamentWidth,
-        0,
-        0.3,
-        0.005
-      ),
-      filamentTwist: numberControl(
-        'uFilamentTwist',
-        d.filamentTwist,
-        -10,
-        10,
-        0.01
-      ),
-      filamentSpeed: numberControl(
-        'uFilamentSpeed',
-        d.filamentSpeed,
-        -3,
-        3,
-        0.01
-      ),
-      filamentBreakup: numberControl(
-        'uFilamentBreakup',
-        d.filamentBreakup,
-        0,
-        1,
-        0.01
-      ),
     },
-    { collapsed: true }
+    { collapsed: true, reset: true }
   );
 
   // Animation
@@ -364,8 +276,10 @@ const ProjectsPortals = props => {
       state => state.activePlate,
       activePlate => {
         if (activePlate) {
-          portalShaderMaterial.uniforms.uTextureMap.value =
-            portalsTextures[activePlate];
+          const texture = portalsTextures[activePlate];
+          portalShaderMaterial.uniforms.uTextureMap.value = texture;
+          portalShaderMaterial.uniforms.uTextureAspect.value =
+            texture.image.width / texture.image.height;
           portalScaleUpAnimation.restart();
           portalSoundEffect.play();
         }

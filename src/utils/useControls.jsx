@@ -12,6 +12,8 @@ import { IS_PHOTO_MODE } from '#utils/utils.js';
  * - `{ collapsed: true }` collapses the folder
  * - supports numbers (with/without min/max/step), hex color strings, booleans,
  *   `options` selects, THREE.Vector2-like values and [x, y, z] arrays
+ * - `{ reset: true }` appends a Reset button restoring every control to its
+ *   schema value (and re-firing onChange / state updates accordingly)
  */
 
 // Survives HMR module re-evaluation so folders don't duplicate
@@ -84,6 +86,7 @@ const useControls = (folderName, schema, options = {}) => {
     });
 
     const params = {};
+    const resetters = [];
 
     for (const [key, def] of Object.entries(schemaRef.current)) {
       const config = hasConfig(def) ? def : { value: def };
@@ -124,19 +127,19 @@ const useControls = (folderName, schema, options = {}) => {
 
       const binding = folder.addBinding(params, key, bindingOptions);
 
-      binding.on('change', event => {
+      const applyValue = raw => {
         let next;
         if (kind === 'array') {
-          next = AXES.slice(0, value.length).map(axis => event.value[axis]);
+          next = AXES.slice(0, value.length).map(axis => raw[axis]);
         } else if (kind === 'vector') {
           // Mutate the original vector instance (e.g. THREE.Vector2) so
           // consumers holding a reference keep seeing fresh values
           for (const axis of Object.keys(params[key])) {
-            value[axis] = event.value[axis];
+            value[axis] = raw[axis];
           }
           next = value;
         } else {
-          next = event.value;
+          next = raw;
         }
 
         if (onChange) {
@@ -144,12 +147,36 @@ const useControls = (folderName, schema, options = {}) => {
         } else {
           setValues(previous => ({ ...previous, [key]: next }));
         }
+      };
+
+      binding.on('change', event => applyValue(event.value));
+
+      // Snapshot now: vector params get mutated in place on change, so a
+      // late copy would capture the current value instead of the default
+      const initialParam =
+        params[key] !== null && typeof params[key] === 'object'
+          ? { ...params[key] }
+          : params[key];
+      resetters.push(() => {
+        if (initialParam !== null && typeof initialParam === 'object') {
+          Object.assign(params[key], initialParam);
+        } else {
+          params[key] = initialParam;
+        }
+        binding.refresh();
+        applyValue(params[key]);
       });
 
       // leva fires onChange once with the initial value after mount
       if (onChange) {
         onChange(value);
       }
+    }
+
+    if (optionsRef.current.reset) {
+      folder
+        .addButton({ title: 'Reset' })
+        .on('click', () => resetters.forEach(reset => reset()));
     }
 
     return () => {

@@ -1,14 +1,3 @@
-#include ../includes/rotate2d.glsl
-
-#define PI 3.1415926
-#define TWO_PI 6.28318530718
-
-// Provided by <tonemapping_pars_fragment> when tone mapping is on; defined
-// here as a fallback since this is a raw ShaderMaterial
-#ifndef saturate
-#define saturate( a ) clamp( a, 0.0, 1.0 )
-#endif
-
 uniform float uTime;
 uniform float uSize;
 uniform sampler2D uTextureMap;
@@ -26,87 +15,34 @@ uniform float uDeformationStart;
 uniform float uDeformationEnd;
 uniform float uDeformationStrength;
 
-// How much the swirl's distortion field warps the project texture,
-// relative to the swirl's own uDistortionStrength (1 = same amount).
-// The texture never rotates, it only gets pushed around by the noise.
+// How much the noise flow field warps the project texture, relative to
+// uDistortionStrength (1 = same amount). The texture never rotates, it
+// only gets pushed around by the noise.
 uniform float uTextureDistortion;
+
+// Fake window-interior parallax: the project image reads as sitting
+// uParallaxDepth (in UV units) behind the disc, sliding against the rim as
+// the character/camera moves. The images are wider than tall on purpose:
+// the disc shows a centered square crop (uTextureAspect = width / height)
+// and the spare width absorbs the horizontal offset, so the parallax is
+// horizontal only and needs no zoom inset.
+uniform float uParallaxDepth;
+uniform float uTextureAspect;
 
 // Final grade applied to the whole disc
 uniform float uLighting;
 uniform float uSaturation;
 
-// Swirl overlay, ported from the cauldron potion portal (background veil
-// and filaments only). Coordinates are normalized so radius 1.0 sits on
-// the open disc edge, which makes the swirl grow with the opening.
-uniform vec3 uDeepColor;
-uniform vec3 uMidColor;
-uniform vec3 uBrightColor;
-uniform float uSwirlOpacity;
-
+// Noise flow field pushing the project texture around
 uniform float uDistortionScale;
 uniform float uDistortionStrength;
 uniform float uDistortionSpeed;
-uniform float uSwirlRotationSpeed;
-
-uniform float uBackgroundStrength;
-uniform float uBackgroundCloudContrast;
-
-uniform float uFilamentStrength;
-uniform float uFilamentCount;
-uniform float uFilamentWidth;
-uniform float uFilamentTwist;
-uniform float uFilamentSpeed;
-uniform float uFilamentBreakup;
 
 varying vec2 vUv;
+varying vec3 vViewDirTangent;
 
 float samplePerlinNoise(vec2 uv) {
   return texture2D(uPerlinTexture, uv).r;
-}
-
-float stripeMask(float phase, float width, float softness) {
-  float distanceToCenter = abs(fract(phase) - 0.5);
-
-  return 1.0 - smoothstep(width, width + softness, distanceToCenter);
-}
-
-// Layer 1: a flat, cloudy veil (no radial glow, so nothing forms at the
-// center of the disc)
-float getBackgroundLayer(float broadNoise) {
-  float clouds = mix(
-    1.0,
-    smoothstep(0.18, 0.82, broadNoise),
-    uBackgroundCloudContrast
-  );
-
-  return clouds * uBackgroundStrength;
-}
-
-// Layer 2: sparse thin spiral lines.
-float getFilamentLayer(
-  float radius,
-  float angle,
-  float broadNoise,
-  float detailNoise
-) {
-  float phase = radius * uFilamentCount
-    - angle * uFilamentTwist / TWO_PI
-    + uTime * uFilamentSpeed;
-  phase += (broadNoise - 0.5) * 1.7;
-
-  float filament = stripeMask(phase, uFilamentWidth, 0.024);
-  float sparseSections = smoothstep(
-    uFilamentBreakup,
-    min(1.0, uFilamentBreakup + 0.18),
-    detailNoise
-  );
-  float radialEnvelope = smoothstep(0.1, 0.25, radius)
-    * (1.0 - smoothstep(0.78, 1.04, radius));
-
-  return filament
-    * sparseSections
-    * radialEnvelope
-    * uFilamentStrength;
 }
 
 void main() {
@@ -132,55 +68,42 @@ void main() {
         discard;
     }
 
-    // Potion portal swirl in disc-normalized coordinates (edge = radius 1.0)
+    // Disc-normalized coordinates (edge = radius 1.0), so the flow field
+    // grows with the opening
     vec2 portalPosition = (vUv - center) / max(size, 0.001);
 
-    // One shared three-sample flow field drives every swirl layer and the
-    // texture deformation.
+    // Two-sample noise flow field deforming the project texture; the
+    // center is kept more stable than the rim
     vec2 noiseUv = portalPosition * uDistortionScale * 0.42
       + vec2(uTime * uDistortionSpeed, -uTime * uDistortionSpeed * 0.73);
     float noiseX = samplePerlinNoise(noiseUv);
     float noiseY = samplePerlinNoise(noiseUv + vec2(17.31, 41.73));
-    float detailNoise = samplePerlinNoise(
-      noiseUv * 2.67 + vec2(-9.17, 13.41)
-    );
 
     vec2 distortion = vec2(noiseX, noiseY) * 2.0 - 1.0;
-    float swirlBaseRadius = length(portalPosition);
-    float centerStability = smoothstep(0.02, 0.55, swirlBaseRadius);
-    vec2 flowPosition = rotate2d(uTime * uSwirlRotationSpeed) * portalPosition;
-    flowPosition += distortion
-      * uDistortionStrength
-      * mix(0.3, 1.0, centerStability);
+    float centerStability = smoothstep(0.02, 0.55, length(portalPosition));
 
-    float radius = length(flowPosition);
-    float angle = atan(flowPosition.y, flowPosition.x);
-    float broadNoise = mix(noiseX, noiseY, 0.5);
+    // Fake interior parallax: intersect the view ray with a virtual plane
+    // uParallaxDepth behind the disc, horizontal axis only. The z floor
+    // keeps grazing angles from smearing the offset to infinity.
+    vec3 parallaxViewDir = normalize(vViewDirTangent);
+    float parallaxOffsetX = parallaxViewDir.x
+      / max(abs(parallaxViewDir.z), 0.3)
+      * uParallaxDepth;
 
-    // Project texture, deformed by the swirl's distortion field only —
-    // same displacement the vortex layers get, minus the rotation
-    vec2 textureUv = vUv
+    // Project texture: centered square crop of the wide image (dividing u
+    // by the aspect keeps proportions), shifted by the parallax, then
+    // deformed by the noise flow field
+    vec2 textureUv = center
+      + vec2(
+          (vUv.x - center.x) / uTextureAspect + parallaxOffsetX,
+          vUv.y - center.y
+        )
       + distortion
         * uDistortionStrength
         * mix(0.3, 1.0, centerStability)
         * uTextureDistortion
         * max(size, 0.001);
     vec4 texColor = texture2D(uTextureMap, textureUv);
-
-    float background = getBackgroundLayer(broadNoise);
-    float filaments = getFilamentLayer(radius, angle, broadNoise, detailNoise);
-
-    vec3 swirlColor = mix(
-      uDeepColor * 0.42,
-      uMidColor,
-      saturate(background * 0.72)
-    );
-    swirlColor += uBrightColor * filaments;
-
-    // The swirl covers the texture where it is intense and lets the project
-    // image show through everywhere else
-    float swirlIntensity = saturate(background * 0.72 + filaments);
-    texColor.rgb = mix(texColor.rgb, swirlColor, swirlIntensity * uSwirlOpacity);
 
     // Lighting and saturation grade on the final disc color
     texColor.rgb *= uLighting;
@@ -189,6 +112,6 @@ void main() {
 
     gl_FragColor = texColor;
 
-   #include <tonemapping_fragment>
+    #include <tonemapping_fragment>
     #include <colorspace_fragment>
 }
