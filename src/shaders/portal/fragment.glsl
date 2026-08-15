@@ -29,6 +29,12 @@ uniform float uTextureDistortion;
 uniform float uParallaxDepth;
 uniform float uTextureAspect;
 
+// Emissive energy ring hugging the deformed edge; intensities above the
+// Bloom pass luminance threshold (2) make it glow
+uniform vec3 uRimColor;
+uniform float uRimIntensity;
+uniform float uRimWidth;
+
 // Final grade applied to the whole disc
 uniform float uLighting;
 uniform float uSaturation;
@@ -109,6 +115,12 @@ void main() {
     texColor.rgb *= uLighting;
     float luminance = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));
     texColor.rgb = mix(vec3(luminance), texColor.rgb, uSaturation);
+
+    // Emissive rim added after the grade so its HDR color reaches the
+    // Bloom pass untouched; flickers with the same noise as the edge
+    float rim = smoothstep(deformedRadius - uRimWidth, deformedRadius, dist)
+      * (0.55 + 0.9 * noise);
+    texColor.rgb += uRimColor * rim * uRimIntensity;
 
     gl_FragColor = texColor;
 

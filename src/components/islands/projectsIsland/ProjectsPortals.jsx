@@ -11,6 +11,8 @@ import { SOUND_VOLUMES } from '#utils/soundVolumes.js';
 
 import portalVertexShader from '#shaders/portal/vertex.glsl';
 import portalFragmentShader from '#shaders/portal/fragment.glsl';
+import portalSparksVertexShader from '#shaders/portalSparks/vertex.glsl';
+import portalSparksFragmentShader from '#shaders/portalSparks/fragment.glsl';
 
 import PortalAudio from '#assets/sounds/portal.mp3';
 
@@ -37,6 +39,10 @@ const PORTAL_SHADER_DEFAULTS = {
   // behind the disc. The offset is horizontal only — the images' extra
   // width is the slide margin, so no zoom inset is needed
   parallaxDepth: 0.4,
+  // Emissive edge ring; intensity > 2 crosses the Bloom threshold
+  rimColor: '#ffffff',
+  rimIntensity: 3.7,
+  rimWidth: 0.02,
   lighting: 1,
   saturation: 1.16,
   sizePulseSpeed: 2.39,
@@ -47,6 +53,34 @@ const PORTAL_SHADER_DEFAULTS = {
   distortionStrength: 0.382,
   distortionSpeed: 0.033,
 };
+
+// Sparks spiralling into the open portal, as if it were sucking in reality
+const SPARKS_DEFAULTS = {
+  count: 80,
+  color: '#00a3ff',
+  intensity: 20,
+  size: 0.043,
+  speed: 0.12,
+  spawnRadius: 1.3,
+  swirlTurns: 0.35,
+  frontOffset: 0.9,
+};
+
+// Buffers are allocated at the max once; the live count control only moves
+// the geometry draw range
+const SPARKS_COUNT = 200;
+const sparksPositions = new Float32Array(SPARKS_COUNT * 3);
+const sparksSizes = new Float32Array(SPARKS_COUNT);
+const sparksAngles = new Float32Array(SPARKS_COUNT);
+const sparksSpeeds = new Float32Array(SPARKS_COUNT);
+const sparksPhases = new Float32Array(SPARKS_COUNT);
+
+for (let i = 0; i < SPARKS_COUNT; i++) {
+  sparksSizes[i] = Math.random() * 0.6 + 0.4;
+  sparksAngles[i] = Math.random() * Math.PI * 2;
+  sparksSpeeds[i] = Math.random() * 0.8 + 0.6;
+  sparksPhases[i] = Math.random();
+}
 
 const ProjectsPortals = props => {
   const { island } = props;
@@ -118,6 +152,11 @@ const ProjectsPortals = props => {
           },
           uParallaxDepth: { value: PORTAL_SHADER_DEFAULTS.parallaxDepth },
           uTextureAspect: { value: 1 },
+          uRimColor: {
+            value: new THREE.Color(PORTAL_SHADER_DEFAULTS.rimColor),
+          },
+          uRimIntensity: { value: PORTAL_SHADER_DEFAULTS.rimIntensity },
+          uRimWidth: { value: PORTAL_SHADER_DEFAULTS.rimWidth },
           uLighting: { value: PORTAL_SHADER_DEFAULTS.lighting },
           uSaturation: { value: PORTAL_SHADER_DEFAULTS.saturation },
           uDistortionScale: { value: PORTAL_SHADER_DEFAULTS.distortionScale },
@@ -129,6 +168,30 @@ const ProjectsPortals = props => {
         transparent: true,
       }),
     [portalVertexShader, portalFragmentShader, perlinTexture]
+  );
+
+  const portalSparksMaterial = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        vertexShader: portalSparksVertexShader,
+        fragmentShader: portalSparksFragmentShader,
+        uniforms: {
+          uTime: { value: 0 },
+          uOpenFactor: { value: 0 },
+          uResolution: { value: new THREE.Vector2(1, 1) },
+          uSize: { value: SPARKS_DEFAULTS.size },
+          uColor: { value: new THREE.Color(SPARKS_DEFAULTS.color) },
+          uIntensity: { value: SPARKS_DEFAULTS.intensity },
+          uSpawnRadius: { value: SPARKS_DEFAULTS.spawnRadius },
+          uSwirlTurns: { value: SPARKS_DEFAULTS.swirlTurns },
+          uFrontOffset: { value: SPARKS_DEFAULTS.frontOffset },
+          uSpeed: { value: SPARKS_DEFAULTS.speed },
+        },
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      }),
+    [portalSparksVertexShader, portalSparksFragmentShader]
   );
 
   // Target radius of the open portal; the scale-up animation reads it live
@@ -143,6 +206,13 @@ const ProjectsPortals = props => {
     step,
     onChange: v => {
       portalShaderMaterial.uniforms[uniform].value = v;
+    },
+  });
+
+  const colorControl = (uniform, value) => ({
+    value,
+    onChange: v => {
+      portalShaderMaterial.uniforms[uniform].value.set(v);
     },
   });
 
@@ -223,6 +293,9 @@ const ProjectsPortals = props => {
         0.5,
         0.005
       ),
+      rimColor: colorControl('uRimColor', d.rimColor),
+      rimIntensity: numberControl('uRimIntensity', d.rimIntensity, 0, 20, 0.1),
+      rimWidth: numberControl('uRimWidth', d.rimWidth, 0, 0.2, 0.001),
       lighting: numberControl('uLighting', d.lighting, 0, 3, 0.01),
       saturation: numberControl('uSaturation', d.saturation, 0, 2, 0.01),
       distortionScale: numberControl(
@@ -245,6 +318,70 @@ const ProjectsPortals = props => {
         0,
         0.5,
         0.001
+      ),
+    },
+    { collapsed: true, reset: true }
+  );
+
+  const sparksNumberControl = (uniform, value, min, max, step) => ({
+    value,
+    min,
+    max,
+    step,
+    onChange: v => {
+      portalSparksMaterial.uniforms[uniform].value = v;
+    },
+  });
+
+  const sparksGeometryRef = useRef(null);
+
+  useControls(
+    'PortalSparks',
+    {
+      count: {
+        value: SPARKS_DEFAULTS.count,
+        min: 0,
+        max: SPARKS_COUNT,
+        step: 1,
+        onChange: v => {
+          sparksGeometryRef.current?.setDrawRange(0, v);
+        },
+      },
+      color: {
+        value: SPARKS_DEFAULTS.color,
+        onChange: v => {
+          portalSparksMaterial.uniforms.uColor.value.set(v);
+        },
+      },
+      intensity: sparksNumberControl(
+        'uIntensity',
+        SPARKS_DEFAULTS.intensity,
+        0,
+        20,
+        0.1
+      ),
+      size: sparksNumberControl('uSize', SPARKS_DEFAULTS.size, 0, 0.3, 0.001),
+      speed: sparksNumberControl('uSpeed', SPARKS_DEFAULTS.speed, 0, 1, 0.005),
+      spawnRadius: sparksNumberControl(
+        'uSpawnRadius',
+        SPARKS_DEFAULTS.spawnRadius,
+        0,
+        3,
+        0.01
+      ),
+      swirlTurns: sparksNumberControl(
+        'uSwirlTurns',
+        SPARKS_DEFAULTS.swirlTurns,
+        -2,
+        2,
+        0.01
+      ),
+      frontOffset: sparksNumberControl(
+        'uFrontOffset',
+        SPARKS_DEFAULTS.frontOffset,
+        0,
+        3,
+        0.01
       ),
     },
     { collapsed: true, reset: true }
@@ -311,17 +448,71 @@ const ProjectsPortals = props => {
     };
   }, [portalShaderMaterial, portalSoundEffect, portalsTextures]);
 
-  useFrame(({ clock }, delta) => {
+  useFrame(({ clock, size, viewport }, delta) => {
     portal.rotation.y += delta * 0.15;
     portalShaderMaterial.uniforms.uTime.value = clock.elapsedTime;
+
+    portalSparksMaterial.uniforms.uTime.value = clock.elapsedTime;
+    // Sparks follow the portal opening (0 closed, 1 fully open)
+    portalSparksMaterial.uniforms.uOpenFactor.value = THREE.MathUtils.clamp(
+      portalShaderMaterial.uniforms.uSize.value / openSizeRef.current,
+      0,
+      1
+    );
+    portalSparksMaterial.uniforms.uResolution.value.set(
+      size.width * viewport.dpr,
+      size.height * viewport.dpr
+    );
   });
 
   return (
-    <Circle
-      args={[0.8, 32]}
-      material={portalShaderMaterial}
-      position={[-16.12, 6.95, -37.7]}
-    />
+    <>
+      <Circle
+        args={[0.8, 32]}
+        material={portalShaderMaterial}
+        position={[-16.12, 6.95, -37.7]}
+      />
+      {/* Positions live in the vertex shader; the zeroed buffer would make
+          the bounding sphere a point, so culling is disabled */}
+      <points
+        position={[-16.12, 6.95, -37.7]}
+        material={portalSparksMaterial}
+        frustumCulled={false}
+      >
+        <bufferGeometry ref={sparksGeometryRef}>
+          <bufferAttribute
+            attach="attributes-position"
+            count={SPARKS_COUNT}
+            array={sparksPositions}
+            itemSize={3}
+          />
+          <bufferAttribute
+            attach="attributes-aSize"
+            count={SPARKS_COUNT}
+            array={sparksSizes}
+            itemSize={1}
+          />
+          <bufferAttribute
+            attach="attributes-aAngle"
+            count={SPARKS_COUNT}
+            array={sparksAngles}
+            itemSize={1}
+          />
+          <bufferAttribute
+            attach="attributes-aSpeed"
+            count={SPARKS_COUNT}
+            array={sparksSpeeds}
+            itemSize={1}
+          />
+          <bufferAttribute
+            attach="attributes-aPhase"
+            count={SPARKS_COUNT}
+            array={sparksPhases}
+            itemSize={1}
+          />
+        </bufferGeometry>
+      </points>
+    </>
   );
 };
 
