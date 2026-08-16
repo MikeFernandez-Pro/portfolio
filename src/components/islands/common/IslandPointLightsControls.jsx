@@ -7,6 +7,7 @@ import {
   FORGE_LAVA_LIGHT_DEFAULTS,
   SWORD_LIGHT_DEFAULTS,
   WELL_LIGHT_DEFAULTS,
+  CAULDRON_LIGHT_DEFAULTS,
   PLATE_LIGHTS_DEFAULTS,
   torchLightsUniforms,
   lanternLightsUniforms,
@@ -14,6 +15,7 @@ import {
   forgeLavaLightUniforms,
   swordLightUniforms,
   wellLightUniforms,
+  cauldronLightUniforms,
   plateLightsUniforms,
   forgeLavaLightSettings,
 } from './islandPointLights.js';
@@ -86,6 +88,28 @@ const IslandPointLightsControls = () => {
       'Indicator',
       INDICATOR_LIGHTS_DEFAULTS
     ),
+    { collapsed: true, reset: true }
+  );
+
+  useControls(
+    'CauldronLight',
+    {
+      ...groupSchema(
+        cauldronLightUniforms,
+        'Cauldron',
+        CAULDRON_LIGHT_DEFAULTS
+      ),
+      height: {
+        value: CAULDRON_LIGHT_DEFAULTS.height,
+        min: -1,
+        max: 5,
+        step: 0.01,
+        onChange: v => {
+          cauldronLightUniforms.uCauldronLightPosition.value.y =
+            CAULDRON_LIGHT_DEFAULTS.position[1] + v;
+        },
+      },
+    },
     { collapsed: true, reset: true }
   );
 

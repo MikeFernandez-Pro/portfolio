@@ -1,5 +1,8 @@
 uniform vec3 uColor;
 uniform float uIntensity;
+uniform float uOpacity;
+uniform float uCoreOpacity;
+uniform float uRimThickness;
 
 varying float vAlpha;
 
@@ -9,9 +12,10 @@ void main() {
     if (distanceToCenter > 0.5)
         discard;
 
-    // Bubble look: thin bright rim around a faint core
-    float rim = smoothstep(0.18, 0.48, distanceToCenter);
-    float alpha = mix(0.15, 1.0, rim) * vAlpha;
+    // Bubble look: bright rim around the inside, whose fill is tunable
+    // (uCoreOpacity 0 = hollow ring, 1 = full disc)
+    float rim = smoothstep(0.48 - uRimThickness, 0.48, distanceToCenter);
+    float alpha = mix(uCoreOpacity, 1.0, rim) * vAlpha * uOpacity;
 
     gl_FragColor = vec4(uColor * uIntensity, alpha);
 

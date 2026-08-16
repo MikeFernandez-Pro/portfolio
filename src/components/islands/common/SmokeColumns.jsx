@@ -1,16 +1,26 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
+
+// Stable fallback so the matrices effect doesn't re-run on every render
+// for groups without an offset control
+const NO_OFFSET = [0, 0, 0];
+
+const INSTANCE_MATRIX = new THREE.Matrix4();
+const INSTANCE_POSITION = new THREE.Vector3();
+const INSTANCE_QUATERNION = new THREE.Quaternion();
+const INSTANCE_SCALE = new THREE.Vector3();
 
 import smokeVertexShader from '#shaders/smoke/vertex.glsl';
 import smokeFragmentShader from '#shaders/smoke/fragment.glsl';
 
 /**
  * Group of smoke columns reusing the bonfire smoke shader: one shared
- * material and one plane per position, tuned from its own debug folder.
- * The plane is 1x10 like the bonfire's (the shader profiles work in local
- * space), so `width`/`height` scale the mesh instead of the geometry.
+ * material and a single InstancedMesh (one draw call per group), tuned
+ * from its own debug folder. The plane is 1x10 like the bonfire's (the
+ * shader profiles work in local space), so `width`/`height` scale the
+ * instances instead of the geometry.
  */
 const SmokeColumns = props => {
   const { folderName, positions, defaults } = props;
@@ -90,25 +100,43 @@ const SmokeColumns = props => {
     reset: true,
   });
   const { width, height } = controls;
-  const offset = controls.offset ?? [0, 0, 0];
+  const offset = controls.offset ?? NO_OFFSET;
 
   useFrame(({ clock }) => {
     smokeMaterial.uniforms.uTime.value = clock.elapsedTime;
   });
 
+  const instancedMeshRef = useRef(null);
+
+  useEffect(() => {
+    const instancedMesh = instancedMeshRef.current;
+
+    INSTANCE_QUATERNION.identity();
+    INSTANCE_SCALE.set(width, height / 10, 1);
+
+    positions.forEach(([x, y, z], index) => {
+      INSTANCE_POSITION.set(x + offset[0], y + offset[1], z + offset[2]);
+      INSTANCE_MATRIX.compose(
+        INSTANCE_POSITION,
+        INSTANCE_QUATERNION,
+        INSTANCE_SCALE
+      );
+      instancedMesh.setMatrixAt(index, INSTANCE_MATRIX);
+    });
+    instancedMesh.instanceMatrix.needsUpdate = true;
+  }, [positions, width, height, offset]);
+
   return (
-    <>
-      {positions.map(([x, y, z]) => (
-        <mesh
-          key={`${x},${y},${z}`}
-          position={[x + offset[0], y + offset[1], z + offset[2]]}
-          scale={[width, height / 10, 1]}
-          material={smokeMaterial}
-        >
-          <planeGeometry args={[1, 10, 16, 64]} />
-        </mesh>
-      ))}
-    </>
+    // Instances are spread across the map while the mesh sits at the
+    // origin, so default culling would be wrong
+    <instancedMesh
+      ref={instancedMeshRef}
+      args={[undefined, undefined, positions.length]}
+      material={smokeMaterial}
+      frustumCulled={false}
+    >
+      <planeGeometry args={[1, 10, 16, 64]} />
+    </instancedMesh>
   );
 };
 

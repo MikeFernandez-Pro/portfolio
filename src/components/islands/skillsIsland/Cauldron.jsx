@@ -16,14 +16,17 @@ const SPEED = 0.5;
 
 // Boiling bubbles popping on the potion surface
 const BUBBLES_DEFAULTS = {
-  count: 30,
+  count: 5,
   color: '#35d567',
-  intensity: 3,
-  size: 0.05,
-  speed: 0.35,
+  intensity: 1,
+  opacity: 1,
+  coreOpacity: 0.51,
+  rimThickness: 0.14,
+  size: 0.171,
+  speed: 0.465,
   growPower: 0.7,
-  pop: 0.9,
-  spread: 0.8,
+  pop: 0.855,
+  spread: 0.75,
 };
 
 // Buffers are allocated at the max once; the count control only moves the
@@ -116,6 +119,9 @@ const Cauldron = props => {
           uHalfSize: { value: portalBounds.halfSize },
           uColor: { value: new THREE.Color(BUBBLES_DEFAULTS.color) },
           uIntensity: { value: BUBBLES_DEFAULTS.intensity },
+          uOpacity: { value: BUBBLES_DEFAULTS.opacity },
+          uCoreOpacity: { value: BUBBLES_DEFAULTS.coreOpacity },
+          uRimThickness: { value: BUBBLES_DEFAULTS.rimThickness },
           uSize: { value: BUBBLES_DEFAULTS.size },
           uSpeed: { value: BUBBLES_DEFAULTS.speed },
           uGrowPower: { value: BUBBLES_DEFAULTS.growPower },
@@ -165,6 +171,28 @@ const Cauldron = props => {
         0,
         20,
         0.1
+      ),
+      opacity: bubblesNumberControl(
+        'uOpacity',
+        BUBBLES_DEFAULTS.opacity,
+        0,
+        1,
+        0.01
+      ),
+      // Inside fill of the bubble (0 = hollow ring, 1 = full disc)
+      coreOpacity: bubblesNumberControl(
+        'uCoreOpacity',
+        BUBBLES_DEFAULTS.coreOpacity,
+        0,
+        1,
+        0.01
+      ),
+      rimThickness: bubblesNumberControl(
+        'uRimThickness',
+        BUBBLES_DEFAULTS.rimThickness,
+        0.01,
+        0.48,
+        0.005
       ),
       size: bubblesNumberControl('uSize', BUBBLES_DEFAULTS.size, 0, 0.3, 0.001),
       speed: bubblesNumberControl(

@@ -69,6 +69,19 @@ const MAGIC_PORTAL_LIGHT_DEFAULTS = {
   height: 0.83,
 };
 
+const CAULDRON_LIGHT_DEFAULTS = {
+  // The potion's bright color
+  color: '#35d567',
+  intensity: 8.5,
+  decay: 0.4,
+  decayPower: 5.75,
+  specularPower: 1,
+  // World position of the GLB `pot` node through the island group
+  // transform; the height control lifts the light above it
+  position: [8.64, 2.75, -29.73],
+  height: 0.8,
+};
+
 const PLATE_LIGHTS_DEFAULTS = {
   // The pressure plates' emissive color
   color: '#68cff2',
@@ -225,6 +238,17 @@ const wellLightUniforms = {
   },
 };
 
+const cauldronLightUniforms = {
+  ...createLightUniforms('Cauldron', CAULDRON_LIGHT_DEFAULTS),
+  uCauldronLightPosition: {
+    value: new THREE.Vector3(
+      CAULDRON_LIGHT_DEFAULTS.position[0],
+      CAULDRON_LIGHT_DEFAULTS.position[1] + CAULDRON_LIGHT_DEFAULTS.height,
+      CAULDRON_LIGHT_DEFAULTS.position[2]
+    ),
+  },
+};
+
 const plateLightsUniforms = {
   ...createLightUniforms('Plate', PLATE_LIGHTS_DEFAULTS),
   // Per-plate activation factor (0 = off, 1 = active), animated by the
@@ -291,7 +315,8 @@ const patchIslandPointLights = material => {
       swordLightUniforms,
       magicPortalLightUniforms,
       wellLightUniforms,
-      plateLightsUniforms
+      plateLightsUniforms,
+      cauldronLightUniforms
     );
 
     shader.vertexShader = shader.vertexShader
@@ -322,6 +347,8 @@ ${lightUniformsGlsl('MagicPortal')}
 uniform vec3 uMagicPortalLightPosition;
 ${lightUniformsGlsl('Well')}
 uniform vec3 uWellLightPosition;
+${lightUniformsGlsl('Cauldron')}
+uniform vec3 uCauldronLightPosition;
 ${lightUniformsGlsl('Plate')}
 uniform vec3 uPlateLightFactors;
 uniform float uPlateLightHeight;
@@ -365,6 +392,7 @@ ${lightCallGlsl('ForgeLava', 'uForgeLavaLightPosition')}
 ${lightCallGlsl('Sword', 'uSwordLightPosition')}
 ${lightCallGlsl('MagicPortal', 'uMagicPortalLightPosition')}
 ${lightCallGlsl('Well', 'uWellLightPosition')}
+${lightCallGlsl('Cauldron', 'uCauldronLightPosition')}
 for (int i = 0; i < PLATE_LIGHT_COUNT; i++) {
   islandLightAccum += islandPointLight(
     uPlateLightColor,
@@ -393,6 +421,7 @@ export {
   SWORD_LIGHT_DEFAULTS,
   MAGIC_PORTAL_LIGHT_DEFAULTS,
   WELL_LIGHT_DEFAULTS,
+  CAULDRON_LIGHT_DEFAULTS,
   PLATE_LIGHTS_DEFAULTS,
   PLATE_LIGHT_INDEX,
   portalLightSettings,
@@ -406,6 +435,7 @@ export {
   swordLightUniforms,
   magicPortalLightUniforms,
   wellLightUniforms,
+  cauldronLightUniforms,
   plateLightsUniforms,
   patchIslandPointLights,
 };
