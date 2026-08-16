@@ -3,7 +3,7 @@ import { useControls } from '#utils/useControls.jsx';
 import { CountryFlag, flagsGradeUniforms } from './CountryFlag';
 
 const FLAGS_GRADE_DEFAULTS = {
-  lightness: 1,
+  lightness: 1.5,
   saturation: 1,
 };
 
