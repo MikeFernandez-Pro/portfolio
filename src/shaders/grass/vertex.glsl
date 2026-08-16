@@ -8,6 +8,8 @@ uniform bool uSquareShape;
 uniform float uPositionX;
 uniform float uPositionZ;
 uniform vec3 uPlayerPosition;
+uniform sampler2D uTrampleTexture;
+uniform float uTrampleStrength;
 
 uniform float uWindScale;
 uniform float uWindStrength;
@@ -18,9 +20,7 @@ uniform float uFlowerHeight;
 uniform float uFlowerWidth;
 uniform vec3 uFlowerStemColor;
 
-uniform float uRepulseRadius; // effect size (world units)
 uniform float uRepulseStrength; // max tilt angle in radians (PI/2 = flat on the ground)
-uniform float uRepulseFalloff; // falloff curve exponent (1 = linear, >1 = tighter around player)
 uniform float uRepulseSquash; // extra height shortening at full influence (0-1)
 
 varying vec3 vColor;
@@ -140,12 +140,12 @@ void main() {
 
   vWorldPosition = grassBladeWorldPos; // for cloud shadows (per blade is enough)
 
-  // Height data texture
-  vec4 heightData = texture2D(
-    uHeightDataTexture,
-    vec2(-grassBladeWorldPos.x + uPositionX, grassBladeWorldPos.z - uPositionZ) / GRASS_PATCH_SIZE * 0.5 +
-      0.5
-  );
+  // Height data texture (patchUv also samples the trample map below)
+  vec2 patchUv =
+    vec2(-grassBladeWorldPos.x + uPositionX, grassBladeWorldPos.z - uPositionZ) /
+      GRASS_PATCH_SIZE * 0.5 +
+    0.5;
+  vec4 heightData = texture2D(uHeightDataTexture, patchUv);
   float grassHeight = heightData.x;
 
     
@@ -216,9 +216,19 @@ float windStrength = texture2D(uPerlinNoiseTexture,
   float angle = remap(hashVal.x, -1.0, 1.0, -PI / 4.0, PI / 4.0); // randomize blades initial rotation
 
 
-  // Radial repulsion: blades are crushed away from the player
-  float playerDistance = distance(grassBladeWorldPos, uPlayerPosition); // 3D so jumping above weakens the effect
-  float repulseInfluence = pow(1.0 - smoothstep(0.0, uRepulseRadius, playerDistance), uRepulseFalloff);
+  // Crush amplitude comes from the trample map: a fading canvas records
+  // where the player walked, so blades ease back up after his passage.
+  // The lower edge cuts the canvas fade residue (blades fully recover),
+  // the upper edge holds them down for a moment (trail plateau).
+  // USE_TRAMPLE is left out on mobile: no vertex fetch, the crush block
+  // below compiles away entirely.
+  #ifdef USE_TRAMPLE
+  float repulseInfluence =
+    smoothstep(0.05, 0.7, texture2D(uTrampleTexture, patchUv).r)
+    * uTrampleStrength;
+  #else
+  float repulseInfluence = 0.0;
+  #endif
 
   vec3 crushAxis = vec3(1.0, 0.0, 0.0);
   if (repulseInfluence > 0.001) {

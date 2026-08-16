@@ -5,6 +5,7 @@ import { CapsuleCollider, RigidBody } from '@react-three/rapier';
 
 import { useStore } from '#store/ZustandStorage.jsx';
 import { IS_MOBILE_DEVICE } from '#utils/utils.js';
+import { useControls } from '#utils/useControls.jsx';
 
 import CharacterModel from '#assets/models/character/character.glb';
 import runningSoundEffect from '#controller/audio/runningSound.js';
@@ -153,6 +154,7 @@ const CharacterController = () => {
         if (groundedTime >= GROUNDED_TIME_THRESHOLD) {
           canJump = true;
           characterJumping = false;
+          useStore.setState({ characterGrounded: true });
         }
       } else {
         groundedTime = 0;
@@ -272,6 +274,26 @@ const CharacterController = () => {
     };
   }, []);
 
+  // Visual-only offset of the character mesh inside the rigid body (the
+  // capsule collider and physics are untouched)
+  useControls(
+    'Character',
+    {
+      meshHeight: {
+        value: -0.02,
+        min: -0.5,
+        max: 0.5,
+        step: 0.005,
+        onChange: v => {
+          if (characterMesh.current) {
+            characterMesh.current.position.y = v;
+          }
+        },
+      },
+    },
+    { collapsed: true, reset: true }
+  );
+
   // Initialize third-person camera behavior
   useThirdPersonCamera(characterBody);
 
@@ -283,10 +305,12 @@ const CharacterController = () => {
           if (state.other.rigidBody !== characterBody.current) return;
           canJump = true;
           characterJumping = false;
+          useStore.setState({ characterGrounded: true });
         }}
         onExit={state => {
           if (state.other.rigidBody !== characterBody.current) return;
           canJump = false;
+          useStore.setState({ characterGrounded: false });
         }}
       />
       <RigidBody
