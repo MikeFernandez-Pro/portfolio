@@ -7,10 +7,39 @@ import * as THREE from 'three';
 
 import portalVertexShader from '#shaders/cauldronPortal/vertex.glsl';
 import portalFragmentShader from '#shaders/cauldronPortal/fragment.glsl';
+import bubblesVertexShader from '#shaders/cauldronBubbles/vertex.glsl';
+import bubblesFragmentShader from '#shaders/cauldronBubbles/fragment.glsl';
 
 import perlinNoiseImage from '#assets/textures/perlin.png';
 
 const SPEED = 0.5;
+
+// Boiling bubbles popping on the potion surface
+const BUBBLES_DEFAULTS = {
+  count: 30,
+  color: '#35d567',
+  intensity: 3,
+  size: 0.05,
+  speed: 0.35,
+  growPower: 0.7,
+  pop: 0.9,
+  spread: 0.8,
+};
+
+// Buffers are allocated at the max once; the count control only moves the
+// geometry draw range. Spawn spots are hashed per cycle in the vertex
+// shader, so only per-bubble timing/size randomness lives here.
+const BUBBLES_COUNT = 80;
+const bubblesPositions = new Float32Array(BUBBLES_COUNT * 3);
+const bubblesPhases = new Float32Array(BUBBLES_COUNT);
+const bubblesSpeeds = new Float32Array(BUBBLES_COUNT);
+const bubblesSizes = new Float32Array(BUBBLES_COUNT);
+
+for (let i = 0; i < BUBBLES_COUNT; i++) {
+  bubblesPhases[i] = Math.random();
+  bubblesSpeeds[i] = Math.random() * 0.8 + 0.6;
+  bubblesSizes[i] = Math.random() * 0.6 + 0.4;
+}
 
 // Ported from an earlier project's ending portal (its portal settings defaults)
 const PORTAL_DEFAULTS = {
@@ -72,8 +101,100 @@ const Cauldron = props => {
     return {
       center: new THREE.Vector2((min.x + max.x) / 2, (min.z + max.z) / 2),
       halfSize: new THREE.Vector2((max.x - min.x) / 2, (max.z - min.z) / 2),
+      surfaceY: max.y,
     };
   }, [island]);
+
+  const bubblesMaterial = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        vertexShader: bubblesVertexShader,
+        fragmentShader: bubblesFragmentShader,
+        uniforms: {
+          uTime: { value: 0 },
+          uResolution: { value: new THREE.Vector2(1, 1) },
+          uHalfSize: { value: portalBounds.halfSize },
+          uColor: { value: new THREE.Color(BUBBLES_DEFAULTS.color) },
+          uIntensity: { value: BUBBLES_DEFAULTS.intensity },
+          uSize: { value: BUBBLES_DEFAULTS.size },
+          uSpeed: { value: BUBBLES_DEFAULTS.speed },
+          uGrowPower: { value: BUBBLES_DEFAULTS.growPower },
+          uPopStart: { value: BUBBLES_DEFAULTS.pop },
+          uSpread: { value: BUBBLES_DEFAULTS.spread },
+        },
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      }),
+    [portalBounds]
+  );
+
+  const bubblesGeometryRef = useRef(null);
+
+  const bubblesNumberControl = (uniform, value, min, max, step) => ({
+    value,
+    min,
+    max,
+    step,
+    onChange: v => {
+      bubblesMaterial.uniforms[uniform].value = v;
+    },
+  });
+
+  useControls(
+    'CauldronBubbles',
+    {
+      count: {
+        value: BUBBLES_DEFAULTS.count,
+        min: 0,
+        max: BUBBLES_COUNT,
+        step: 1,
+        onChange: v => {
+          bubblesGeometryRef.current?.setDrawRange(0, v);
+        },
+      },
+      color: {
+        value: BUBBLES_DEFAULTS.color,
+        onChange: v => {
+          bubblesMaterial.uniforms.uColor.value.set(v);
+        },
+      },
+      intensity: bubblesNumberControl(
+        'uIntensity',
+        BUBBLES_DEFAULTS.intensity,
+        0,
+        20,
+        0.1
+      ),
+      size: bubblesNumberControl('uSize', BUBBLES_DEFAULTS.size, 0, 0.3, 0.001),
+      speed: bubblesNumberControl(
+        'uSpeed',
+        BUBBLES_DEFAULTS.speed,
+        0,
+        2,
+        0.005
+      ),
+      // Shape of the swelling over a bubble's life (< 1 grows fast then
+      // slows down, > 1 the opposite)
+      growPower: bubblesNumberControl(
+        'uGrowPower',
+        BUBBLES_DEFAULTS.growPower,
+        0.2,
+        3,
+        0.01
+      ),
+      // Life fraction where the burst begins (closer to 1 = more sudden)
+      pop: bubblesNumberControl('uPopStart', BUBBLES_DEFAULTS.pop, 0.5, 0.99, 0.005),
+      spread: bubblesNumberControl(
+        'uSpread',
+        BUBBLES_DEFAULTS.spread,
+        0,
+        1,
+        0.01
+      ),
+    },
+    { collapsed: true, reset: true }
+  );
 
   // Stable identity: CSM resets every uniform to these values whenever the
   // uniforms prop changes reference, which would wipe the debug tweaks
@@ -190,30 +311,77 @@ const Cauldron = props => {
     { collapsed: true }
   );
 
-  useFrame(({ clock }, delta) => {
+  useFrame(({ clock, size, viewport }, delta) => {
     island.nodes.pot.rotation.y += delta * SPEED;
 
     if (portalMaterialRef.current?.uniforms) {
       portalMaterialRef.current.uniforms.uTime.value = clock.elapsedTime;
     }
+
+    bubblesMaterial.uniforms.uTime.value = clock.elapsedTime;
+    bubblesMaterial.uniforms.uResolution.value.set(
+      size.width * viewport.dpr,
+      size.height * viewport.dpr
+    );
   });
 
   return (
-    <skinnedMesh
-      name="island_8"
-      geometry={island.nodes.island_8.geometry}
-      skeleton={island.nodes.island_8.skeleton}
-      morphTargetDictionary={island.nodes.island_8.morphTargetDictionary}
-      morphTargetInfluences={island.nodes.island_8.morphTargetInfluences}
-    >
-      <CustomShaderMaterial
-        ref={portalMaterialRef}
-        baseMaterial={THREE.MeshStandardMaterial}
-        vertexShader={portalVertexShader}
-        fragmentShader={portalFragmentShader}
-        uniforms={portalUniforms}
-      />
-    </skinnedMesh>
+    <>
+      <skinnedMesh
+        name="island_8"
+        geometry={island.nodes.island_8.geometry}
+        skeleton={island.nodes.island_8.skeleton}
+        morphTargetDictionary={island.nodes.island_8.morphTargetDictionary}
+        morphTargetInfluences={island.nodes.island_8.morphTargetInfluences}
+      >
+        <CustomShaderMaterial
+          ref={portalMaterialRef}
+          baseMaterial={THREE.MeshStandardMaterial}
+          vertexShader={portalVertexShader}
+          fragmentShader={portalFragmentShader}
+          uniforms={portalUniforms}
+        />
+      </skinnedMesh>
+      {/* Boiling bubbles above the liquid disc; positions live in the vertex
+          shader so the zeroed buffer would make the bounding sphere a point,
+          hence the disabled culling */}
+      <points
+        position={[
+          portalBounds.center.x,
+          portalBounds.surfaceY + 0.02,
+          portalBounds.center.y,
+        ]}
+        material={bubblesMaterial}
+        frustumCulled={false}
+      >
+        <bufferGeometry ref={bubblesGeometryRef}>
+          <bufferAttribute
+            attach="attributes-position"
+            count={BUBBLES_COUNT}
+            array={bubblesPositions}
+            itemSize={3}
+          />
+          <bufferAttribute
+            attach="attributes-aPhase"
+            count={BUBBLES_COUNT}
+            array={bubblesPhases}
+            itemSize={1}
+          />
+          <bufferAttribute
+            attach="attributes-aSpeed"
+            count={BUBBLES_COUNT}
+            array={bubblesSpeeds}
+            itemSize={1}
+          />
+          <bufferAttribute
+            attach="attributes-aSize"
+            count={BUBBLES_COUNT}
+            array={bubblesSizes}
+            itemSize={1}
+          />
+        </bufferGeometry>
+      </points>
+    </>
   );
 };
 

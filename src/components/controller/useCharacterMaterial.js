@@ -7,6 +7,7 @@ import gsap from 'gsap';
 import voronoiImage from '#assets/textures/customVoronoi.png';
 import vertexShader from '#shaders/character/vertex.glsl';
 import fragmentShader from '#shaders/character/fragment.glsl';
+import { patchIslandPointLights } from '#islands/common/islandPointLights.js';
 
 const CHARACTER_MATERIAL_NAME = 'knight';
 const BOUNDS_MIN = new THREE.Vector3(-3.34, 0, -2.41);
@@ -55,6 +56,11 @@ const useCharacterMaterial = characterScene => {
       tonemapped: false,
       side: THREE.DoubleSide,
     });
+
+    // CSM v6 mutates the base material in place; chain the fake island
+    // point lights on top so torches, lanterns and portals also light the
+    // character as it walks by
+    patchIslandPointLights(characterMesh.material);
 
     return () => {
       if (respawnTimelineRef.current) {

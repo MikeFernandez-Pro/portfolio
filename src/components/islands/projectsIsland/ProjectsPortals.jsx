@@ -8,6 +8,11 @@ import * as THREE from 'three';
 
 import { useStore } from '#store/ZustandStorage.jsx';
 import { SOUND_VOLUMES } from '#utils/soundVolumes.js';
+import {
+  PORTAL_LIGHT_DEFAULTS,
+  portalLightSettings,
+  portalLightUniforms,
+} from '#islands/common/islandPointLights.js';
 
 import portalVertexShader from '#shaders/portal/vertex.glsl';
 import portalFragmentShader from '#shaders/portal/fragment.glsl';
@@ -387,6 +392,55 @@ const ProjectsPortals = props => {
     { collapsed: true, reset: true }
   );
 
+  useControls(
+    'PortalLight',
+    {
+      color: {
+        value: PORTAL_LIGHT_DEFAULTS.color,
+        onChange: v => {
+          portalLightUniforms.uPortalLightColor.value.set(v);
+        },
+      },
+      intensity: {
+        value: PORTAL_LIGHT_DEFAULTS.intensity,
+        min: 0,
+        max: 10,
+        step: 0.05,
+        onChange: v => {
+          portalLightSettings.intensity = v;
+        },
+      },
+      decay: {
+        value: PORTAL_LIGHT_DEFAULTS.decay,
+        min: 0,
+        max: 1,
+        step: 0.005,
+        onChange: v => {
+          portalLightUniforms.uPortalLightDecay.value = v;
+        },
+      },
+      decayPower: {
+        value: PORTAL_LIGHT_DEFAULTS.decayPower,
+        min: 0.1,
+        max: 8,
+        step: 0.05,
+        onChange: v => {
+          portalLightUniforms.uPortalLightDecayPower.value = v;
+        },
+      },
+      specularPower: {
+        value: PORTAL_LIGHT_DEFAULTS.specularPower,
+        min: 1,
+        max: 64,
+        step: 1,
+        onChange: v => {
+          portalLightUniforms.uPortalLightSpecularPower.value = v;
+        },
+      },
+    },
+    { collapsed: true, reset: true }
+  );
+
   // Animation
 
   useEffect(() => {
@@ -453,12 +507,22 @@ const ProjectsPortals = props => {
     portalShaderMaterial.uniforms.uTime.value = clock.elapsedTime;
 
     portalSparksMaterial.uniforms.uTime.value = clock.elapsedTime;
-    // Sparks follow the portal opening (0 closed, 1 fully open)
-    portalSparksMaterial.uniforms.uOpenFactor.value = THREE.MathUtils.clamp(
-      portalShaderMaterial.uniforms.uSize.value / openSizeRef.current,
-      0,
-      1
+    // Sparks grow in with the very first portal opening, then the ratchet
+    // keeps them at full strength: re-pressing a plate replays the disc
+    // scale-up but must not make the sparks vanish and reappear
+    const openFactor = Math.max(
+      portalSparksMaterial.uniforms.uOpenFactor.value,
+      THREE.MathUtils.clamp(
+        portalShaderMaterial.uniforms.uSize.value / openSizeRef.current,
+        0,
+        1
+      )
     );
+    portalSparksMaterial.uniforms.uOpenFactor.value = openFactor;
+    // The island point light follows the same ratchet: off until the first
+    // opening, full strength forever after
+    portalLightUniforms.uPortalLightIntensity.value =
+      portalLightSettings.intensity * openFactor;
     portalSparksMaterial.uniforms.uResolution.value.set(
       size.width * viewport.dpr,
       size.height * viewport.dpr

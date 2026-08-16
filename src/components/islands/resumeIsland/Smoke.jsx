@@ -13,6 +13,10 @@ const Smoke = () => {
     {
       uTime: 0,
       uColor: new THREE.Color('#313131'),
+      uOpacity: 0.5,
+      uFadeHeight: 1,
+      uBaseFade: 0,
+      uTimeOffsetStrength: 1,
       uDisplacementUv: 2.8,
       uDisplacementUvY: 1.6,
       newPositionY: 1.69,

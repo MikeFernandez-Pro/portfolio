@@ -9,6 +9,10 @@ import voronoiImage from '#assets/textures/customVoronoi.png';
 import perlinNoiseImage from '#assets/textures/perlin.png';
 import vertexShader from '#shaders/forgeLava/vertex.glsl';
 import fragmentShader from '#shaders/forgeLava/fragment.glsl';
+import {
+  forgeLavaLightSettings,
+  forgeLavaLightUniforms,
+} from '#islands/common/islandPointLights.js';
 
 const LAVA_DEFAULTS = {
   posX: -7.59,
@@ -224,6 +228,12 @@ const ForgeLavaPlane = ({ blowerMesh }) => {
       uniformsRef.current.uIntensity.value =
         base + (peak - base) * influences[blowerIndex];
     }
+
+    // The fake point light gasps along, proportionally to the lava glow
+    forgeLavaLightUniforms.uForgeLavaLightIntensity.value =
+      forgeLavaLightSettings.intensity *
+      (uniformsRef.current.uIntensity.value /
+        Math.max(gaspParamsRef.current.base, 0.0001));
   });
 
   return (

@@ -5,6 +5,9 @@ import * as THREE from 'three';
 import { IS_MOBILE_DEVICE } from '#utils/utils.js';
 
 import { patchCloudShadows } from '#environment/CloudShadows.jsx';
+import { patchIslandPointLights } from '#islands/common/islandPointLights.js';
+import { IslandPointLightsControls } from '#islands/common/IslandPointLightsControls.jsx';
+import { SmokeColumns } from '#islands/common/SmokeColumns.jsx';
 import { LanternsAndHome } from '#islands/common/LanternsAndHome';
 import { IslandMaterialsControls } from '#islands/common/IslandMaterialsControls';
 import { ContactIsland } from '#islands/contactIsland/ContactIsland';
@@ -18,6 +21,25 @@ import islandModel from '#assets/models/island/island-no-ao.glb?url';
 
 const ISLAND_POSITION = new THREE.Vector3(-1.35, 2.25, -15);
 
+// World-space cauldron position (GLB `pot` node through the island group
+// transform), smoke rises from just above the potion surface
+const CAULDRON_SMOKE_POSITION = [8.64, 3.1, -29.73];
+
+// World-space torch smoke positions: the torch flames (TORCHES_POSITIONS in
+// TorchesSparks.jsx) minus the bonfire, which already has its own Smoke
+// component, with the hand-tuned per-torch offsets baked in
+const TORCH_SMOKE_POSITIONS = [
+  [-5.78, 1.7, -16.55],
+  [-18.51, 5.8, -30.99],
+  [-18.31, 5.8, -35.71],
+  [-13.83, 5.8, -35.57],
+  [-10.87, 7.88, -46.85],
+  [-15.29, 7.69, -52.85],
+  [-4.68, 7.8, -52.99],
+  [-6.28, 8.37, -57.97],
+  [-13.13, 8.4, -57.97],
+];
+
 const Islands = () => {
   const islandRef = useRef();
 
@@ -28,17 +50,62 @@ const Islands = () => {
   // The GLB clips animate island_7, which is intentionally not mounted —
   // drop those tracks so the mixer doesn't warn about a missing node
   const filteredAnimations = useMemo(() => {
+    // Each island primitive gets one interleaved weights track (all morph
+    // targets together), so removing the cauldron bubble means zeroing the
+    // potBubbles component inside the values rather than dropping a track
+    const morphDictionary = nodes.island_1.morphTargetDictionary;
+    const potBubblesIndex = morphDictionary.potBubbles;
+    const targetCount = Object.keys(morphDictionary).length;
+
     animations.forEach(clip => {
       clip.tracks = clip.tracks.filter(
         track => !track.name.startsWith('island_7.')
       );
+
+      clip.tracks.forEach(track => {
+        if (!track.name.endsWith('.morphTargetInfluences')) return;
+        for (
+          let i = potBubblesIndex;
+          i < track.values.length;
+          i += targetCount
+        ) {
+          track.values[i] = 0;
+        }
+      });
     });
     return animations;
-  }, [animations]);
+  }, [animations, nodes]);
 
   const islandAnimations = useAnimations(filteredAnimations, islandRef);
 
   useEffect(() => {
+    // The pot bubbles are visible at rest in the base geometry (their morph
+    // animation is already zeroed in filteredAnimations): identify their
+    // vertices through the potBubbles morph deltas — only bubble vertices
+    // have non-zero ones — and shove them far below the island
+    const morphDictionary = nodes.island_1.morphTargetDictionary;
+    const potBubblesIndex = morphDictionary.potBubbles;
+
+    Object.values(nodes).forEach(node => {
+      const geometry = node.geometry;
+      const bubbleDeltas =
+        geometry?.morphAttributes?.position?.[potBubblesIndex];
+      if (!bubbleDeltas || geometry.userData.potBubblesHidden) return;
+
+      const position = geometry.attributes.position;
+      for (let i = 0; i < bubbleDeltas.count; i++) {
+        if (
+          bubbleDeltas.getX(i) !== 0 ||
+          bubbleDeltas.getY(i) !== 0 ||
+          bubbleDeltas.getZ(i) !== 0
+        ) {
+          position.setY(i, position.getY(i) - 30);
+        }
+      }
+      position.needsUpdate = true;
+      geometry.userData.potBubblesHidden = true;
+    });
+
     const islandMesh = island.scene.getObjectByName('island_1');
 
     if (islandMesh) {
@@ -47,6 +114,7 @@ const Islands = () => {
       islandMesh.material.aoMap = null;
       islandMesh.material.roughness = 1;
       patchCloudShadows(islandMesh.material);
+      patchIslandPointLights(islandMesh.material);
     }
 
     // Hide keyboard controls on mobile
@@ -176,6 +244,38 @@ const Islands = () => {
       </group>
       <LanternsAndHome island={island} />
       <IslandMaterialsControls materials={materials} />
+      <IslandPointLightsControls />
+      <SmokeColumns
+        folderName="CauldronSmoke"
+        positions={[CAULDRON_SMOKE_POSITION]}
+        defaults={{
+          color: '#4a7d5c',
+          opacity: 0.5,
+          fadeHeight: 1,
+          baseFade: 1.2,
+          timeOffsetStrength: 1,
+          swayScale: 2.8,
+          swayPower: 1.6,
+          width: 0.73,
+          height: 7,
+          offset: [0, 0, 0],
+        }}
+      />
+      <SmokeColumns
+        folderName="TorchesSmoke"
+        positions={TORCH_SMOKE_POSITIONS}
+        defaults={{
+          color: '#313131',
+          opacity: 0.32,
+          fadeHeight: 0.67,
+          baseFade: 0.32,
+          timeOffsetStrength: 1,
+          swayScale: 2.8,
+          swayPower: 0.83,
+          width: 0.14,
+          height: 2.9,
+        }}
+      />
       {/* Shares island_1's morphTargetInfluences array with the mounted mesh,
           so the lava reads the mixer-animated blowerClosed weight live */}
       <ForgeLavaPlane blowerMesh={nodes.island_1} />

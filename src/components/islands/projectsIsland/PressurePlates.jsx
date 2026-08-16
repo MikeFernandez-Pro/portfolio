@@ -6,6 +6,10 @@ import { Howl } from 'howler';
 
 import { useStore } from '#store/ZustandStorage.jsx';
 import { SOUND_VOLUMES } from '#utils/soundVolumes.js';
+import {
+  PLATE_LIGHT_INDEX,
+  plateLightsUniforms,
+} from '#islands/common/islandPointLights.js';
 
 import PressurePlateAudio from '#assets/sounds/pressure-plate.mp3';
 
@@ -13,7 +17,7 @@ import PressurePlateAudio from '#assets/sounds/pressure-plate.mp3';
 const PLATE_EMISSIVE_COLOR = new THREE.Color('#68CFF2');
 let plateActiveIntensity = 3.56;
 
-const createPlateAnimation = (material, pressurePlateSoundEffect) => {
+const createPlateAnimation = (material, lightIndex, pressurePlateSoundEffect) => {
   const progress = { value: 0 };
 
   return gsap.to(progress, {
@@ -27,6 +31,11 @@ const createPlateAnimation = (material, pressurePlateSoundEffect) => {
     },
     onUpdate: () => {
       material.emissiveIntensity = progress.value * plateActiveIntensity;
+      // The plate's fake point light follows the same press/release ramp
+      plateLightsUniforms.uPlateLightFactors.value.setComponent(
+        lightIndex,
+        progress.value
+      );
     },
   });
 };
@@ -86,6 +95,7 @@ const PressurePlates = props => {
 
       plates[plate].animation = createPlateAnimation(
         plates[plate].material,
+        PLATE_LIGHT_INDEX[plate],
         pressurePlateSoundEffect
       );
     }

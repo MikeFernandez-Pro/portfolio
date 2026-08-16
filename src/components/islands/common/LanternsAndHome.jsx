@@ -2,7 +2,7 @@ import { useLayoutEffect } from 'react';
 import { useControls } from '#utils/useControls.jsx';
 
 const LANTERNS_EMISSIVE_COLOR = '#ff7e7e';
-const LANTERNS_EMISSIVE_INTENSITY = 6.55;
+const LANTERNS_EMISSIVE_INTENSITY = 6;
 
 const LanternsAndHome = props => {
   const { island } = props;

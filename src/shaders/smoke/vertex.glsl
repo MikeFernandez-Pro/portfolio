@@ -1,19 +1,29 @@
 uniform float uTime;
+uniform float uTimeOffsetStrength;
 uniform float uDisplacementUv;
 uniform float uDisplacementUvY;
 uniform float newPositionY;
 
 varying float positionY;
 varying vec2 vUv;
+varying float vTime;
 
 #include ../includes/perlin2d.glsl
 
 void main() {
 
+  // Columns sharing a material get a per-mesh time offset hashed from
+  // their world position, so their sway/scroll patterns aren't in sync;
+  // uTimeOffsetStrength scales the desynchronization (0 = all in phase)
+  float timeOffset = fract(
+    sin(dot(modelMatrix[3].xz, vec2(12.9898, 78.233))) * 43758.5453
+  ) * 100.0 * uTimeOffsetStrength;
+  float time = uTime + timeOffset;
+
   vec3 newPosition = position;
   vec2 displacementUv = uv;
   displacementUv *= uDisplacementUv;
-  displacementUv.y -= uTime * uDisplacementUvY;
+  displacementUv.y -= time * uDisplacementUvY;
 
   float displacementStrength = pow(uv.y * 30.0, 30.0);
   float perlin = perlin2d(uv * 0.1) * displacementStrength;
@@ -21,7 +31,7 @@ void main() {
   newPosition.z += perlin * newPositionY;
 
   vec3 testPosition = position;
-  testPosition.x += sin(testPosition.y * uDisplacementUv - uTime) * pow(testPosition.y, uDisplacementUvY) * 0.1;
+  testPosition.x += sin(testPosition.y * uDisplacementUv - time) * pow(testPosition.y, uDisplacementUvY) * 0.1;
 
   vec4 modelPosition = modelMatrix * vec4(testPosition, 1.0);
 
@@ -32,4 +42,5 @@ void main() {
 
   vUv = uv;
   positionY = testPosition.y;
+  vTime = time;
 }

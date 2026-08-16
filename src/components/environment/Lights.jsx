@@ -133,7 +133,7 @@ const Lights = () => {
         step: 0.001,
       },
       radius: {
-        value: 6.5,
+        value: 8.2,
         min: 0,
         max: 25,
         step: 0.1,
