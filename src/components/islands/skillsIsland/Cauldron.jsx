@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import CustomShaderMaterial from 'three-custom-shader-material';
@@ -13,6 +13,8 @@ import bubblesFragmentShader from '#shaders/cauldronBubbles/fragment.glsl';
 import perlinNoiseImage from '#assets/textures/perlin.png';
 
 const SPEED = 0.5;
+const POTION_PLANE_HEIGHT = 0;
+const BUBBLES_SURFACE_OFFSET = 0.02;
 
 // Boiling bubbles popping on the potion surface
 const BUBBLES_DEFAULTS = {
@@ -87,6 +89,9 @@ const Cauldron = props => {
   const { island } = props;
 
   const portalMaterialRef = useRef(null);
+  const potionMeshRef = useRef(null);
+  const bubblesPointsRef = useRef(null);
+  const planeHeightRef = useRef(POTION_PLANE_HEIGHT);
 
   const perlinNoiseTexture = useTexture(perlinNoiseImage, texture => {
     texture.colorSpace = THREE.NoColorSpace;
@@ -107,6 +112,23 @@ const Cauldron = props => {
       surfaceY: max.y,
     };
   }, [island]);
+
+  const applyPlaneHeight = height => {
+    planeHeightRef.current = height;
+
+    if (potionMeshRef.current) {
+      potionMeshRef.current.position.y = height;
+    }
+
+    if (bubblesPointsRef.current) {
+      bubblesPointsRef.current.position.y =
+        portalBounds.surfaceY + BUBBLES_SURFACE_OFFSET + height;
+    }
+  };
+
+  useLayoutEffect(() => {
+    applyPlaneHeight(planeHeightRef.current);
+  }, [portalBounds]);
 
   const bubblesMaterial = useMemo(
     () =>
@@ -300,6 +322,13 @@ const Cauldron = props => {
   useControls(
     'CauldronPortal',
     {
+      planeHeight: {
+        value: POTION_PLANE_HEIGHT,
+        min: -0.5,
+        max: 0.5,
+        step: 0.001,
+        onChange: applyPlaneHeight,
+      },
       deepColor: colorControl('uDeepColor', d.deepColor),
       midColor: colorControl('uMidColor', d.midColor),
       brightColor: colorControl('uBrightColor', d.brightColor),
@@ -356,6 +385,7 @@ const Cauldron = props => {
   return (
     <>
       <skinnedMesh
+        ref={potionMeshRef}
         name="island_8"
         geometry={island.nodes.island_8.geometry}
         skeleton={island.nodes.island_8.skeleton}
@@ -374,9 +404,10 @@ const Cauldron = props => {
           shader so the zeroed buffer would make the bounding sphere a point,
           hence the disabled culling */}
       <points
+        ref={bubblesPointsRef}
         position={[
           portalBounds.center.x,
-          portalBounds.surfaceY + 0.02,
+          portalBounds.surfaceY + BUBBLES_SURFACE_OFFSET + POTION_PLANE_HEIGHT,
           portalBounds.center.y,
         ]}
         material={bubblesMaterial}

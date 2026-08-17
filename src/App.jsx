@@ -34,8 +34,7 @@ let hoverAnimation = undefined;
 
 const App = () => {
   const sceneRevealerRef = useRef();
-  const horizontalBlurPassRef = useRef();
-  const verticalBlurPassRef = useRef();
+  const cheapDofPassRef = useRef();
   const soundOnIconRef = useRef();
   const soundOffIconRef = useRef();
   const startExperienceRef = useRef();
@@ -178,8 +177,7 @@ const App = () => {
           )}
           <EffectComposer
             sceneRevealerRef={sceneRevealerRef}
-            horizontalBlurPassRef={horizontalBlurPassRef}
-            verticalBlurPassRef={verticalBlurPassRef}
+            cheapDofPassRef={cheapDofPassRef}
           />
 
           <Bvh firstHitOnly>

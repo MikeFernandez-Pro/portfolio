@@ -9,13 +9,12 @@ import {
 import { ToneMappingMode } from 'postprocessing';
 import { useControls } from '#utils/useControls.jsx';
 
-import { BlurPass } from './BlurPass.jsx';
+import { CheapDofPass } from './CheapDofPass.jsx';
 import { SceneRevealer } from './SceneRevealer.jsx';
 import { IS_MOBILE_DEVICE } from '#utils/utils.js';
 
 const EffectComposer = props => {
-  const { sceneRevealerRef, horizontalBlurPassRef, verticalBlurPassRef } =
-    props;
+  const { sceneRevealerRef, cheapDofPassRef } = props;
 
   const controls = useControls(
     'Ambient Occlusion',
@@ -42,14 +41,11 @@ const EffectComposer = props => {
   return (
     <EffectComposerR3F enableNormalPass={false} multisampling={0}>
       <SceneRevealer sceneRevealerRef={sceneRevealerRef} />
+      {/* AO and DoF are too expensive on mobile GPUs */}
+      {!IS_MOBILE_DEVICE && <CheapDofPass cheapDofPassRef={cheapDofPassRef} />}
+      {/* After DoF: the blur taps read the raw input, so an earlier vignette
+          would get washed out of blurred regions */}
       <Vignette />
-      {/* AO and blur are too expensive on mobile GPUs */}
-      {!IS_MOBILE_DEVICE && (
-        <BlurPass
-          horizontalBlurPassRef={horizontalBlurPassRef}
-          verticalBlurPassRef={verticalBlurPassRef}
-        />
-      )}
       {!IS_MOBILE_DEVICE && (
         <N8AO {...controls} quality={controls.quality} />
       )}

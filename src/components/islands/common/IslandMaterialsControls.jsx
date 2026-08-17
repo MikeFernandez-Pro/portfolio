@@ -22,8 +22,8 @@ const MATERIAL_DEFAULTS = {
     emissiveIntensity: 10.7,
   },
   Candles: {
-    color: '#ffaf67',
-    emissiveColor: '#ffaf67',
+    color: '#e57164',
+    emissiveColor: '#e57164',
     emissiveIntensity: 20,
   },
 };

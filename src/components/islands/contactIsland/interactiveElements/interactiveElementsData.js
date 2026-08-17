@@ -23,8 +23,8 @@ const MAIL_BOX_URL = 'mailto:contact@mike-fernandez.dev';
 const LINKEDIN_URL =
   'https://www.linkedin.com/in/mike-fernandez-front-end-dev/';
 const VERCEL_URL = 'https://vercel.com/mikefernandez-pro';
-const PORTAL_URL = 'https://magic-portal-threejs.vercel.app/';
-const SEA_URL = 'https://raging-sea-shader-flame.vercel.app/';
+const PORTAL_URL = 'https://ho-ho-no.vercel.app/';
+const SEA_URL = 'https://doan-ten-con-vat.vercel.app/';
 const HALLOWEEN_URL = 'https://halloween-challenge.vercel.app/';
 const STATUE_URL = '/CV_Portfolio_Mike.pdf';
 
