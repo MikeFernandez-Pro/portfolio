@@ -5,7 +5,7 @@ import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
 import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
 
-import voronoiImage from '#assets/textures/customVoronoi.png';
+import voronoiImage from '#assets/textures/voronoi.webp';
 import perlinNoiseImage from '#assets/textures/perlin.png';
 import vertexShader from '#shaders/forgeLava/vertex.glsl';
 import fragmentShader from '#shaders/forgeLava/fragment.glsl';

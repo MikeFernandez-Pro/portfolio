@@ -93,6 +93,18 @@ const PLATE_LIGHTS_DEFAULTS = {
   height: 1.02,
 };
 
+const WINDOW_LIGHT_DEFAULTS = {
+  // The window ray color
+  color: '#fba567',
+  intensity: 4.7,
+  decay: 1,
+  decayPower: 1.4,
+  specularPower: 1,
+  // Window-end cap of the ray beam: WindowRay local (-19.28, -0.94, 3.04)
+  // through the island group transform (x0.45, +(-1.35, 2.25, -15))
+  position: [-10.03, 1.43, -13.77],
+};
+
 const WELL_LIGHT_DEFAULTS = {
   // The well's inner water color
   color: '#4ad0ee',
@@ -231,6 +243,13 @@ const magicPortalLightUniforms = {
 // Off until the glyphs are activated
 magicPortalLightUniforms.uMagicPortalLightIntensity.value = 0;
 
+const windowLightUniforms = {
+  ...createLightUniforms('Window', WINDOW_LIGHT_DEFAULTS),
+  uWindowLightPosition: {
+    value: new THREE.Vector3(...WINDOW_LIGHT_DEFAULTS.position),
+  },
+};
+
 const wellLightUniforms = {
   ...createLightUniforms('Well', WELL_LIGHT_DEFAULTS),
   uWellLightPosition: {
@@ -315,6 +334,7 @@ const patchIslandPointLights = material => {
       swordLightUniforms,
       magicPortalLightUniforms,
       wellLightUniforms,
+      windowLightUniforms,
       plateLightsUniforms,
       cauldronLightUniforms
     );
@@ -347,6 +367,8 @@ ${lightUniformsGlsl('MagicPortal')}
 uniform vec3 uMagicPortalLightPosition;
 ${lightUniformsGlsl('Well')}
 uniform vec3 uWellLightPosition;
+${lightUniformsGlsl('Window')}
+uniform vec3 uWindowLightPosition;
 ${lightUniformsGlsl('Cauldron')}
 uniform vec3 uCauldronLightPosition;
 ${lightUniformsGlsl('Plate')}
@@ -392,6 +414,7 @@ ${lightCallGlsl('ForgeLava', 'uForgeLavaLightPosition')}
 ${lightCallGlsl('Sword', 'uSwordLightPosition')}
 ${lightCallGlsl('MagicPortal', 'uMagicPortalLightPosition')}
 ${lightCallGlsl('Well', 'uWellLightPosition')}
+${lightCallGlsl('Window', 'uWindowLightPosition')}
 ${lightCallGlsl('Cauldron', 'uCauldronLightPosition')}
 for (int i = 0; i < PLATE_LIGHT_COUNT; i++) {
   islandLightAccum += islandPointLight(
@@ -421,6 +444,7 @@ export {
   SWORD_LIGHT_DEFAULTS,
   MAGIC_PORTAL_LIGHT_DEFAULTS,
   WELL_LIGHT_DEFAULTS,
+  WINDOW_LIGHT_DEFAULTS,
   CAULDRON_LIGHT_DEFAULTS,
   PLATE_LIGHTS_DEFAULTS,
   PLATE_LIGHT_INDEX,
@@ -435,6 +459,7 @@ export {
   swordLightUniforms,
   magicPortalLightUniforms,
   wellLightUniforms,
+  windowLightUniforms,
   cauldronLightUniforms,
   plateLightsUniforms,
   patchIslandPointLights,

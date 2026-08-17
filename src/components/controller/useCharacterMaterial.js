@@ -4,10 +4,11 @@ import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
 import { useTexture } from '@react-three/drei';
 import gsap from 'gsap';
 
-import voronoiImage from '#assets/textures/customVoronoi.png';
+import voronoiImage from '#assets/textures/voronoi.webp';
 import vertexShader from '#shaders/character/vertex.glsl';
 import fragmentShader from '#shaders/character/fragment.glsl';
 import { patchIslandPointLights } from '#islands/common/islandPointLights.js';
+import { patchCloudShadows } from '#environment/CloudShadows.jsx';
 
 const CHARACTER_MATERIAL_NAME = 'knight';
 const BOUNDS_MIN = new THREE.Vector3(-3.34, 0, -2.41);
@@ -57,9 +58,10 @@ const useCharacterMaterial = characterScene => {
       side: THREE.DoubleSide,
     });
 
-    // CSM v6 mutates the base material in place; chain the fake island
-    // point lights on top so torches, lanterns and portals also light the
-    // character as it walks by
+    // CSM v6 mutates the base material in place; chain the cloud shadows
+    // and the fake island point lights on top so passing clouds darken the
+    // character and torches, lanterns and portals light it as it walks by
+    patchCloudShadows(characterMesh.material);
     patchIslandPointLights(characterMesh.material);
 
     return () => {

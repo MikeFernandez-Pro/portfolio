@@ -22,7 +22,7 @@ const INTERACTIVE_ELEMENTS_COUNT = 9;
 const MAIL_BOX_URL = 'mailto:contact@mike-fernandez.dev';
 const LINKEDIN_URL =
   'https://www.linkedin.com/in/mike-fernandez-front-end-dev/';
-const VERCEL_URL = 'https://vercel.com/mikefernandez-pro';
+const VERCEL_URL = 'https://x.com/Rahzell83';
 const PORTAL_URL = 'https://ho-ho-no.vercel.app/';
 const SEA_URL = 'https://doan-ten-con-vat.vercel.app/';
 const HALLOWEEN_URL = 'https://halloween-challenge.vercel.app/';

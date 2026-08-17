@@ -7,6 +7,7 @@ import {
   FORGE_LAVA_LIGHT_DEFAULTS,
   SWORD_LIGHT_DEFAULTS,
   WELL_LIGHT_DEFAULTS,
+  WINDOW_LIGHT_DEFAULTS,
   CAULDRON_LIGHT_DEFAULTS,
   PLATE_LIGHTS_DEFAULTS,
   torchLightsUniforms,
@@ -15,6 +16,7 @@ import {
   forgeLavaLightUniforms,
   swordLightUniforms,
   wellLightUniforms,
+  windowLightUniforms,
   cauldronLightUniforms,
   plateLightsUniforms,
   forgeLavaLightSettings,
@@ -186,6 +188,21 @@ const IslandPointLightsControls = () => {
         step: 0.01,
         onChange: v => {
           wellLightUniforms.uWellLightPosition.value.set(...v);
+        },
+      },
+    },
+    { collapsed: true, reset: true }
+  );
+
+  useControls(
+    'WindowLight',
+    {
+      ...groupSchema(windowLightUniforms, 'Window', WINDOW_LIGHT_DEFAULTS),
+      position: {
+        value: WINDOW_LIGHT_DEFAULTS.position,
+        step: 0.01,
+        onChange: v => {
+          windowLightUniforms.uWindowLightPosition.value.set(...v);
         },
       },
     },

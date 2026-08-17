@@ -10,8 +10,8 @@ import cheapDofFragmentShader from '#shaders/cheapDof/fragment.glsl';
 // no extra render targets, in-focus pixels early-out
 const CHEAP_DOF_DEFAULTS = {
   focusDistance: 0,
-  focusRange: 41.5,
-  bokehRadius: 0.0045,
+  focusRange: 41,
+  bokehRadius: 0.003,
   samples: 16,
   debugFocus: false,
 };

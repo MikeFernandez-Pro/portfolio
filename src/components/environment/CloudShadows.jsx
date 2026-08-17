@@ -44,7 +44,11 @@ const cloudShadowUniforms = {
  * (e.g. the GLB island texture material).
  */
 const patchCloudShadows = material => {
-  material.onBeforeCompile = shader => {
+  const previousOnBeforeCompile = material.onBeforeCompile;
+
+  material.onBeforeCompile = (shader, renderer) => {
+    previousOnBeforeCompile?.call(material, shader, renderer);
+
     Object.assign(shader.uniforms, cloudShadowUniforms);
 
     shader.vertexShader = shader.vertexShader

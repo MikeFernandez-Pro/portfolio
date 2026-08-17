@@ -9,6 +9,7 @@ import { patchIslandPointLights } from '#islands/common/islandPointLights.js';
 import { IslandPointLightsControls } from '#islands/common/IslandPointLightsControls.jsx';
 import { SmokeColumns } from '#islands/common/SmokeColumns.jsx';
 import { LanternsAndHome } from '#islands/common/LanternsAndHome';
+import { WindowRay } from '#islands/common/WindowRay';
 import { IslandMaterialsControls } from '#islands/common/IslandMaterialsControls';
 import { ContactIsland } from '#islands/contactIsland/ContactIsland';
 import { ForgeLavaPlane } from '#islands/contactIsland/forge/ForgeLavaPlane.jsx';
@@ -106,6 +107,21 @@ const Islands = () => {
       geometry.userData.potBubblesHidden = true;
     });
 
+    // The Vercel sign quads are baked into the signs primitive together with
+    // the mail and LinkedIn ones, but they sit apart at x > -3 in geometry
+    // space — shove them below the island, XSign renders an X logo in their
+    // place
+    const signsPosition = nodes.island_15.geometry.attributes.position;
+    if (!nodes.island_15.geometry.userData.vercelSignHidden) {
+      for (let i = 0; i < signsPosition.count; i++) {
+        if (signsPosition.getX(i) > -3) {
+          signsPosition.setY(i, signsPosition.getY(i) - 30);
+        }
+      }
+      signsPosition.needsUpdate = true;
+      nodes.island_15.geometry.userData.vercelSignHidden = true;
+    }
+
     const islandMesh = island.scene.getObjectByName('island_1');
 
     if (islandMesh) {
@@ -132,6 +148,7 @@ const Islands = () => {
             islandNodes={nodes}
             islandAnimations={islandAnimations}
           />
+          <WindowRay />
           <SkillsIsland island={island} />
           <CountriesFlags island={island} />
           <skinnedMesh

@@ -1,5 +1,6 @@
 import { Well } from './Well';
 import { Forge } from './forge/Forge';
+import { XSign } from './XSign';
 
 const ContactIsland = props => {
   const { islandNodes, islandAnimations } = props;
@@ -12,6 +13,7 @@ const ContactIsland = props => {
           /> */}
       <Well islandNodes={islandNodes} />
       <Forge islandAnimations={islandAnimations} />
+      <XSign />
     </>
   );
 };

@@ -40,24 +40,29 @@ const EffectComposer = props => {
 
   return (
     <EffectComposerR3F enableNormalPass={false} multisampling={0}>
-      <SceneRevealer sceneRevealerRef={sceneRevealerRef} />
-      {/* AO and DoF are too expensive on mobile GPUs */}
-      {!IS_MOBILE_DEVICE && <CheapDofPass cheapDofPassRef={cheapDofPassRef} />}
-      {/* After DoF: the blur taps read the raw input, so an earlier vignette
-          would get washed out of blurred regions */}
-      <Vignette />
-      {!IS_MOBILE_DEVICE && (
-        <N8AO {...controls} quality={controls.quality} />
-      )}
-      <Bloom
-        mipmapBlur
-        luminanceThreshold={2}
-        luminanceSmoothing={1}
-        intensity={2}
-      />
-      <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
-      <SMAA />
-    </EffectComposerR3F>
+    <SceneRevealer sceneRevealerRef={sceneRevealerRef} />
+  
+    {!IS_MOBILE_DEVICE && (
+      <N8AO {...controls} quality={controls.quality} />
+    )}
+  
+    {!IS_MOBILE_DEVICE && (
+      <CheapDofPass cheapDofPassRef={cheapDofPassRef} />
+    )}
+  
+    <Bloom
+      mipmapBlur
+      luminanceThreshold={2}
+      luminanceSmoothing={1}
+      intensity={2}
+    />
+  
+    <Vignette />
+  
+    <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+  
+    <SMAA />
+  </EffectComposerR3F>
   );
 };
 
