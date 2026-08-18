@@ -8,6 +8,7 @@ import * as THREE from 'three';
 
 import Joystick from '#controller/Joystick.jsx';
 import CharacterController from '#controller/CharacterController.jsx';
+import RespawnControls from '#controller/RespawnControls.jsx';
 import Sky from '#environment/Sky.jsx';
 import Lights from '#environment/Lights.jsx';
 import Clouds from '#environment/Clouds.jsx';
@@ -17,6 +18,7 @@ import Islands from '#islands/Islands.jsx';
 import TorchesSparks from '#islands/common/torchSparks/TorchesSparks.jsx';
 import { IslandCollider } from '#islands/common/IslandCollider.jsx';
 import FireFlies from '#islands/common/FireFlies.jsx';
+import { Spiral } from '#islands/common/Spiral.jsx';
 import { InteractiveElements } from '#islands/contactIsland/interactiveElements/InteractiveElements.jsx';
 import { Grass } from '#islands/resumeIsland/grass/Grass.jsx';
 import Smoke from '#islands/resumeIsland/Smoke.jsx';
@@ -161,6 +163,7 @@ const Experience = () => {
         <OrbitControls target={IS_PHOTO_MODE ? [-1.35, 5, -15] : undefined} />
       )}
       {!IS_PHOTO_MODE && <StatsGl />}
+      {!IS_PHOTO_MODE && <RespawnControls />}
       {!IS_PHOTO_MODE && <Joystick />}
       <Clouds />
       <Sky />
@@ -171,6 +174,7 @@ const Experience = () => {
       <Smoke />
       <TorchesSparks />
       <Grass />
+      <Spiral />
       <Islands />
       <mesh>
         <sphereGeometry args={[125]} />

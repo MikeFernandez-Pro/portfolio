@@ -69,6 +69,7 @@ const useControls = (folderName, schema, options = {}) => {
   const [values, setValues] = useState(() => {
     const initial = {};
     for (const [key, def] of Object.entries(schemaRef.current)) {
+      if (typeof def === 'function') continue; // button, not part of the state
       if (hasConfig(def)) {
         if (def.onChange) continue; // transient, not part of the state
         initial[key] = def.value;
@@ -89,6 +90,12 @@ const useControls = (folderName, schema, options = {}) => {
     const resetters = [];
 
     for (const [key, def] of Object.entries(schemaRef.current)) {
+      // A bare function becomes a click button (e.g. Play / Reset actions)
+      if (typeof def === 'function') {
+        folder.addButton({ title: key }).on('click', def);
+        continue;
+      }
+
       const config = hasConfig(def) ? def : { value: def };
       const { value, min, max, step, options: choices, onChange } = config;
 

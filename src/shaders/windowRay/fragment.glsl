@@ -16,7 +16,7 @@ void main() {
     // uSmoothness shapes the falloff (1 = linear, higher = fades sooner,
     // lower = longer bright core)
     float ray = pow(1.0 - progress, uSmoothness);
-
+ 
     // Clip outside [uEnd, uStart] so the sliders shrink the ray from its
     // extremities instead of just moving the fade zone
     ray *= step(vRayCoord, uStart) * step(uEnd, vRayCoord);
@@ -26,4 +26,7 @@ void main() {
         * (1.0 - smoothstep(1.0 - uEdgeSmoothness, 1.0, vUv.x));
 
     gl_FragColor = vec4(uColor, ray * edges * uOpacity);
+
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
 }

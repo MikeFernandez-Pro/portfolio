@@ -13,6 +13,7 @@ import runningSoundEffect from '#controller/audio/runningSound.js';
 import { directionOffset } from '#controller/CharacterControllerUtils.js';
 
 import { useCharacterMaterial } from '#controller/useCharacterMaterial.js';
+import { playRespawnAnimation } from '#controller/respawnAnimation.js';
 import { useKeyboardControls } from '#controller/hooks/useKeyboardControls.js';
 import { useThirdPersonCamera } from '#controller/hooks/useThirdPersonCamera.js';
 import { useCharacterAnimation } from '#controller/hooks/useCharacterAnimation.js';
@@ -58,7 +59,7 @@ const CharacterController = () => {
   const animation = useCharacterAnimation(characterAnimations);
 
   // Character material and respawn effect
-  const { playRespawn } = useCharacterMaterial(scene);
+  useCharacterMaterial(scene);
 
   // Adapter: route to animation helper while keeping local state
   const updateCharacterAnimation = useCallback(
@@ -165,16 +166,21 @@ const CharacterController = () => {
       characterRespawning = true;
       runningSoundEffect.stop();
       characterBody.current.setBodyType(FIXED);
-      characterBody.current.setTranslation({ x: 0, y: 0.6, z: 0 }, true);
+      // Settled resting height (the body is held FIXED during the respawn, so
+      // this must be the height it rests at, not the initial pre-settle 0.7)
+      characterBody.current.setTranslation({ x: 0, y: 0.62, z: 0 }, true);
       // Reset visual orientation to default
       if (characterMesh.current) {
         characterMesh.current.rotation.set(0, Math.PI, 0);
       }
-      playRespawn({
-        onStart: () => {
-          // ensure idle animation while respawning
-          if (currentAnimation !== IDLE) updateCharacterAnimation(IDLE);
-        },
+      // Reset to idle regardless of the animation the character died in
+      // (jump, run, sprint...)
+      characterJumping = false;
+      characterSprinting = false;
+      updateCharacterAnimation(IDLE);
+      useStore.setState({ isCharacterMoving: false });
+      // Play the full respawn animation (character voronoi + spawn spiral)
+      playRespawnAnimation({
         onComplete: () => {
           characterRespawning = false;
           characterBody.current.setBodyType(DYNAMIC);
@@ -189,7 +195,7 @@ const CharacterController = () => {
     // Block movement while respawning
     if (characterRespawning) {
       runningSoundEffect.stop();
-      if (currentAnimation !== IDLE && !characterJumping) {
+      if (currentAnimation !== IDLE) {
         updateCharacterAnimation(IDLE);
         useStore.setState({ isCharacterMoving: false });
       }

@@ -2,8 +2,10 @@ uniform sampler2D uVoronoiTexture;
 uniform float uRepeat;
 uniform vec3 uColor;
 uniform float uIntensity;
-uniform float uProgress;
-uniform float uRespawn;
+uniform float uProgress; // voronoi reveal: 0 = none, 1 = full lava pattern
+uniform float uThickness; // voronoi edge softness
+uniform float uCharFormProgress; // 0 = only lava, 1 = formed character
+uniform float uAlphaClip; // discard fragments below this alpha (no depth write)
 
 varying vec3 vClampedPos;
 varying vec3 vNormalizedNormal;
@@ -26,11 +28,18 @@ vec4 triplanar(sampler2D tex, vec3 p01, vec3 n, float repeat) {
 void main() {
 
     float vTex = triplanar(uVoronoiTexture, vClampedPos, vNormalizedNormal, uRepeat).r;
-    vTex = smoothstep(1.0 - uProgress, 1.0, vTex);
 
+    // Voronoi lava — controlled ONLY by uProgress (reveal) + uThickness (edge)
+    float lower = 1.0 - uProgress;
+    vTex = smoothstep(lower, lower + uThickness, vTex);
 
-    vec4 lavaColor = vec4(vec3(uIntensity * vTex * uColor), vTex); // or uProgress
+    vec4 lavaColor = vec4(vec3(uIntensity * vTex * uColor), vTex);
     vec4 characterColor = csm_DiffuseColor;
 
-    csm_DiffuseColor = vec4(mix(lavaColor, characterColor, uRespawn));
+    // Character form fades in over the lava — controlled ONLY by uCharFormProgress
+    csm_DiffuseColor = vec4(mix(lavaColor, characterColor, uCharFormProgress));
+
+    // Discard near-transparent fragments so they don't write depth — otherwise
+    // depthWrite=true shows the character's silhouette while it's invisible
+    if (csm_DiffuseColor.a < uAlphaClip) discard;
 }

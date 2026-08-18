@@ -9,6 +9,7 @@ import {
   WELL_LIGHT_DEFAULTS,
   WINDOW_LIGHT_DEFAULTS,
   CAULDRON_LIGHT_DEFAULTS,
+  SPAWN_LIGHT_DEFAULTS,
   PLATE_LIGHTS_DEFAULTS,
   torchLightsUniforms,
   lanternLightsUniforms,
@@ -18,8 +19,10 @@ import {
   wellLightUniforms,
   windowLightUniforms,
   cauldronLightUniforms,
+  spawnLightUniforms,
   plateLightsUniforms,
   forgeLavaLightSettings,
+  spawnLightSettings,
 } from './islandPointLights.js';
 
 // Debug folders for the point lights injected into the island material
@@ -109,6 +112,35 @@ const IslandPointLightsControls = () => {
         onChange: v => {
           cauldronLightUniforms.uCauldronLightPosition.value.y =
             CAULDRON_LIGHT_DEFAULTS.position[1] + v;
+        },
+      },
+    },
+    { collapsed: true, reset: true }
+  );
+
+  useControls(
+    'SpawnLight',
+    {
+      ...groupSchema(spawnLightUniforms, 'Spawn', SPAWN_LIGHT_DEFAULTS),
+      // The uniform is driven by the respawn timeline (0 at rest); the control
+      // only sets the peak intensity the fade rises to
+      intensity: {
+        value: SPAWN_LIGHT_DEFAULTS.intensity,
+        min: 0,
+        max: 15,
+        step: 0.05,
+        onChange: v => {
+          spawnLightSettings.intensity = v;
+        },
+      },
+      height: {
+        value: SPAWN_LIGHT_DEFAULTS.height,
+        min: -2,
+        max: 5,
+        step: 0.01,
+        onChange: v => {
+          spawnLightUniforms.uSpawnLightPosition.value.y =
+            SPAWN_LIGHT_DEFAULTS.position[1] + v;
         },
       },
     },

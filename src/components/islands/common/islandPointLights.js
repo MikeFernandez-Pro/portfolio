@@ -117,6 +117,18 @@ const WELL_LIGHT_DEFAULTS = {
   position: [5.6, 1.9, -9.96],
 };
 
+const SPAWN_LIGHT_DEFAULTS = {
+  // Glow under the character spawn zone (Spiral SPAWN_POSITION x/z, world)
+  color: '#44fca3',
+  intensity: 8.5,
+  decay: 0.435,
+  decayPower: 3.9,
+  specularPower: 1,
+  position: [0, 0, 0],
+  // Height lifts the light above the spawn base
+  height: 1.2,
+};
+
 // World-space flame positions, same as TORCHES_POSITIONS in TorchesSparks.jsx
 const TORCH_LIGHT_POSITIONS = [
   [-5.8, 1.7, -16.6],
@@ -189,6 +201,11 @@ const forgeLavaLightSettings = {
 const magicPortalLightSettings = {
   intensity: MAGIC_PORTAL_LIGHT_DEFAULTS.intensity,
   height: MAGIC_PORTAL_LIGHT_DEFAULTS.height,
+};
+// Spawn light: off at rest, faded in/out by the respawn timeline; the control
+// sets the peak the fade rises to
+const spawnLightSettings = {
+  intensity: SPAWN_LIGHT_DEFAULTS.intensity,
 };
 
 const createLightUniforms = (prefix, defaults) => ({
@@ -268,6 +285,19 @@ const cauldronLightUniforms = {
   },
 };
 
+const spawnLightUniforms = {
+  ...createLightUniforms('Spawn', SPAWN_LIGHT_DEFAULTS),
+  uSpawnLightPosition: {
+    value: new THREE.Vector3(
+      SPAWN_LIGHT_DEFAULTS.position[0],
+      SPAWN_LIGHT_DEFAULTS.position[1] + SPAWN_LIGHT_DEFAULTS.height,
+      SPAWN_LIGHT_DEFAULTS.position[2]
+    ),
+  },
+};
+// Off until a respawn plays
+spawnLightUniforms.uSpawnLightIntensity.value = 0;
+
 const plateLightsUniforms = {
   ...createLightUniforms('Plate', PLATE_LIGHTS_DEFAULTS),
   // Per-plate activation factor (0 = off, 1 = active), animated by the
@@ -336,7 +366,8 @@ const patchIslandPointLights = material => {
       wellLightUniforms,
       windowLightUniforms,
       plateLightsUniforms,
-      cauldronLightUniforms
+      cauldronLightUniforms,
+      spawnLightUniforms
     );
 
     shader.vertexShader = shader.vertexShader
@@ -371,6 +402,8 @@ ${lightUniformsGlsl('Window')}
 uniform vec3 uWindowLightPosition;
 ${lightUniformsGlsl('Cauldron')}
 uniform vec3 uCauldronLightPosition;
+${lightUniformsGlsl('Spawn')}
+uniform vec3 uSpawnLightPosition;
 ${lightUniformsGlsl('Plate')}
 uniform vec3 uPlateLightFactors;
 uniform float uPlateLightHeight;
@@ -416,6 +449,7 @@ ${lightCallGlsl('MagicPortal', 'uMagicPortalLightPosition')}
 ${lightCallGlsl('Well', 'uWellLightPosition')}
 ${lightCallGlsl('Window', 'uWindowLightPosition')}
 ${lightCallGlsl('Cauldron', 'uCauldronLightPosition')}
+${lightCallGlsl('Spawn', 'uSpawnLightPosition')}
 for (int i = 0; i < PLATE_LIGHT_COUNT; i++) {
   islandLightAccum += islandPointLight(
     uPlateLightColor,
@@ -446,11 +480,13 @@ export {
   WELL_LIGHT_DEFAULTS,
   WINDOW_LIGHT_DEFAULTS,
   CAULDRON_LIGHT_DEFAULTS,
+  SPAWN_LIGHT_DEFAULTS,
   PLATE_LIGHTS_DEFAULTS,
   PLATE_LIGHT_INDEX,
   portalLightSettings,
   forgeLavaLightSettings,
   magicPortalLightSettings,
+  spawnLightSettings,
   portalLightUniforms,
   torchLightsUniforms,
   lanternLightsUniforms,
@@ -461,6 +497,7 @@ export {
   wellLightUniforms,
   windowLightUniforms,
   cauldronLightUniforms,
+  spawnLightUniforms,
   plateLightsUniforms,
   patchIslandPointLights,
 };

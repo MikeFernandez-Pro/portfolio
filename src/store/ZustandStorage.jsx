@@ -20,5 +20,10 @@ export const useStore = create(
 
     // Debug: free OrbitControls camera (pauses the third-person follow)
     freeCameraActive: false,
+
+    // Respawn animation targets (registered by their components)
+    characterRespawnUniforms: null,
+    spiralRespawnUniforms: null,
+    spiralRespawnMesh: null,
   }))
 );
