@@ -39,12 +39,6 @@ uniform float uCoreHalo;
 uniform float uCorePulseAmount;
 uniform float uCorePulseSpeed;
 
-uniform float uRimStrength;
-uniform float uRimRadius;
-uniform float uRimWidth;
-uniform float uRimWobble;
-uniform float uRimSpeed;
-
 uniform sampler2D uPerlinNoise;
 uniform float uTime;
 
@@ -156,29 +150,6 @@ float getCoreLayer(float radius) {
   return (core + halo * uCoreHalo) * uCoreStrength;
 }
 
-// Layer 5: an irregular outer stroke that seals the portal against its frame.
-float getRimLayer(
-  float radius,
-  float angle,
-  float broadNoise,
-  float detailNoise
-) {
-  float travellingWave = sin(
-    angle * 3.0 + uTime * uRimSpeed * TWO_PI
-  ) * 0.35;
-  float wobble = (
-    (broadNoise - 0.5) * 2.0 + travellingWave
-  ) * uRimWobble;
-  float distanceToRim = abs(radius - (uRimRadius + wobble));
-  float rim = 1.0 - smoothstep(
-    uRimWidth,
-    uRimWidth + 0.035,
-    distanceToRim
-  );
-
-  return rim * mix(0.48, 1.0, detailNoise) * uRimStrength;
-}
-
 void main() {
   vec2 portalPosition = vPortalPosition;
   float baseRadius = length(portalPosition);
@@ -217,7 +188,6 @@ void main() {
     detailNoise
   );
   float core = getCoreLayer(radius);
-  float rim = getRimLayer(radius, angle, broadNoise, detailNoise);
 
   vec3 color = mix(
     uDeepColor * 0.42,
@@ -228,7 +198,6 @@ void main() {
   color += uBrightColor * ribbons * ribbons * 0.26;
   color += uBrightColor * filaments;
   color += uBrightColor * core;
-  color += mix(uMidColor, uBrightColor, 0.68) * rim;
 
   float discAlpha = 1.0 - smoothstep(0.96, 1.06, baseRadius);
   float alpha = discAlpha * uOpacity;

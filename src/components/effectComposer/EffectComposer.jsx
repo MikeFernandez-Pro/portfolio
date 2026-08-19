@@ -11,7 +11,7 @@ import { useControls } from '#utils/useControls.jsx';
 
 import { CheapDofPass } from './CheapDofPass.jsx';
 import { SceneRevealer } from './SceneRevealer.jsx';
-import { IS_MOBILE_DEVICE } from '#utils/utils.js';
+import { IS_MOBILE_DEVICE, IS_PHOTO_MODE } from '#utils/utils.js';
 
 const EffectComposer = props => {
   const { sceneRevealerRef, cheapDofPassRef } = props;
@@ -46,7 +46,7 @@ const EffectComposer = props => {
       <N8AO {...controls} quality={controls.quality} />
     )}
   
-    {!IS_MOBILE_DEVICE && (
+    {!IS_MOBILE_DEVICE && !IS_PHOTO_MODE && (
       <CheapDofPass cheapDofPassRef={cheapDofPassRef} />
     )}
   

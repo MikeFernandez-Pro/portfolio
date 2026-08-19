@@ -28,9 +28,9 @@ const setBuildConfig = (key, value) => {
 };
 
 /**
- * Debug folder driving the whole respawn animation (character voronoi + spawn
- * spiral): Play / Reset buttons, a progress scrubber, and live durations,
- * colors and intensities. Renders nothing.
+ * Debug folder driving the whole respawn animation (character voronoi dissolve
+ * + spawn spiral): Play / Reset buttons, a progress scrubber, and live
+ * durations, colors and intensities. Renders nothing.
  */
 const RespawnControls = () => {
   useControls(
@@ -124,6 +124,36 @@ const RespawnControls = () => {
             u.uRepeat.value = value;
           }),
       },
+      perlinScale: {
+        value: RESPAWN_DEFAULTS.charPerlinScale,
+        min: 0.1,
+        max: 20,
+        step: 0.1,
+        onChange: value =>
+          withChar(u => {
+            u.uPerlinScale.value = value;
+          }),
+      },
+      perlinStrength: {
+        value: RESPAWN_DEFAULTS.charPerlinStrength,
+        min: 0,
+        max: 2,
+        step: 0.01,
+        onChange: value =>
+          withChar(u => {
+            u.uPerlinStrength.value = value;
+          }),
+      },
+      perlinSpeed: {
+        value: RESPAWN_DEFAULTS.charPerlinSpeed,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        onChange: value =>
+          withChar(u => {
+            u.uPerlinSpeed.value = value;
+          }),
+      },
       // Animated peak: thickness ramps 0 -> this -> 0 across the respawn
       voronoiThickness: {
         value: RESPAWN_DEFAULTS.charThickness,
@@ -157,7 +187,7 @@ const RespawnControls = () => {
           }),
       },
       // Manual character form (0 = only lava, 1 = formed character). Also
-      // timeline-driven; for static inspection. Fully independent of voronoi.
+      // timeline-driven; for static inspection.
       uCharFormProgress: {
         value: 1,
         min: 0,

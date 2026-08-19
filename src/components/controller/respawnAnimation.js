@@ -20,8 +20,11 @@ export const RESPAWN_DEFAULTS = {
   spiralEndX: 1, // uv.x offset at the end of the sweep
   // Look
   charColor: '#25c447',
-  charIntensity: 11.6,
-  charRepeat: 3.2, // voronoi pattern scale
+  charIntensity: 3.6,
+  charRepeat: 0, // voronoi pattern scale
+  charPerlinScale: 1.5, // perlin warp scale
+  charPerlinStrength: 1, // perlin UV warp strength
+  charPerlinSpeed: 0.12, // perlin scroll speed
   charThickness: 0.2, // voronoi dissolve edge softness
   alphaClip: 0.01, // discard only ~fully-transparent fragments (kills the
   // silhouette) while keeping the character's opacity fade-in intact

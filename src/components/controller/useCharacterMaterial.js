@@ -4,6 +4,7 @@ import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
 import { useTexture } from '@react-three/drei';
 
 import voronoiImage from '#assets/textures/voronoi.webp';
+import perlinNoiseImage from '#assets/textures/perlin.png';
 import vertexShader from '#shaders/character/vertex.glsl';
 import fragmentShader from '#shaders/character/fragment.glsl';
 import { patchIslandPointLights } from '#islands/common/islandPointLights.js';
@@ -22,6 +23,12 @@ const useCharacterMaterial = characterScene => {
     texture.colorSpace = THREE.NoColorSpace;
   });
 
+  const perlinTexture = useTexture(perlinNoiseImage, texture => {
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.colorSpace = THREE.NoColorSpace;
+  });
+
   useEffect(() => {
     if (!characterScene) {
       return;
@@ -31,7 +38,7 @@ const useCharacterMaterial = characterScene => {
       CHARACTER_MATERIAL_NAME
     );
 
-    if (!characterMesh || !voronoiTexture) {
+    if (!characterMesh || !voronoiTexture || !perlinTexture) {
       return;
     }
 
@@ -39,11 +46,16 @@ const useCharacterMaterial = characterScene => {
       baseMaterial: characterMesh.material,
       uniforms: {
         uVoronoiTexture: { value: voronoiTexture },
+        uPerlinTexture: { value: perlinTexture },
         uBoundsMin: { value: BOUNDS_MIN },
         uBoundsMax: { value: BOUNDS_MAX },
         uColor: { value: new THREE.Color(RESPAWN_DEFAULTS.charColor) },
         uIntensity: { value: RESPAWN_DEFAULTS.charIntensity },
         uRepeat: { value: RESPAWN_DEFAULTS.charRepeat },
+        uPerlinScale: { value: RESPAWN_DEFAULTS.charPerlinScale },
+        uPerlinStrength: { value: RESPAWN_DEFAULTS.charPerlinStrength },
+        uPerlinSpeed: { value: RESPAWN_DEFAULTS.charPerlinSpeed },
+        uTime: { value: 0 },
         uThickness: { value: RESPAWN_DEFAULTS.charThickness },
         uProgress: { value: 0 },
         uCharFormProgress: { value: 1 },
@@ -54,18 +66,12 @@ const useCharacterMaterial = characterScene => {
       transparent: true,
       tonemapped: false,
       side: THREE.DoubleSide,
-      // Keep depth writing (avoids self-sorting holes on the DoubleSide model);
-      // the shader discards near-transparent fragments so no silhouette shows
       depthWrite: true,
     });
 
-    // CSM v6 mutates the base material in place; chain the cloud shadows
-    // and the fake island point lights on top so passing clouds darken the
-    // character and torches, lanterns and portals light it as it walks by
     patchCloudShadows(characterMesh.material);
     patchIslandPointLights(characterMesh.material);
 
-    // Expose the respawn uniforms so the shared timeline can drive them
     useStore.setState({
       characterRespawnUniforms: characterMesh.material.uniforms,
     });
@@ -73,7 +79,10 @@ const useCharacterMaterial = characterScene => {
     return () => {
       useStore.setState({ characterRespawnUniforms: null });
     };
-  }, [characterScene, voronoiTexture]);
+  }, [characterScene, voronoiTexture, perlinTexture]);
 };
+
+useTexture.preload(voronoiImage);
+useTexture.preload(perlinNoiseImage);
 
 export { useCharacterMaterial };

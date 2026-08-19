@@ -78,11 +78,6 @@ const PORTAL_DEFAULTS = {
   coreHalo: 0.33,
   corePulseAmount: 0.109,
   corePulseSpeed: 0.66,
-  rimStrength: 0,
-  rimRadius: 1.015,
-  rimWidth: 0.095,
-  rimWobble: 0.127,
-  rimSpeed: 0.48,
 };
 
 const Cauldron = props => {
@@ -286,11 +281,6 @@ const Cauldron = props => {
       uCoreHalo: { value: PORTAL_DEFAULTS.coreHalo },
       uCorePulseAmount: { value: PORTAL_DEFAULTS.corePulseAmount },
       uCorePulseSpeed: { value: PORTAL_DEFAULTS.corePulseSpeed },
-      uRimStrength: { value: PORTAL_DEFAULTS.rimStrength },
-      uRimRadius: { value: PORTAL_DEFAULTS.rimRadius },
-      uRimWidth: { value: PORTAL_DEFAULTS.rimWidth },
-      uRimWobble: { value: PORTAL_DEFAULTS.rimWobble },
-      uRimSpeed: { value: PORTAL_DEFAULTS.rimSpeed },
     }),
     [perlinNoiseTexture, portalBounds]
   );
@@ -359,11 +349,6 @@ const Cauldron = props => {
       coreHalo: numberControl('uCoreHalo', d.coreHalo, 0, 2, 0.01),
       corePulseAmount: numberControl('uCorePulseAmount', d.corePulseAmount, 0, 0.5, 0.001),
       corePulseSpeed: numberControl('uCorePulseSpeed', d.corePulseSpeed, 0, 3, 0.01),
-      rimStrength: numberControl('uRimStrength', d.rimStrength, 0, 2, 0.01),
-      rimRadius: numberControl('uRimRadius', d.rimRadius, 0.5, 1.2, 0.005),
-      rimWidth: numberControl('uRimWidth', d.rimWidth, 0, 0.3, 0.005),
-      rimWobble: numberControl('uRimWobble', d.rimWobble, 0, 0.5, 0.001),
-      rimSpeed: numberControl('uRimSpeed', d.rimSpeed, -3, 3, 0.01),
     },
     { collapsed: true }
   );

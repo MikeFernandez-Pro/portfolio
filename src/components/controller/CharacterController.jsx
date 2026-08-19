@@ -131,6 +131,11 @@ const CharacterController = () => {
   let characterPosition;
 
   useFrame((state, delta) => {
+    const dissolveUniforms = useStore.getState().characterRespawnUniforms;
+    if (dissolveUniforms?.uTime) {
+      dissolveUniforms.uTime.value = state.clock.elapsedTime;
+    }
+
     direction = directionOffset(eventKeys, characterBody);
     characterIsMoving = direction !== undefined ? true : false;
 

@@ -165,7 +165,7 @@ const Experience = () => {
       {!IS_PHOTO_MODE && <StatsGl />}
       {!IS_PHOTO_MODE && <RespawnControls />}
       {!IS_PHOTO_MODE && <Joystick />}
-      <Clouds />
+      {!IS_PHOTO_MODE && <Clouds />}
       <Sky />
       <Lights />
       <CloudShadows />

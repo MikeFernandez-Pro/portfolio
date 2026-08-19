@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import spiralVertexShader from '#shaders/spiral/vertex.glsl';
 import spiralFragmentShader from '#shaders/spiral/fragment.glsl';
 
-import spiralModel from '#assets/models/island/Spirale2.glb?url';
+import spiralModel from '#assets/models/island/Spiral.glb?url';
 import spiralTextureImage from '#assets/textures/spiralTexture.png';
 
 import { useStore } from '#store/ZustandStorage.jsx';
