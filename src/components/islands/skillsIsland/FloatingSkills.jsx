@@ -38,7 +38,7 @@ const FloatingSkills = props => {
   );
 
   useControls(
-    'FloatingSkills',
+    'Skills',
     {
       color: {
         value: FLOATING_SKILLS_COLOR,

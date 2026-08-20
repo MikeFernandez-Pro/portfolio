@@ -4,7 +4,6 @@ import { useTexture } from '@react-three/drei';
 import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
 
-import { Butterfly } from './Butterfly.jsx';
 import { cloudShadowUniforms } from '#environment/CloudShadows.jsx';
 import { useStore } from '#store/ZustandStorage.jsx';
 import { IS_MOBILE_DEVICE } from '#utils/utils.js';
@@ -24,21 +23,6 @@ trampleCanvas.width = TRAMPLE_SIZE;
 trampleCanvas.height = TRAMPLE_SIZE;
 const trampleContext = trampleCanvas.getContext('2d');
 trampleContext.fillRect(0, 0, TRAMPLE_SIZE, TRAMPLE_SIZE);
-
-// Live preview on screen, toggled from the Repulse debug folder (the id
-// dance keeps HMR from stacking duplicates)
-if (!IS_MOBILE_DEVICE) {
-  trampleCanvas.id = 'grass-trample-debug';
-  document.getElementById('grass-trample-debug')?.remove();
-  trampleCanvas.style.position = 'fixed';
-  trampleCanvas.style.top = '0';
-  trampleCanvas.style.left = '0';
-  trampleCanvas.style.width = '256px';
-  trampleCanvas.style.height = '256px';
-  trampleCanvas.style.zIndex = 10;
-  trampleCanvas.style.pointerEvents = 'none';
-  document.body.append(trampleCanvas);
-}
 
 // Radial glow stamped at the character position, drawn once procedurally.
 // Kept tight (steep falloff): the shader's smoothstep amplifies faint
@@ -82,7 +66,6 @@ const Grass = () => {
       flowerAmount: { value: 0.0035, min: 0, max: 0.05, step: 0.0001 },
       flowerHeight: { value: 0.447, min: 0, max: 1.5, step: 0.001 },
       flowerWidth: { value: 0.1, min: 0, max: 0.5, step: 0.001 },
-      flowerStemColor: '#49d57c',
       count: { value: 16 * 5000, min: 0, max: 16 * 50000, step: 1 },
       segmentsCount: { value: 3, min: 1, max: 10, step: 1 },
       patchSize: { value: 11.7, min: 11, max: 13, step: 0.001 },
@@ -115,12 +98,6 @@ const Grass = () => {
       trailDuration: { value: 0.6, min: 0.1, max: 6, step: 0.05 },
       trailRadius: { value: 0.04, min: 0.002, max: 0.5, step: 0.001 },
       trampleStrength: { value: 1, min: 0, max: 1, step: 0.01 },
-      showTrailMap: {
-        value: false,
-        onChange: v => {
-          trampleCanvas.style.display = v ? 'block' : 'none';
-        },
-      },
     },
     { collapsed: true, reset: true }
   );
@@ -195,8 +172,9 @@ const Grass = () => {
           uFlowerAmount: { value: controls.flowerAmount },
           uFlowerHeight: { value: controls.flowerHeight },
           uFlowerWidth: { value: controls.flowerWidth },
+          // The stems match the blade tips
           uFlowerStemColor: {
-            value: new THREE.Color(controls.flowerStemColor),
+            value: new THREE.Color(controls.colorTop),
           },
           uHeightDataTexture: { value: grassHeightTexture },
           uPerlinNoiseTexture: { value: perlinNoiseTexture },
@@ -240,7 +218,7 @@ const Grass = () => {
     grassMaterial.uniforms.uFlowerHeight.value = controls.flowerHeight;
     grassMaterial.uniforms.uFlowerWidth.value = controls.flowerWidth;
     grassMaterial.uniforms.uFlowerStemColor.value = new THREE.Color(
-      controls.flowerStemColor
+      controls.colorTop
     );
     grassMaterial.uniforms.uHeightDataTexture.value = grassHeightTexture;
     grassMaterial.uniforms.uGrassParameters.value.x = controls.segmentsCount;

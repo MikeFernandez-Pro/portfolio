@@ -33,21 +33,6 @@ const MagicGlyphs = props => {
     []
   );
 
-  const controls = useControls(
-    'MagicGlyphs',
-    {
-      emissiveIntensity: {
-        value: 0,
-        min: 0,
-        max: 10,
-      },
-      emissiveColor: {
-        value: '#ff6c43',
-      },
-    },
-    { collapsed: true }
-  );
-
   // Progress of the light fade-in (0 → 1 on glyph activation), kept so the
   // intensity control stays accurate before/after the animation
   const lightProgressRef = useRef(0);
@@ -57,7 +42,7 @@ const MagicGlyphs = props => {
   const glyphBaseYRef = useRef(null);
 
   useControls(
-    'MagicPortalLight',
+    'SkillsPortalLight',
     {
       color: {
         value: MAGIC_PORTAL_LIGHT_DEFAULTS.color,
@@ -121,10 +106,9 @@ const MagicGlyphs = props => {
   );
 
   useEffect(() => {
-    island.materials.magicPortal.emissive = new THREE.Color(
-      controls.emissiveColor
-    );
-    island.materials.magicPortal.emissiveIntensity = controls.emissiveIntensity;
+    // Off at rest, the activation animation below raises it
+    island.materials.magicPortal.emissive = new THREE.Color('#ff6c43');
+    island.materials.magicPortal.emissiveIntensity = 0;
 
     // The island point light sits above the major glyph; its world
     // position lives in the GLB, so it's resolved at runtime
@@ -180,7 +164,7 @@ const MagicGlyphs = props => {
       magicLightAnimation.kill();
       magicLightAnimation = null;
     };
-  }, [island, controls]);
+  }, [island]);
 
   useFrame((_state, delta) => {
     if (magicGlyphActivationRef.current) {

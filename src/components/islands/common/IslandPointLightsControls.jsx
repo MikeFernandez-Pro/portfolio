@@ -150,7 +150,7 @@ const IslandPointLightsControls = () => {
   // Per-plate on/off is driven by the activation ramps in PressurePlates
   // (uPlateLightFactors); these controls set the shared look
   useControls(
-    'PlateLights',
+    'PlatesLight',
     {
       ...groupSchema(plateLightsUniforms, 'Plate', PLATE_LIGHTS_DEFAULTS),
       height: {

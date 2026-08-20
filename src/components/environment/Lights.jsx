@@ -6,7 +6,7 @@ import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
 
 import { useStore } from '#store/ZustandStorage.jsx';
-import { IS_MOBILE_DEVICE } from '#utils/utils.js';
+import { IS_MOBILE_DEVICE, IS_PHOTO_MODE } from '#utils/utils.js';
 
 /**
  * Renders the scene through a free OrbitControls camera while the gameplay
@@ -270,7 +270,7 @@ const Lights = () => {
         position={[-3, 4, 3]}
         intensity={directionalLightControls.intensity}
         color={directionalLightControls.color}
-        castShadow={!IS_MOBILE_DEVICE}
+        castShadow={!IS_MOBILE_DEVICE && !IS_PHOTO_MODE}
         target={targetObject}
         shadow-mapSize={[2048, 2048]}
         shadow-camera-near={shadowCameraControls.near}

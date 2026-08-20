@@ -310,7 +310,7 @@ const Cauldron = props => {
   const d = PORTAL_DEFAULTS;
 
   useControls(
-    'CauldronPortal',
+    'CauldronLiquid',
     {
       planeHeight: {
         value: POTION_PLANE_HEIGHT,

@@ -49,7 +49,7 @@ const CheapDofPass = props => {
   const d = CHEAP_DOF_DEFAULTS;
 
   useControls(
-    'CheapDOF',
+    'depthOfField',
     {
       // World units from the camera to the focal plane, and how far from it
       // the blur reaches full strength

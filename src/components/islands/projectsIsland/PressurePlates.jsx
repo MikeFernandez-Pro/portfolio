@@ -54,7 +54,7 @@ const PressurePlates = props => {
   );
 
   useControls(
-    'PressurePlates',
+    'Plates',
     {
       emissiveColor: {
         value: `#${PLATE_EMISSIVE_COLOR.getHexString()}`,
