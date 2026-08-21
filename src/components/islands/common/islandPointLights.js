@@ -82,6 +82,17 @@ const CAULDRON_LIGHT_DEFAULTS = {
   height: 0.8,
 };
 
+const CANDLE_LIGHTS_DEFAULTS = {
+  color: '#f28d4a',
+  intensity: 1.35,
+  // Tight radius: candles only glow on their immediate surroundings
+  decay: 0.545,
+  decayPower: 4.6,
+  specularPower: 1,
+  // Lift above the flame tip (world units)
+  height: 0.12,
+};
+
 const PLATE_LIGHTS_DEFAULTS = {
   // The pressure plates' emissive color
   color: '#68cff2',
@@ -298,6 +309,40 @@ const spawnLightUniforms = {
 // Off until a respawn plays
 spawnLightUniforms.uSpawnLightIntensity.value = 0;
 
+// The candle flames live in the GLB, so unlike the other grouped lights the
+// positions can't be baked as GLSL constants: Islands.jsx clusters the
+// candles primitive at load and fills this fixed-size uniform array
+const MAX_CANDLE_LIGHTS = 16;
+
+const candleLightsUniforms = {
+  ...createLightUniforms('Candle', CANDLE_LIGHTS_DEFAULTS),
+  uCandleLightPositions: {
+    value: Array.from(
+      { length: MAX_CANDLE_LIGHTS },
+      () => new THREE.Vector3()
+    ),
+  },
+  uCandleLightCount: { value: 0 },
+};
+
+const setCandleLightPositions = positions => {
+  if (positions.length > MAX_CANDLE_LIGHTS) {
+    console.warn(
+      `islandPointLights: ${positions.length} candle lights, ` +
+        `capped at ${MAX_CANDLE_LIGHTS}`
+    );
+  }
+  const count = Math.min(positions.length, MAX_CANDLE_LIGHTS);
+  for (let i = 0; i < count; i++) {
+    candleLightsUniforms.uCandleLightPositions.value[i].set(
+      positions[i][0],
+      positions[i][1] + CANDLE_LIGHTS_DEFAULTS.height,
+      positions[i][2]
+    );
+  }
+  candleLightsUniforms.uCandleLightCount.value = count;
+};
+
 const plateLightsUniforms = {
   ...createLightUniforms('Plate', PLATE_LIGHTS_DEFAULTS),
   // Per-plate activation factor (0 = off, 1 = active), animated by the
@@ -367,7 +412,8 @@ const patchIslandPointLights = material => {
       windowLightUniforms,
       plateLightsUniforms,
       cauldronLightUniforms,
-      spawnLightUniforms
+      spawnLightUniforms,
+      candleLightsUniforms
     );
 
     shader.vertexShader = shader.vertexShader
@@ -407,6 +453,10 @@ uniform vec3 uSpawnLightPosition;
 ${lightUniformsGlsl('Plate')}
 uniform vec3 uPlateLightFactors;
 uniform float uPlateLightHeight;
+${lightUniformsGlsl('Candle')}
+#define MAX_CANDLE_LIGHTS ${MAX_CANDLE_LIGHTS}
+uniform vec3 uCandleLightPositions[MAX_CANDLE_LIGHTS];
+uniform int uCandleLightCount;
 #define PLATE_LIGHT_COUNT ${PLATE_LIGHT_POSITIONS.length}
 const vec3 PLATE_LIGHT_POSITIONS[PLATE_LIGHT_COUNT] = vec3[](
     ${toGlslVec3Array(PLATE_LIGHT_POSITIONS)}
@@ -450,6 +500,10 @@ ${lightCallGlsl('Well', 'uWellLightPosition')}
 ${lightCallGlsl('Window', 'uWindowLightPosition')}
 ${lightCallGlsl('Cauldron', 'uCauldronLightPosition')}
 ${lightCallGlsl('Spawn', 'uSpawnLightPosition')}
+for (int i = 0; i < MAX_CANDLE_LIGHTS; i++) {
+  if (i >= uCandleLightCount) break;
+  ${lightCallGlsl('Candle', 'uCandleLightPositions[i]')}
+}
 for (int i = 0; i < PLATE_LIGHT_COUNT; i++) {
   islandLightAccum += islandPointLight(
     uPlateLightColor,
@@ -482,6 +536,7 @@ export {
   CAULDRON_LIGHT_DEFAULTS,
   SPAWN_LIGHT_DEFAULTS,
   PLATE_LIGHTS_DEFAULTS,
+  CANDLE_LIGHTS_DEFAULTS,
   PLATE_LIGHT_INDEX,
   portalLightSettings,
   forgeLavaLightSettings,
@@ -499,5 +554,7 @@ export {
   cauldronLightUniforms,
   spawnLightUniforms,
   plateLightsUniforms,
+  candleLightsUniforms,
+  setCandleLightPositions,
   patchIslandPointLights,
 };

@@ -31,6 +31,14 @@ const FOLDER_TREE = {
   NatureEffects: { 'Wind Lines': null, 'Cloud Shadows': null },
   Grass: null,
   Spawn: { 'Respawn Animation': null, SpawnLight: null, Controls: null },
+  Character: {
+    HeadOrb: null,
+    BeltLantern: {
+      LanternTransform: null,
+      LanternSwing: null,
+      LanternColors: null,
+    },
+  },
   Torches: {
     Torches: null,
     TorchLights: null,
@@ -39,6 +47,7 @@ const FOLDER_TREE = {
   },
   Well: { Well: null, WellLight: null },
   Lanterns: { Lanterns: null, LanternLights: null, FireFlies: null },
+  Candles: { Candles: null, CandlesLight: null },
   Forge: {
     ForgeSparks: null,
     Sword: { ForgeSword: null, SwordLight: null },

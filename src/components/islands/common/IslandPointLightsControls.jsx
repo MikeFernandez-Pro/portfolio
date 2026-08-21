@@ -11,6 +11,7 @@ import {
   CAULDRON_LIGHT_DEFAULTS,
   SPAWN_LIGHT_DEFAULTS,
   PLATE_LIGHTS_DEFAULTS,
+  CANDLE_LIGHTS_DEFAULTS,
   torchLightsUniforms,
   lanternLightsUniforms,
   indicatorLightsUniforms,
@@ -21,6 +22,7 @@ import {
   cauldronLightUniforms,
   spawnLightUniforms,
   plateLightsUniforms,
+  candleLightsUniforms,
   forgeLavaLightSettings,
   spawnLightSettings,
 } from './islandPointLights.js';
@@ -83,6 +85,12 @@ const IslandPointLightsControls = () => {
   useControls(
     'LanternLights',
     groupSchema(lanternLightsUniforms, 'Lantern', LANTERN_LIGHTS_DEFAULTS),
+    { collapsed: true, reset: true }
+  );
+
+  useControls(
+    'CandlesLight',
+    groupSchema(candleLightsUniforms, 'Candle', CANDLE_LIGHTS_DEFAULTS),
     { collapsed: true, reset: true }
   );
 

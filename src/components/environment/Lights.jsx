@@ -113,12 +113,12 @@ const Lights = () => {
     'directionalLight',
     {
       intensity: {
-        value: 17.0,
+        value: 13.0,
         min: 0,
         max: 40,
       },
       color: {
-        value: '#3a62c8',
+        value: '#356eff',
       },
       bias: {
         value: 0,
@@ -190,12 +190,12 @@ const Lights = () => {
     'ambientLight',
     {
       intensity: {
-        value: 7.5,
+        value: 4,
         min: 0,
         max: 20,
       },
       color: {
-        value: '#526cad',
+        value: '#2664ff',
       },
     },
     { collapsed: true }

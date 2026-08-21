@@ -12,6 +12,8 @@ import runningSoundEffect from '#controller/audio/runningSound.js';
 import { directionOffset } from '#controller/CharacterControllerUtils.js';
 
 import { useCharacterMaterial } from '#controller/useCharacterMaterial.js';
+import { useLanternAttachment } from '#controller/useLanternAttachment.js';
+import { useHeadOrb } from '#controller/useHeadOrb.js';
 import { playRespawnAnimation } from '#controller/respawnAnimation.js';
 import { useKeyboardControls } from '#controller/hooks/useKeyboardControls.js';
 import { useThirdPersonCamera } from '#controller/hooks/useThirdPersonCamera.js';
@@ -59,6 +61,12 @@ const CharacterController = () => {
 
   // Character material and respawn effect
   useCharacterMaterial(scene);
+
+  // Belt lantern (attached to the hips bone, swings with movement)
+  useLanternAttachment({ scene, characterBody, characterMesh });
+
+  // Glowing orb inside the head
+  useHeadOrb(scene);
 
   // Adapter: route to animation helper while keeping local state
   const updateCharacterAnimation = useCallback(

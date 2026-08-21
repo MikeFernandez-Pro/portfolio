@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
+import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
 import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
 
@@ -14,40 +15,39 @@ import grassVertexShader from '#shaders/grass/vertex.glsl';
 import grassHeightTextureAsset from '#assets/textures/grass-height-map.webp';
 import perlinNoiseImage from '#assets/textures/perlin.png';
 
-// Trample map: a small 2D canvas mapped onto the patch XZ records where the
-// character walked; it fades to black a little every frame, so crushed
-// blades ease back up instead of snapping once out of the live radius
+// Trample map: a small buffer mapped onto the patch XZ. Each texel stores
+// the remaining crush influence (sampled directly by the vertex shader) and
+// fades linearly to zero, so a crushed blade starts straightening the moment
+// the character leaves and travels back to its rest pose in exactly
+// trailDuration seconds. Floats fade without 8-bit rounding residue; the
+// byte copy is what gets uploaded to the GPU.
 const TRAMPLE_SIZE = 128;
-const trampleCanvas = document.createElement('canvas');
-trampleCanvas.width = TRAMPLE_SIZE;
-trampleCanvas.height = TRAMPLE_SIZE;
-const trampleContext = trampleCanvas.getContext('2d');
-trampleContext.fillRect(0, 0, TRAMPLE_SIZE, TRAMPLE_SIZE);
+const trampleValues = new Float32Array(TRAMPLE_SIZE * TRAMPLE_SIZE);
+const trampleData = new Uint8Array(TRAMPLE_SIZE * TRAMPLE_SIZE);
 
-// Radial glow stamped at the character position, drawn once procedurally.
-// Kept tight (steep falloff): the shader's smoothstep amplifies faint
-// edges, so a soft gradient would read much larger than the glow itself.
-const glowCanvas = document.createElement('canvas');
-glowCanvas.width = 64;
-glowCanvas.height = 64;
-const glowContext = glowCanvas.getContext('2d');
-const glowGradient = glowContext.createRadialGradient(32, 32, 0, 32, 32, 32);
-glowGradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-glowGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.85)');
-glowGradient.addColorStop(0.8, 'rgba(255, 255, 255, 0.25)');
-glowGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-glowContext.fillStyle = glowGradient;
-glowContext.fillRect(0, 0, 64, 64);
+// Radial glow profile stamped at the character position (same stops as the
+// old canvas gradient). Kept tight (steep falloff): the crush follows it
+// directly, so a soft tail would read much larger than the glow itself.
+const glowProfile = r => {
+  if (r >= 1) return 0;
+  if (r < 0.5) return 1 - (r / 0.5) * 0.15; // 1 -> 0.85
+  if (r < 0.8) return 0.85 - ((r - 0.5) / 0.3) * 0.6; // 0.85 -> 0.25
+  return 0.25 - ((r - 0.8) / 0.2) * 0.25; // 0.25 -> 0
+};
 
-const trampleTexture = new THREE.CanvasTexture(trampleCanvas);
+const trampleTexture = new THREE.DataTexture(
+  trampleData,
+  TRAMPLE_SIZE,
+  TRAMPLE_SIZE,
+  THREE.RedFormat,
+  THREE.UnsignedByteType
+);
 trampleTexture.colorSpace = THREE.NoColorSpace;
-// The shader samples with the height map UV convention (v = 0 at the top
-// row we draw at), no vertical flip wanted
-trampleTexture.flipY = false;
 // Updated every frame: skip the mipmap regeneration, sample linearly
 trampleTexture.generateMipmaps = false;
 trampleTexture.minFilter = THREE.LinearFilter;
 trampleTexture.magFilter = THREE.LinearFilter;
+trampleTexture.needsUpdate = true;
 
 const Grass = () => {
   const grassRef = useRef(null);
@@ -59,18 +59,21 @@ const Grass = () => {
   const controls = useControls(
     'Grass',
     {
-      colorBase: '#22651e', //297a25
-      colorTop: '#49d57c', //4cf288
-      redTipColor: '#ee3055',
-      redTipLength: { value: 0.3, min: 0, max: 1, step: 0.01 },
+      colorBase: '#3bd532',
+      colorTop: '#d4ff3b',
+      redTipColor: '#ff0000',
+      redTipLength: { value: 0.44, min: 0, max: 1, step: 0.01 },
       flowerAmount: { value: 0.0035, min: 0, max: 0.05, step: 0.0001 },
       flowerHeight: { value: 0.447, min: 0, max: 1.5, step: 0.001 },
-      flowerWidth: { value: 0.1, min: 0, max: 0.5, step: 0.001 },
-      count: { value: 16 * 5000, min: 0, max: 16 * 50000, step: 1 },
+      flowerWidth: { value: 0.083, min: 0, max: 0.5, step: 0.001 },
+      // How close the two bottom vertices sit (fraction of the full width,
+      // 1 = no pinch)
+      flowerBaseWidth: { value: 0.16, min: 0, max: 1, step: 0.01 },
+      count: { value: 80000, min: 0, max: 16 * 50000, step: 1 },
       segmentsCount: { value: 3, min: 1, max: 10, step: 1 },
       patchSize: { value: 11.7, min: 11, max: 13, step: 0.001 },
       width: { value: 0.08, min: 0, max: 0.2, step: 0.001 },
-      height: { value: 0.36, min: 0, max: 1, step: 0.001 },
+      height: { value: 0.417, min: 0, max: 1, step: 0.001 },
       squared: false,
       position: { value: [-8.88, 6.83, -52.98], step: 0.001 },
     },
@@ -94,9 +97,10 @@ const Grass = () => {
       squash: { value: 0.14, min: 0, max: 1, step: 0.01 },
       // Trample map: how long the trail takes to fade out (seconds), glow
       // diameter as a fraction of the patch, and how much the trail
-      // crushes the blades
-      trailDuration: { value: 0.6, min: 0.1, max: 6, step: 0.05 },
-      trailRadius: { value: 0.04, min: 0.002, max: 0.5, step: 0.001 },
+      // crushes the blades. trailDuration = seconds a crushed blade takes to
+      // travel back to its rest pose once the character leaves
+      trailDuration: { value: 0.3, min: 0.1, max: 6, step: 0.05 },
+      trailRadius: { value: 0.06, min: 0.002, max: 0.5, step: 0.001 },
       trampleStrength: { value: 1, min: 0, max: 1, step: 0.01 },
     },
     { collapsed: true, reset: true }
@@ -152,7 +156,13 @@ const Grass = () => {
 
   const grassMaterial = useMemo(
     () =>
-      new THREE.ShaderMaterial({
+      // Wraps MeshStandardMaterial so the blades receive the scene lighting
+      // (directional + ambient); the class (not an instance) is passed
+      // because CSM v6 mutates its baseMaterial
+      new CustomShaderMaterial({
+        baseMaterial: THREE.MeshStandardMaterial,
+        roughness: 1,
+        metalness: 0,
         // The trample map (texture + crush) is compiled out on mobile
         defines: IS_MOBILE_DEVICE ? {} : { USE_TRAMPLE: '' },
         uniforms: {
@@ -172,6 +182,7 @@ const Grass = () => {
           uFlowerAmount: { value: controls.flowerAmount },
           uFlowerHeight: { value: controls.flowerHeight },
           uFlowerWidth: { value: controls.flowerWidth },
+          uFlowerBaseWidth: { value: controls.flowerBaseWidth },
           // The stems match the blade tips
           uFlowerStemColor: {
             value: new THREE.Color(controls.colorTop),
@@ -217,6 +228,7 @@ const Grass = () => {
     grassMaterial.uniforms.uFlowerAmount.value = controls.flowerAmount;
     grassMaterial.uniforms.uFlowerHeight.value = controls.flowerHeight;
     grassMaterial.uniforms.uFlowerWidth.value = controls.flowerWidth;
+    grassMaterial.uniforms.uFlowerBaseWidth.value = controls.flowerBaseWidth;
     grassMaterial.uniforms.uFlowerStemColor.value = new THREE.Color(
       controls.colorTop
     );
@@ -265,22 +277,20 @@ const Grass = () => {
       );
     }
 
-    // The whole trample pipeline (canvas work + texture upload) is off on
+    // The whole trample pipeline (buffer work + texture upload) is off on
     // mobile, where the shader compiles without USE_TRAMPLE anyway
     if (IS_MOBILE_DEVICE) {
       return;
     }
 
-    // Trample map: fade the previous frames toward black, then stamp the
-    // glow at the character position (same patch mapping as the height map
-    // in the vertex shader). The fade alpha is derived from the trail
-    // duration so the map decays to ~5% in trailDuration seconds at any
-    // framerate.
-    trampleContext.globalCompositeOperation = 'source-over';
-    trampleContext.globalAlpha =
-      1 - Math.pow(0.05, delta / repulseControls.trailDuration);
-    trampleContext.fillStyle = '#000000';
-    trampleContext.fillRect(0, 0, TRAMPLE_SIZE, TRAMPLE_SIZE);
+    // Trample map: fade every texel linearly, so a crushed blade starts
+    // straightening immediately and finishes its travel back to rest in
+    // exactly trailDuration seconds at any framerate
+    const fadeStep = delta / repulseControls.trailDuration;
+    for (let i = 0; i < trampleValues.length; i++) {
+      const faded = trampleValues[i] - fadeStep;
+      trampleValues[i] = faded > 0 ? faded : 0;
+    }
 
     // The store subscription can leave the uniform undefined until the
     // character controller publishes its first position. Airborne
@@ -305,21 +315,42 @@ const Grass = () => {
         0.5;
 
       if (u > -0.1 && u < 1.1 && v > -0.1 && v < 1.1) {
-        const glowSize =
-          repulseControls.trailRadius * TRAMPLE_SIZE * (justLanded ? 1.5 : 1);
-        trampleContext.globalCompositeOperation = 'lighten';
-        // Full alpha: standing still keeps the blades pressed down
-        trampleContext.globalAlpha = 1;
-        trampleContext.drawImage(
-          glowCanvas,
-          u * TRAMPLE_SIZE - glowSize * 0.5,
-          v * TRAMPLE_SIZE - glowSize * 0.5,
-          glowSize,
-          glowSize
+        // Stamp the glow at the character position (same patch mapping as
+        // the height map in the vertex shader), lighten-style: standing
+        // still keeps the blades pressed down
+        const glowRadius =
+          repulseControls.trailRadius *
+          TRAMPLE_SIZE *
+          (justLanded ? 1.5 : 1) *
+          0.5;
+        const centerX = u * TRAMPLE_SIZE;
+        const centerY = v * TRAMPLE_SIZE;
+        const minX = Math.max(0, Math.floor(centerX - glowRadius));
+        const maxX = Math.min(
+          TRAMPLE_SIZE - 1,
+          Math.ceil(centerX + glowRadius)
         );
+        const minY = Math.max(0, Math.floor(centerY - glowRadius));
+        const maxY = Math.min(
+          TRAMPLE_SIZE - 1,
+          Math.ceil(centerY + glowRadius)
+        );
+
+        for (let iy = minY; iy <= maxY; iy++) {
+          for (let ix = minX; ix <= maxX; ix++) {
+            const r =
+              Math.hypot(ix + 0.5 - centerX, iy + 0.5 - centerY) / glowRadius;
+            const glow = glowProfile(r);
+            const index = iy * TRAMPLE_SIZE + ix;
+            if (glow > trampleValues[index]) trampleValues[index] = glow;
+          }
+        }
       }
     }
 
+    for (let i = 0; i < trampleValues.length; i++) {
+      trampleData[i] = trampleValues[i] * 255;
+    }
     trampleTexture.needsUpdate = true;
   });
 

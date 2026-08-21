@@ -18,14 +18,19 @@ uniform float uWindSpeed;
 uniform float uFlowerAmount;
 uniform float uFlowerHeight;
 uniform float uFlowerWidth;
+// Base pinch: fraction of the full width separating the two bottom vertices
+uniform float uFlowerBaseWidth;
 uniform vec3 uFlowerStemColor;
 
 uniform float uRepulseStrength; // max tilt angle in radians (PI/2 = flat on the ground)
 uniform float uRepulseSquash; // extra height shortening at full influence (0-1)
 
-varying vec3 vColor;
-varying vec2 vUv;
-varying vec3 vWorldPosition;
+// CSM composes this shader with three's chunks: `saturate` and `PI` come
+// from <common> (do not redefine), and the varyings are prefixed to avoid
+// colliding with the standard material's vUv/vColor/vWorldPosition
+varying vec3 vGrassColor;
+varying vec2 vGrassUv;
+varying vec3 vGrassWorldPos;
 
 // inverseLerp and remap are for remapping values
 float inverseLerp(float v, float minValue, float maxValue) {
@@ -36,10 +41,6 @@ float remap(float v, float inMin, float inMax, float outMin, float outMax) {
   return mix(outMin, outMax, t);
 }
 
-// Used in viewspace thickening
-float saturate(float x) {
-  return clamp(x, 0.0, 1.0);
-}
 float easeOut(float x, float t) {
   return 1.0 - pow(1.0 - x, t);
 }
@@ -138,7 +139,7 @@ void main() {
   vec3 grassBladeWorldPos = (modelMatrix * vec4(grassOffset, 1.0)).xyz; // get the world position of the grass blade
   vec3 hashVal = hash(grassBladeWorldPos); // generate hash value from the world position
 
-  vWorldPosition = grassBladeWorldPos; // for cloud shadows (per blade is enough)
+  vGrassWorldPos = grassBladeWorldPos; // for cloud shadows (per blade is enough)
 
   // Height data texture (patchUv also samples the trample map below)
   vec2 patchUv =
@@ -174,12 +175,14 @@ void main() {
 
   float width;
   if (randomFlowers) {
-    width = uFlowerWidth * grassHeight; // squared: constant width, no taper
+    // Pinched base widening linearly to the full width at the tip
+    width = uFlowerWidth * grassHeight
+      * mix(uFlowerBaseWidth, 1.0, heightPercent);
   } else if (uSquareShape) {
     width = GRASS_WIDTH + 0.1;
   } else {
-    width = GRASS_WIDTH * easeOut(1.04 - heightPercent, 3.0) * grassHeight;
-  }
+    width = GRASS_WIDTH * easeOut(1.06 - heightPercent, 3.0) * grassHeight;
+  } 	
 
   // Flowers grow around their own average height; grassHeight and
   // randomHeight keep each one a different size
@@ -212,20 +215,17 @@ float windStrength = texture2D(uPerlinNoiseTexture,
   float leanFactor =
     remap(hashVal.y, -1.0, 1.0, -0.3, 0.3) + randomLeanAnimation;
 
-   const float PI = 3.14159;
   float angle = remap(hashVal.x, -1.0, 1.0, -PI / 4.0, PI / 4.0); // randomize blades initial rotation
 
 
-  // Crush amplitude comes from the trample map: a fading canvas records
-  // where the player walked, so blades ease back up after his passage.
-  // The lower edge cuts the canvas fade residue (blades fully recover),
-  // the upper edge holds them down for a moment (trail plateau).
+  // Crush amplitude comes straight from the trample map: it fades linearly
+  // in Grass.jsx, so the value IS the remaining influence and blades travel
+  // from crushed back to their rest pose over exactly the trail duration.
   // USE_TRAMPLE is left out on mobile: no vertex fetch, the crush block
   // below compiles away entirely.
   #ifdef USE_TRAMPLE
   float repulseInfluence =
-    smoothstep(0.05, 0.7, texture2D(uTrampleTexture, patchUv).r)
-    * uTrampleStrength;
+    texture2D(uTrampleTexture, patchUv).r * uTrampleStrength;
   #else
   float repulseInfluence = 0.0;
   #endif
@@ -268,8 +268,6 @@ float windStrength = texture2D(uPerlinNoiseTexture,
   vec3 grassLocalPosition = grassMat * vec3(x, y, z) + grassOffset; // change initial XYZ coords with offset and rotation matrix
 
   // Viewspace thicken
-  vec4 mvPosition = modelViewMatrix * vec4(grassLocalPosition, 1.0);
-
   vec3 viewDir = normalize(cameraPosition - grassBladeWorldPos);
   vec3 grassFaceNormal = grassMat * vec3(0.0, 0.0, -zSide);
 
@@ -277,24 +275,31 @@ float windStrength = texture2D(uPerlinNoiseTexture,
   float viewSpaceThickenFactor =
     easeOut(1.0 - viewDotNormal, 4.0) * smoothstep(0.0, 0.2, viewDotNormal);
 
-  mvPosition.x += viewSpaceThickenFactor * (xSide - 0.5) * width * 0.5 * -zSide;
+  // The thickening happens along the camera's right axis but is applied in
+  // local space (CSM projects csm_Position through three's own chunks, so
+  // the lighting varyings stay consistent). The mesh has no rotation or
+  // scale, so world and local axes match.
+  vec3 cameraRight = vec3(viewMatrix[0].x, viewMatrix[1].x, viewMatrix[2].x);
+  grassLocalPosition +=
+    cameraRight * (viewSpaceThickenFactor * (xSide - 0.5) * width * 0.5 * -zSide);
 
-  gl_Position = projectionMatrix * mvPosition;
-  
   if (grassHeight < 0.25) {
-        gl_Position = vec4(0.0, 0.0, 0.0, 0.0); // Position hors écran ou invalide
-        vColor = vec3(0.0); 
-        return;
-    }
+    // Collapse the blade to a point: zero-area triangles rasterize nothing
+    csm_Position = vec3(0.0);
+    vGrassColor = vec3(0.0);
+    return;
+  }
+
+  csm_Position = grassLocalPosition;
+  csm_Normal = grassFaceNormal;
 
   // Pass the color to the fragment shader; flowers use their own green
-  vColor = mix(
+  vGrassColor = mix(
     uGrassBaseColor,
     randomFlowers ? uFlowerStemColor : uGrassTopColor,
     heightPercent
   );
 
   // x: flower flag, y: height percent along the blade
-  vUv = vec2(randomFlowers ? 1.0 : 0.0, heightPercent);
-  // vColor = vec3(windStrength);
+  vGrassUv = vec2(randomFlowers ? 1.0 : 0.0, heightPercent);
 }

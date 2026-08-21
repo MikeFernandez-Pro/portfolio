@@ -5,7 +5,10 @@ import * as THREE from 'three';
 import { IS_MOBILE_DEVICE } from '#utils/utils.js';
 
 import { patchCloudShadows } from '#environment/CloudShadows.jsx';
-import { patchIslandPointLights } from '#islands/common/islandPointLights.js';
+import {
+  patchIslandPointLights,
+  setCandleLightPositions,
+} from '#islands/common/islandPointLights.js';
 import { IslandPointLightsControls } from '#islands/common/IslandPointLightsControls.jsx';
 import { SmokeColumns } from '#islands/common/SmokeColumns.jsx';
 import { LanternsAndHome } from '#islands/common/LanternsAndHome';
@@ -121,6 +124,37 @@ const Islands = () => {
       signsPosition.needsUpdate = true;
       nodes.island_15.geometry.userData.vercelSignHidden = true;
     }
+
+    // One fake point light per candle: cluster the candles primitive's
+    // vertices by XZ proximity in island space, one light at each cluster's
+    // top (the flame tip), brought to world through the group transform
+    const candlesPosition = nodes.island_5.geometry.attributes.position;
+    const candleClusters = [];
+    for (let i = 0; i < candlesPosition.count; i++) {
+      const x = candlesPosition.getX(i);
+      const y = candlesPosition.getY(i);
+      const z = candlesPosition.getZ(i);
+
+      let cluster = candleClusters.find(
+        c => Math.hypot(c.sumX / c.n - x, c.sumZ / c.n - z) < 0.8
+      );
+      if (!cluster) {
+        cluster = { sumX: 0, sumZ: 0, n: 0, maxY: -Infinity };
+        candleClusters.push(cluster);
+      }
+      cluster.sumX += x;
+      cluster.sumZ += z;
+      cluster.n += 1;
+      if (y > cluster.maxY) cluster.maxY = y;
+    }
+    const islandScale = 0.45;
+    setCandleLightPositions(
+      candleClusters.map(c => [
+        (c.sumX / c.n) * islandScale + ISLAND_POSITION.x,
+        c.maxY * islandScale + ISLAND_POSITION.y,
+        (c.sumZ / c.n) * islandScale + ISLAND_POSITION.z,
+      ])
+    );
 
     const islandMesh = island.scene.getObjectByName('island_1');
 
