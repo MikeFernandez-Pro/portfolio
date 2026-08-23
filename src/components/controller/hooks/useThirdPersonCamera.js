@@ -48,7 +48,13 @@ export function useThirdPersonCamera(characterBodyRef) {
       return;
     }
 
-    CAMERA_POSITION.addVectors(characterPosition, CAMERA_OFFSET);
+    // Never chase the character below world zero: while it falls into the
+    // void (death), the follow target keeps the height it had at the edge
+    CAMERA_POSITION.set(
+      characterPosition.x,
+      Math.max(characterPosition.y, 0),
+      characterPosition.z
+    ).add(CAMERA_OFFSET);
     // Exact exp-damp alpha: same smoothing rate at any fps, never exceeds 1
     LERP_CAMERA_POSITION.lerp(CAMERA_POSITION, 1 - Math.exp(-5 * delta));
     state.camera.position.set(...LERP_CAMERA_POSITION);

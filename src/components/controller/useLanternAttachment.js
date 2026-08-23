@@ -8,6 +8,11 @@ import { useControls } from '#utils/useControls.jsx';
 import { IS_MOBILE_DEVICE } from '#utils/utils.js';
 import { BODY_TYPE_FIXED as FIXED } from '#controller/constants.js';
 import { useLanternMaterial } from '#controller/useLanternMaterial.js';
+import {
+  BELT_LANTERN_LIGHT_DEFAULTS,
+  beltLanternLightUniforms,
+  beltLanternLightSettings,
+} from '#islands/common/islandPointLights.js';
 
 const ATTACH_GROUP_NAME = 'lanternAttachGroup';
 const LANTERN_MESH_NAME = 'Cube';
@@ -33,6 +38,9 @@ const SWING_DEFAULTS = {
 // Anything above this is a teleport, not gameplay (run start/stop velocity
 // snaps peak around |Δv|/dt ≈ 700 at 165Hz)
 const MAX_ACCEL = 2000;
+
+// Scratch vector for the per-frame light offset (no allocations)
+const LIGHT_OFFSET = new THREE.Vector3();
 
 const clampAngle = (value, limit) => Math.min(Math.max(value, -limit), limit);
 const wrapAngle = value => Math.atan2(Math.sin(value), Math.cos(value));
@@ -244,11 +252,80 @@ const useLanternAttachment = ({ scene, characterBody, characterMesh }) => {
     { collapsed: true, reset: true }
   );
 
+  // Fake point light following the lantern (BeltLanternLight debug folder)
+  useControls(
+    'BeltLanternLight',
+    {
+      color: {
+        value: BELT_LANTERN_LIGHT_DEFAULTS.color,
+        onChange: v => {
+          beltLanternLightUniforms.uBeltLanternLightColor.value.set(v);
+        },
+      },
+      intensity: {
+        value: BELT_LANTERN_LIGHT_DEFAULTS.intensity,
+        min: 0,
+        max: 10,
+        step: 0.05,
+        onChange: v => {
+          beltLanternLightUniforms.uBeltLanternLightIntensity.value = v;
+        },
+      },
+      decay: {
+        value: BELT_LANTERN_LIGHT_DEFAULTS.decay,
+        min: 0,
+        max: 1,
+        step: 0.005,
+        onChange: v => {
+          beltLanternLightUniforms.uBeltLanternLightDecay.value = v;
+        },
+      },
+      decayPower: {
+        value: BELT_LANTERN_LIGHT_DEFAULTS.decayPower,
+        min: 0.1,
+        max: 8,
+        step: 0.05,
+        onChange: v => {
+          beltLanternLightUniforms.uBeltLanternLightDecayPower.value = v;
+        },
+      },
+      specularPower: {
+        value: BELT_LANTERN_LIGHT_DEFAULTS.specularPower,
+        min: 1,
+        max: 64,
+        step: 1,
+        onChange: v => {
+          beltLanternLightUniforms.uBeltLanternLightSpecularPower.value = v;
+        },
+      },
+      offset: {
+        value: BELT_LANTERN_LIGHT_DEFAULTS.offset,
+        min: -1,
+        max: 1,
+        step: 0.01,
+        onChange: v => {
+          beltLanternLightSettings.offset = v;
+        },
+      },
+    },
+    { collapsed: true, reset: true }
+  );
+
   useFrame((_, delta) => {
     const swingGroup = swingGroupRef.current;
     const body = characterBody.current;
     const mesh = characterMesh.current;
     if (!swingGroup || !body || !mesh) return;
+
+    // Pin the fake light onto the lantern (world space). The offset control
+    // is expressed in character space: rotated by the mesh yaw so "in front
+    // of the belt" stays in front whichever way the character faces
+    const lightPosition = beltLanternLightUniforms.uBeltLanternLightPosition;
+    lanternMeshRef.current.getWorldPosition(lightPosition.value);
+    LIGHT_OFFSET.set(...beltLanternLightSettings.offset).applyQuaternion(
+      mesh.quaternion
+    );
+    lightPosition.value.add(LIGHT_OFFSET);
 
     const dt = Math.min(delta, 1 / 30);
     if (dt <= 0) return;

@@ -22,7 +22,10 @@ import { IS_PHOTO_MODE } from '#utils/utils.js';
 // must match the folderName passed at call sites; any title not listed here
 // keeps today's behavior: its own folder at the root, in mount order.
 const FOLDER_TREE = {
-  Postprocessing: { depthOfField: null, 'Ambient Occlusion': null },
+  Postprocessing: {
+    depthOfField: null,
+    'Ambient Occlusion': null,
+  },
   Sky: { Background: null, Stars: null },
   WorldLight: {
     directionalLight: null,
@@ -30,13 +33,20 @@ const FOLDER_TREE = {
   },
   NatureEffects: { 'Wind Lines': null, 'Cloud Shadows': null },
   Grass: null,
-  Spawn: { 'Respawn Animation': null, SpawnLight: null, Controls: null },
+  Spawn: {
+    'Respawn Animation': null,
+    'Player Death': null,
+    SpawnLight: null,
+    Controls: null,
+  },
   Character: {
     HeadOrb: null,
+    Falling: null,
     BeltLantern: {
       LanternTransform: null,
       LanternSwing: null,
       LanternColors: null,
+      BeltLanternLight: null,
     },
   },
   Torches: {

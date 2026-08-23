@@ -1,12 +1,16 @@
-import { useRef, useCallback, useLayoutEffect } from 'react';
+import { useRef, useCallback, useLayoutEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useGLTF, useAnimations } from '@react-three/drei';
+import { useGLTF, useAnimations, useFBX } from '@react-three/drei';
 import { CapsuleCollider, RigidBody } from '@react-three/rapier';
+import gsap from 'gsap';
+import * as THREE from 'three';
 
 import { useStore } from '#store/ZustandStorage.jsx';
 import { IS_MOBILE_DEVICE } from '#utils/utils.js';
+import { useControls } from '#utils/useControls.jsx';
 
 import CharacterModel from '#assets/models/character/character.glb';
+import FallingAnimation from '#assets/animations/Falling.fbx';
 import runningSoundEffect from '#controller/audio/runningSound.js';
 
 import { directionOffset } from '#controller/CharacterControllerUtils.js';
@@ -17,9 +21,15 @@ import { useHeadOrb } from '#controller/useHeadOrb.js';
 import { playRespawnAnimation } from '#controller/respawnAnimation.js';
 import { useKeyboardControls } from '#controller/hooks/useKeyboardControls.js';
 import { useThirdPersonCamera } from '#controller/hooks/useThirdPersonCamera.js';
+import {
+  DeathParticles,
+  playDeathParticles,
+} from '#controller/DeathParticles.jsx';
+import { playDespawnAnimation } from '#controller/despawnAnimation.js';
 import { useCharacterAnimation } from '#controller/hooks/useCharacterAnimation.js';
 import { updateMovement } from '#controller/movement/updateMovement.js';
 import SensorCollider from '#controller/SensorCollider.jsx';
+import FallingZoneSensor from '#controller/FallingZoneSensor.jsx';
 import {
   BODY_TYPE_DYNAMIC as DYNAMIC,
   BODY_TYPE_FIXED as FIXED,
@@ -27,6 +37,7 @@ import {
   ANIMATION_RUN as RUN,
   ANIMATION_SPRINT as SPRINT,
   ANIMATION_JUMP as JUMP,
+  ANIMATION_FALLING as FALLING,
   DEFAULT_CHARACTER_SPEED,
   DEFAULT_CHARACTER_SPRINT_SPEED,
 } from '#controller/constants.js';
@@ -38,13 +49,59 @@ let canJump = false;
 let currentAnimation = IDLE;
 let characterIsMoving = false;
 let characterJumping = false;
+// Set by the falling-zone sensor: the character fell off the world and plays
+// the falling animation until the death sequence hands back to idle
+let characterFalling = false;
 let characterSprinting = false;
 let characterRespawning = false;
 let groundedTime = 0;
+let deathTimeline = null;
+
+// Body pitch during the falling animation. The FBX hips rotation track is
+// stripped (it made the character dive) and replaced with a single static
+// keyframe: hips rest pose pitched by this angle. Baked into the clip data so
+// the mixer crossfade blends the lean in with the rest of the pose instead of
+// the whole mesh snapping to it
+const DEFAULT_FALLING_BODY_ANGLE = 56;
+let fallingBodyAngle = (DEFAULT_FALLING_BODY_ANGLE * Math.PI) / 180;
+
+const PITCH_AXIS = new THREE.Vector3(1, 0, 0);
+
+// Write the pitched hips pose into the falling clip's hips keyframe. `chain`
+// maps the pitch (expressed in character space, like the old mesh tilt) into
+// the hips' parent space; live-updating the track values is picked up by the
+// mixer on the next frame
+const bakeFallingBodyAngle = ({ track, rest, chain }) => {
+  const pitch = new THREE.Quaternion().setFromAxisAngle(
+    PITCH_AXIS,
+    fallingBodyAngle
+  );
+  const q = chain
+    .clone()
+    .invert()
+    .multiply(pitch)
+    .multiply(chain)
+    .multiply(rest);
+  track.values.set([q.x, q.y, q.z, q.w]);
+};
+// Debug preview (Tweakpane): suspends the controller loop so the falling
+// animation can be watched and tuned in place
+let fallingPreviewActive = false;
 
 // Seconds of ~zero vertical velocity before the grounded fallback re-enables
 // jumping (was 3 frames at 60fps)
 const GROUNDED_TIME_THRESHOLD = 0.05;
+
+// Fallback kill height: the death-zone sensor is the primary death trigger;
+// dropping below this despawns the character even if the sensor
+// intersection was missed
+const DEATH_HEIGHT = -3;
+
+// Death sequence timing (seconds from the death). Character despawn and dust
+// burst fire the instant the character dies; then the character teleports to
+// spawn and the respawn dissolve reforms it.
+const DEATH_TELEPORT_AT = 0.9;
+const DEATH_RESPAWN_AT = DEATH_TELEPORT_AT + 0.6;
 
 // running sound is managed in #controller/audio/runningSound.js
 
@@ -56,7 +113,55 @@ const CharacterController = () => {
   const characterMesh = useRef();
 
   const { scene, animations } = useGLTF(CharacterModel);
-  const characterAnimations = useAnimations(animations, scene);
+
+  // Falling animation lives in a separate Mixamo FBX. Same rig (mixamorig:*)
+  // as the GLB, but the FBX animates finger bones the GLB rig doesn't have
+  // and its root motion is in Mixamo's cm scale — keep only the rotation
+  // tracks of bones that exist so the clip drops cleanly onto the character.
+  // The hips rotation is dropped too (it pitches the body into a dive) and
+  // replaced with a static rest-pose keyframe leaned by fallingBodyAngle.
+  const fallingFbx = useFBX(FallingAnimation);
+  const fallingHipsRef = useRef(null);
+  const mergedAnimations = useMemo(() => {
+    const clip = fallingFbx.animations[0].clone();
+    clip.name = FALLING;
+    const rigBones = new Set();
+    scene.traverse(object => object.isBone && rigBones.add(object.name));
+    // Note: the loaders sanitize node names ('mixamorig:Hips' becomes
+    // 'mixamorigHips'), so runtime bone and track names have no colon
+    clip.tracks = clip.tracks.filter(track => {
+      const [boneName, property] = track.name.split('.');
+      return (
+        rigBones.has(boneName) &&
+        property === 'quaternion' &&
+        boneName !== 'mixamorigHips'
+      );
+    });
+
+    // Rest pose captured before the mixer ever poses the rig, and the
+    // rotation chain from the character root down to the hips' parent so the
+    // pitch can be expressed in character space
+    const hips = scene.getObjectByName('mixamorigHips');
+    const rest = hips.quaternion.clone();
+    const chain = new THREE.Quaternion();
+    const ancestors = [];
+    for (let node = hips.parent; node && node !== scene; node = node.parent) {
+      ancestors.unshift(node);
+    }
+    ancestors.forEach(node => chain.multiply(node.quaternion));
+    const track = new THREE.QuaternionKeyframeTrack(
+      'mixamorigHips.quaternion',
+      [0],
+      [rest.x, rest.y, rest.z, rest.w]
+    );
+    fallingHipsRef.current = { track, rest, chain };
+    bakeFallingBodyAngle(fallingHipsRef.current);
+    clip.tracks.push(track);
+
+    return [...animations, clip];
+  }, [animations, fallingFbx, scene]);
+
+  const characterAnimations = useAnimations(mergedAnimations, scene);
   const animation = useCharacterAnimation(characterAnimations);
 
   // Character material and respawn effect
@@ -85,6 +190,9 @@ const CharacterController = () => {
         case JUMP:
           animation.playJump();
           break;
+        case FALLING:
+          animation.playFalling();
+          break;
         default:
           break;
       }
@@ -92,15 +200,97 @@ const CharacterController = () => {
     [animation]
   );
 
-  // Character jump event
+  // Debug: play the falling animation in place and tune the body pitch
+  // applied while it plays. The preview freezes the body and suspends the
+  // controller loop so gameplay code doesn't override the animation
+  useControls(
+    'Falling',
+    {
+      bodyAngle: {
+        value: DEFAULT_FALLING_BODY_ANGLE,
+        min: -90,
+        max: 90,
+        step: 1,
+        onChange: v => {
+          fallingBodyAngle = (v * Math.PI) / 180;
+          if (fallingHipsRef.current) {
+            bakeFallingBodyAngle(fallingHipsRef.current);
+          }
+        },
+      },
+      playFalling: () => {
+        fallingPreviewActive = true;
+        runningSoundEffect.stop();
+        characterBody.current.setBodyType(FIXED);
+        updateCharacterAnimation(FALLING);
+      },
+      stopPreview: () => {
+        fallingPreviewActive = false;
+        characterBody.current.setBodyType(DYNAMIC);
+        updateCharacterAnimation(IDLE);
+      },
+    },
+    { collapsed: true }
+  );
+
+  // Full death sequence, fired by the death-zone sensor (or the fallback
+  // DEATH_HEIGHT check): the character freezes and disintegrates mid-air in
+  // the falling pose (formed -> voronoi lava -> gone, the respawn dissolve
+  // reversed) while the dust burst rises from where it died; then the
+  // character teleports to spawn and the respawn dissolve reforms it
+  const killCharacter = useCallback(() => {
+    if (characterRespawning) return;
+    characterRespawning = true;
+    runningSoundEffect.stop();
+    characterBody.current.setBodyType(FIXED);
+    characterJumping = false;
+    characterSprinting = false;
+    updateCharacterAnimation(FALLING);
+    useStore.setState({ isCharacterMoving: false });
+    playDespawnAnimation();
+    playDeathParticles(characterBody.current.translation());
+
+    const startRespawn = () =>
+      playRespawnAnimation({
+        onComplete: () => {
+          characterRespawning = false;
+          characterBody.current.setBodyType(DYNAMIC);
+        },
+      });
+
+    deathTimeline?.kill();
+    deathTimeline = gsap.timeline();
+    // Teleport the character back to spawn while it's fully dissolved
+    deathTimeline.call(
+      () => {
+        // Settled resting height (the body is held FIXED during the
+        // respawn, so this must be the height it rests at, not the initial
+        // pre-settle 0.7)
+        characterBody.current.setTranslation({ x: 0, y: 0.62, z: 0 }, true);
+        // Reset visual orientation to default
+        if (characterMesh.current) {
+          characterMesh.current.rotation.set(0, Math.PI, 0);
+        }
+        // Back on solid ground: reform in idle, not the falling pose
+        characterFalling = false;
+        updateCharacterAnimation(IDLE);
+      },
+      undefined,
+      DEATH_TELEPORT_AT
+    );
+    deathTimeline.call(startRespawn, undefined, DEATH_RESPAWN_AT);
+  }, [updateCharacterAnimation]);
+
+  // Character jump event. Falling and respawning own the animation: no jump
+  // until the character is back on its feet (the grounded fallback can
+  // re-enable canJump while the body is held FIXED during the respawn)
   const characterJumpEvent = () => {
-    if (canJump) {
-      characterJumping = true;
-      canJump = false;
-      groundedTime = 0;
-      characterBody.current.applyImpulse({ x: 0, y: 1.2, z: 0 });
-      updateCharacterAnimation(JUMP);
-    }
+    if (!canJump || characterFalling || characterRespawning) return;
+    characterJumping = true;
+    canJump = false;
+    groundedTime = 0;
+    characterBody.current.applyImpulse({ x: 0, y: 1.2, z: 0 });
+    updateCharacterAnimation(JUMP);
   };
 
   // Keyboard controls (desktop)
@@ -112,7 +302,14 @@ const CharacterController = () => {
       if (!characterIsMoving) return;
       characterSpeed = characterSprintSpeed;
       characterSprinting = true;
-      if (currentAnimation !== SPRINT && !characterJumping) {
+      // Falling / respawning own the animation; the sprint flag stays set so
+      // the frame loop picks the sprint up on landing if shift is still held
+      if (
+        currentAnimation !== SPRINT &&
+        !characterJumping &&
+        !characterFalling &&
+        !characterRespawning
+      ) {
         updateCharacterAnimation(SPRINT);
         // Increase playback rate when sprinting
         runningSoundEffect.rate(1.5);
@@ -143,6 +340,9 @@ const CharacterController = () => {
       dissolveUniforms.uTime.value = state.clock.elapsedTime;
     }
 
+    // Debug falling preview: whole controller suspended while tweaking
+    if (fallingPreviewActive) return;
+
     direction = directionOffset(eventKeys, characterBody);
     characterIsMoving = direction !== undefined ? true : false;
 
@@ -150,7 +350,9 @@ const CharacterController = () => {
       characterIsMoving &&
       characterSprinting &&
       currentAnimation !== SPRINT &&
-      !characterJumping
+      !characterJumping &&
+      !characterFalling &&
+      !characterRespawning
     ) {
       updateCharacterAnimation(SPRINT);
     }
@@ -167,6 +369,7 @@ const CharacterController = () => {
         if (groundedTime >= GROUNDED_TIME_THRESHOLD) {
           canJump = true;
           characterJumping = false;
+          characterFalling = false;
           useStore.setState({ characterGrounded: true });
         }
       } else {
@@ -174,30 +377,10 @@ const CharacterController = () => {
       }
     }
 
-    if (characterPosition.y < 0 && !characterRespawning) {
-      characterRespawning = true;
-      runningSoundEffect.stop();
-      characterBody.current.setBodyType(FIXED);
-      // Settled resting height (the body is held FIXED during the respawn, so
-      // this must be the height it rests at, not the initial pre-settle 0.7)
-      characterBody.current.setTranslation({ x: 0, y: 0.62, z: 0 }, true);
-      // Reset visual orientation to default
-      if (characterMesh.current) {
-        characterMesh.current.rotation.set(0, Math.PI, 0);
-      }
-      // Reset to idle regardless of the animation the character died in
-      // (jump, run, sprint...)
-      characterJumping = false;
-      characterSprinting = false;
-      updateCharacterAnimation(IDLE);
-      useStore.setState({ isCharacterMoving: false });
-      // Play the full respawn animation (character voronoi + spawn spiral)
-      playRespawnAnimation({
-        onComplete: () => {
-          characterRespawning = false;
-          characterBody.current.setBodyType(DYNAMIC);
-        },
-      });
+    // Primary death trigger is the death-zone sensor; this catches the
+    // character if it slips past the sensor
+    if (characterPosition.y < DEATH_HEIGHT && !characterRespawning) {
+      killCharacter();
     }
     // Camera follow is managed by useThirdPersonCamera
 
@@ -207,7 +390,8 @@ const CharacterController = () => {
     // Block movement while respawning
     if (characterRespawning) {
       runningSoundEffect.stop();
-      if (currentAnimation !== IDLE) {
+      // The falling pose survives the dissolve; anything else resets to idle
+      if (currentAnimation !== IDLE && currentAnimation !== FALLING) {
         updateCharacterAnimation(IDLE);
         useStore.setState({ isCharacterMoving: false });
       }
@@ -224,7 +408,7 @@ const CharacterController = () => {
       (IS_MOBILE_DEVICE && joystickAngleRef.current === undefined)
     ) {
       runningSoundEffect.stop();
-      if (currentAnimation !== IDLE && !characterJumping) {
+      if (currentAnimation !== IDLE && !characterJumping && !characterFalling) {
         updateCharacterAnimation(IDLE);
 
         useStore.setState({ isCharacterMoving: false });
@@ -244,7 +428,12 @@ const CharacterController = () => {
     if (characterBody.current.bodyType() === FIXED)
       characterBody.current.setBodyType(DYNAMIC);
 
-    if (currentAnimation !== RUN && !characterJumping && !characterSprinting) {
+    if (
+      currentAnimation !== RUN &&
+      !characterJumping &&
+      !characterSprinting &&
+      !characterFalling
+    ) {
       updateCharacterAnimation(RUN);
       useStore.setState({ isCharacterMoving: true });
       runningSoundEffect.play();
@@ -297,18 +486,40 @@ const CharacterController = () => {
 
   return (
     <>
+      {/* Death disintegration burst (positioned + played by the death
+          sequence above; outside the rigid body so the teleport to spawn
+          never drags it along) */}
+      <DeathParticles />
       <SensorCollider
         onEnter={state => {
           // Only the character should toggle the grounded state
           if (state.other.rigidBody !== characterBody.current) return;
           canJump = true;
           characterJumping = false;
+          characterFalling = false;
           useStore.setState({ characterGrounded: true });
         }}
         onExit={state => {
           if (state.other.rigidBody !== characterBody.current) return;
           canJump = false;
           useStore.setState({ characterGrounded: false });
+        }}
+      />
+      {/* Fell off the world: the falling animation plays the moment the
+          character crosses the zone under the island edges, then the death
+          zone below (or the DEATH_HEIGHT fallback) kills it */}
+      <FallingZoneSensor
+        onEnter={state => {
+          if (state.other.rigidBody !== characterBody.current) return;
+          if (characterRespawning || characterFalling) return;
+          characterFalling = true;
+          runningSoundEffect.stop();
+          updateCharacterAnimation(FALLING);
+          useStore.setState({ isCharacterMoving: false });
+        }}
+        onDeathEnter={state => {
+          if (state.other.rigidBody !== characterBody.current) return;
+          killCharacter();
         }}
       />
       <RigidBody

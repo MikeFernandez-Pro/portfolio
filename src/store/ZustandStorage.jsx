@@ -25,5 +25,9 @@ export const useStore = create(
     characterRespawnUniforms: null,
     spiralRespawnUniforms: null,
     spiralRespawnMesh: null,
+
+    // Death disintegration burst (registered by DeathParticles)
+    deathParticlesMesh: null,
+    deathParticlesUniforms: null,
   }))
 );

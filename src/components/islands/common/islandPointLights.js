@@ -31,6 +31,19 @@ const LANTERN_LIGHTS_DEFAULTS = {
   specularPower: 1,
 };
 
+const BELT_LANTERN_LIGHT_DEFAULTS = {
+  // Same warm tone as the street lanterns
+  color: '#1a9cbe',
+  intensity: 4.9,
+  decay: 1,
+  decayPower: 4.25,
+  specularPower: 1,
+  // Offset from the lantern mesh origin (the top loop the lantern hangs
+  // from), expressed in character space (x sideways, z fore/aft, rotates
+  // with the facing); the y drop sits the glow on the lantern body
+  offset: [-0.03, -0.11, -0.12],
+};
+
 const INDICATOR_LIGHTS_DEFAULTS = {
   color: '#ffb27d',
   intensity: 0.9,
@@ -244,6 +257,18 @@ const lanternLightsUniforms = createLightUniforms(
   LANTERN_LIGHTS_DEFAULTS
 );
 
+// Follows the character's belt lantern: the position uniform is written
+// every frame by useLanternAttachment from the lantern mesh world position
+const beltLanternLightUniforms = {
+  ...createLightUniforms('BeltLantern', BELT_LANTERN_LIGHT_DEFAULTS),
+  uBeltLanternLightPosition: { value: new THREE.Vector3() },
+};
+
+// Mutated by the debug control, applied by the per-frame position update
+const beltLanternLightSettings = {
+  offset: [...BELT_LANTERN_LIGHT_DEFAULTS.offset],
+};
+
 const indicatorLightsUniforms = createLightUniforms(
   'Indicator',
   INDICATOR_LIGHTS_DEFAULTS
@@ -404,6 +429,7 @@ const patchIslandPointLights = material => {
       portalLightUniforms,
       torchLightsUniforms,
       lanternLightsUniforms,
+      beltLanternLightUniforms,
       indicatorLightsUniforms,
       forgeLavaLightUniforms,
       swordLightUniforms,
@@ -435,6 +461,8 @@ ${lightUniformsGlsl('Portal')}
 uniform vec3 uPortalLightPosition;
 ${lightUniformsGlsl('Torch')}
 ${lightUniformsGlsl('Lantern')}
+${lightUniformsGlsl('BeltLantern')}
+uniform vec3 uBeltLanternLightPosition;
 ${lightUniformsGlsl('Indicator')}
 ${lightUniformsGlsl('ForgeLava')}
 uniform vec3 uForgeLavaLightPosition;
@@ -490,6 +518,7 @@ for (int i = 0; i < TORCH_LIGHT_COUNT; i++) {
 for (int i = 0; i < LANTERN_LIGHT_COUNT; i++) {
   ${lightCallGlsl('Lantern', 'LANTERN_LIGHT_POSITIONS[i]')}
 }
+${lightCallGlsl('BeltLantern', 'uBeltLanternLightPosition')}
 for (int i = 0; i < INDICATOR_LIGHT_COUNT; i++) {
   ${lightCallGlsl('Indicator', 'INDICATOR_LIGHT_POSITIONS[i]')}
 }
@@ -527,6 +556,7 @@ export {
   PORTAL_LIGHT_DEFAULTS,
   TORCH_LIGHTS_DEFAULTS,
   LANTERN_LIGHTS_DEFAULTS,
+  BELT_LANTERN_LIGHT_DEFAULTS,
   INDICATOR_LIGHTS_DEFAULTS,
   FORGE_LAVA_LIGHT_DEFAULTS,
   SWORD_LIGHT_DEFAULTS,
@@ -545,6 +575,8 @@ export {
   portalLightUniforms,
   torchLightsUniforms,
   lanternLightsUniforms,
+  beltLanternLightUniforms,
+  beltLanternLightSettings,
   indicatorLightsUniforms,
   forgeLavaLightUniforms,
   swordLightUniforms,

@@ -5,6 +5,7 @@ import {
   ANIMATION_RUN as RUN,
   ANIMATION_SPRINT as SPRINT,
   ANIMATION_JUMP as JUMP,
+  ANIMATION_FALLING as FALLING,
 } from '#controller/constants.js';
 
 export function useCharacterAnimation(characterAnimations) {
@@ -41,5 +42,6 @@ export function useCharacterAnimation(characterAnimations) {
     playRun: () => play(RUN),
     playSprint: () => play(SPRINT),
     playJump: () => play(JUMP),
+    playFalling: () => play(FALLING),
   };
 }

@@ -7,6 +7,7 @@ export const ANIMATION_IDLE = 'Idle';
 export const ANIMATION_RUN = 'Run';
 export const ANIMATION_SPRINT = 'Sprint';
 export const ANIMATION_JUMP = 'JumpRunning';
+export const ANIMATION_FALLING = 'Falling';
 
 // Character default speeds
 export const DEFAULT_CHARACTER_SPEED = 4;
