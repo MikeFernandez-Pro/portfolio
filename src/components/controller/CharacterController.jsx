@@ -1,6 +1,6 @@
 import { useRef, useCallback, useLayoutEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useGLTF, useAnimations, useFBX } from '@react-three/drei';
+import { useGLTF, useAnimations } from '@react-three/drei';
 import { CapsuleCollider, RigidBody } from '@react-three/rapier';
 import gsap from 'gsap';
 import * as THREE from 'three';
@@ -10,7 +10,7 @@ import { IS_MOBILE_DEVICE } from '#utils/utils.js';
 import { useControls } from '#utils/useControls.jsx';
 
 import CharacterModel from '#assets/models/character/character.glb';
-import FallingAnimation from '#assets/animations/Falling.fbx';
+import FallingAnimation from '#assets/animations/Falling.glb';
 import runningSoundEffect from '#controller/audio/runningSound.js';
 
 import { directionOffset } from '#controller/CharacterControllerUtils.js';
@@ -57,7 +57,7 @@ let characterRespawning = false;
 let groundedTime = 0;
 let deathTimeline = null;
 
-// Body pitch during the falling animation. The FBX hips rotation track is
+// Body pitch during the falling animation. The clip's hips rotation track is
 // stripped (it made the character dive) and replaced with a single static
 // keyframe: hips rest pose pitched by this angle. Baked into the clip data so
 // the mixer crossfade blends the lean in with the rest of the pose instead of
@@ -114,16 +114,17 @@ const CharacterController = () => {
 
   const { scene, animations } = useGLTF(CharacterModel);
 
-  // Falling animation lives in a separate Mixamo FBX. Same rig (mixamorig:*)
-  // as the GLB, but the FBX animates finger bones the GLB rig doesn't have
-  // and its root motion is in Mixamo's cm scale — keep only the rotation
-  // tracks of bones that exist so the clip drops cleanly onto the character.
-  // The hips rotation is dropped too (it pitches the body into a dive) and
-  // replaced with a static rest-pose keyframe leaned by fallingBodyAngle.
-  const fallingFbx = useFBX(FallingAnimation);
+  // Falling animation lives in a separate animation-only GLB (Blender export
+  // of the Mixamo clip). Same rig (mixamorig:*) as the character, but the
+  // clip carries translation/scale tracks on every bone and animates bones
+  // the character rig doesn't have — keep only the rotation tracks of bones
+  // that exist so the clip drops cleanly onto the character. The hips
+  // rotation is dropped too (it pitches the body into a dive) and replaced
+  // with a static rest-pose keyframe leaned by fallingBodyAngle.
+  const fallingGltf = useGLTF(FallingAnimation);
   const fallingHipsRef = useRef(null);
   const mergedAnimations = useMemo(() => {
-    const clip = fallingFbx.animations[0].clone();
+    const clip = fallingGltf.animations[0].clone();
     clip.name = FALLING;
     const rigBones = new Set();
     scene.traverse(object => object.isBone && rigBones.add(object.name));
@@ -159,7 +160,7 @@ const CharacterController = () => {
     clip.tracks.push(track);
 
     return [...animations, clip];
-  }, [animations, fallingFbx, scene]);
+  }, [animations, fallingGltf, scene]);
 
   const characterAnimations = useAnimations(mergedAnimations, scene);
   const animation = useCharacterAnimation(characterAnimations);
