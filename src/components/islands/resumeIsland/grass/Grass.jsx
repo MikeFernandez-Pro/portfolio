@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { useTexture } from '@react-three/drei';
 import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
 import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
@@ -12,8 +11,10 @@ import { IS_MOBILE_DEVICE } from '#utils/utils.js';
 import grassFragmentShader from '#shaders/grass/fragment.glsl';
 import grassVertexShader from '#shaders/grass/vertex.glsl';
 
-import grassHeightTextureAsset from '#assets/textures/grass-height-map.webp';
-import perlinNoiseImage from '#assets/textures/perlin.png';
+import {
+  useSpiralGrassHeightTexture,
+  useVoronoiPerlinTexture,
+} from '#utils/packedTextures.js';
 
 // Trample map: a small buffer mapped onto the patch XZ. Each texel stores
 // the remaining crush influence (sampled directly by the vertex shader) and
@@ -142,17 +143,12 @@ const Grass = () => {
     return grassGeometry;
   }, [controls.segmentsCount, controls.patchSize, controls.count]);
 
-  // Materials
-  const grassHeightTexture = useTexture(grassHeightTextureAsset, texture => {
-    texture.colorSpace = THREE.NoColorSpace;
-    texture.flipY = false;
-  });
+  // Materials. The height map lives in the green channel of the packed
+  // spiral/grass/star texture; it used to be loaded with flipY = false, so
+  // the vertex shader flips patchUv.y before sampling instead.
+  const grassHeightTexture = useSpiralGrassHeightTexture();
 
-  const perlinNoiseTexture = useTexture(perlinNoiseImage, texture => {
-    texture.colorSpace = THREE.NoColorSpace;
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-  });
+  const perlinNoiseTexture = useVoronoiPerlinTexture();
 
   const grassMaterial = useMemo(
     () =>
@@ -378,6 +374,3 @@ const Grass = () => {
 };
 
 export { Grass };
-
-useTexture.preload(grassHeightTextureAsset);
-useTexture.preload(perlinNoiseImage);

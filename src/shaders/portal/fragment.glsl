@@ -1,6 +1,9 @@
 uniform float uTime;
 uniform float uSize;
+// Shared sRGB screens atlas + the UV rect of the active project image
 uniform sampler2D uTextureMap;
+uniform vec2 uTextureOffset;
+uniform vec2 uTextureSize;
 uniform sampler2D uPerlinTexture;
 
 // Idle pulse: the open disc radius breathes between the two amplitudes
@@ -48,7 +51,8 @@ varying vec2 vUv;
 varying vec3 vViewDirTangent;
 
 float samplePerlinNoise(vec2 uv) {
-  return texture2D(uPerlinTexture, uv).r;
+  // perlin = green channel of the packed voronoi/perlin texture
+  return texture2D(uPerlinTexture, uv).g;
 }
 
 void main() {
@@ -65,7 +69,7 @@ void main() {
 
     float dist = length(vUv - center);
 
-    float noise = texture2D(uPerlinTexture, vUv * uNoiseScale + uTime * uNoiseSpeed).r;
+    float noise = texture2D(uPerlinTexture, vUv * uNoiseScale + uTime * uNoiseSpeed).g;
 
     float deformationStrength = smoothstep(uDeformationStart, uDeformationEnd, dist);
     float deformedRadius = baseRadius + (noise - 0.5) * uDeformationStrength * deformationStrength;
@@ -109,7 +113,11 @@ void main() {
         * mix(0.3, 1.0, centerStability)
         * uTextureDistortion
         * max(size, 0.001);
-    vec4 texColor = texture2D(uTextureMap, textureUv);
+    // Map into the atlas rect; the clamp replaces the old clamp-to-edge
+    // wrapping so parallax/distortion can't bleed into neighboring tiles
+    vec2 atlasUv = uTextureOffset
+      + clamp(textureUv, vec2(0.001), vec2(0.999)) * uTextureSize;
+    vec4 texColor = texture2D(uTextureMap, atlasUv);
 
     // Lighting and saturation grade on the final disc color
     texColor.rgb *= uLighting;

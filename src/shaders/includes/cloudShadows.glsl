@@ -32,7 +32,8 @@ float cloudShadowFactor(vec2 worldXZ) {
     }
 
     vec2 cUv = layerUv + vec2(17.31, 9.17) * float(i);
-    cloudField += texture2D(uCloudShadowNoise, cUv).r * layerWeight;
+    // perlin = green channel of the packed voronoi/perlin texture
+    cloudField += texture2D(uCloudShadowNoise, cUv).g * layerWeight;
     cloudWeight += layerWeight;
     layerWeight *= 0.5;
     layerUv *= 2.0;

@@ -16,7 +16,8 @@ varying vec2 vUv;
 void main()
 {
     vec2 noiseUv = vUv + vec2(uTime * 0.05);
-    float noise = texture2D(uPerlinNoise, noiseUv).r;
+    // perlin = green channel of the packed voronoi/perlin texture
+    float noise = texture2D(uPerlinNoise, noiseUv).g;
     float innerDeformation = (noise - 0.5) * uInnerPerlinStrength;
     float outerDeformation = (noise - 0.5) * uOuterPerlinStrength;
 

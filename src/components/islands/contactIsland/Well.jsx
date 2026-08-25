@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useGLTF, useTexture, Instances, Instance } from '@react-three/drei';
+import { useGLTF, Instances, Instance } from '@react-three/drei';
 import CustomShaderMaterial from 'three-custom-shader-material';
 import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
@@ -9,7 +9,7 @@ import wellVertexShader from '#shaders/well/vertex.glsl';
 import wellFragmentShader from '#shaders/well/fragment.glsl';
 import fishVertexShader from '#shaders/fish/vertex.glsl';
 
-import perlinNoiseImage from '#assets/textures/perlin.png';
+import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
 
 import fishModel from '#assets/models/island/fish.glb?url';
 
@@ -219,11 +219,7 @@ const Well = () => {
     { collapsed: true }
   );
 
-  const perlinNoiseTexture = useTexture(perlinNoiseImage, texture => {
-    texture.colorSpace = THREE.NoColorSpace;
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-  });
+  const perlinNoiseTexture = useVoronoiPerlinTexture();
 
   // Stable identity: CSM resets every uniform to these values whenever the
   // uniforms prop changes reference, which would wipe the debug tweaks
@@ -328,6 +324,5 @@ const Well = () => {
 };
 
 useGLTF.preload(fishModel);
-useTexture.preload(perlinNoiseImage);
 
 export { Well };

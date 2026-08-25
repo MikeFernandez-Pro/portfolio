@@ -1,13 +1,12 @@
 import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { useTexture } from '@react-three/drei';
 import { Effect } from 'postprocessing';
 import gsap from 'gsap';
 import * as THREE from 'three';
 
 import sceneRevealerFragmentShader from '#shaders/sceneRevealer/fragment.glsl';
 
-import PerlinNoiseImage from '#assets/textures/perlin.png';
+import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
 
 import { IS_PHOTO_MODE } from '#utils/utils.js';
 
@@ -29,11 +28,7 @@ const SceneRevealer = props => {
 
   const aspectRatio = useThree(state => state.viewport.aspect);
 
-  const perlinNoiseTexture = useTexture(PerlinNoiseImage, texture => {
-    texture.colorSpace = THREE.NoColorSpace;
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-  });
+  const perlinNoiseTexture = useVoronoiPerlinTexture();
 
   const effect = useMemo(
     () => new sceneRevealerEffect(aspectRatio, perlinNoiseTexture),
@@ -70,7 +65,5 @@ const SceneRevealer = props => {
 
   return <primitive ref={sceneRevealerRef} object={effect} />;
 };
-
-useTexture.preload(PerlinNoiseImage);
 
 export { SceneRevealer };

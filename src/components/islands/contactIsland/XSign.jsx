@@ -1,10 +1,12 @@
-import { useRef } from 'react';
-import * as THREE from 'three';
-import { useTexture } from '@react-three/drei';
+import { useMemo, useRef } from 'react';
 
 import { useControls } from '#utils/useControls.jsx';
 
-import xLogoImage from '#assets/textures/x2.png';
+import {
+  useScreensAtlasTexture,
+  SCREENS_ATLAS_RECTS,
+  createAtlasTileTexture,
+} from '#utils/packedTextures.js';
 
 // The baked Vercel sign quads (hidden in Islands.jsx) spanned
 // x -2.54..-1.46, y -1.89..-1.38, z 11.62..12.20 in island-local space —
@@ -26,9 +28,14 @@ const XSign = () => {
   const meshRef = useRef();
   const materialRef = useRef();
 
-  const xLogoTexture = useTexture(xLogoImage, texture => {
-    texture.colorSpace = THREE.SRGBColorSpace;
-  });
+  // White X logo tile of the screens atlas. The atlas has no alpha channel
+  // (flattened over black), so the white logo's green channel doubles as the
+  // cutout mask through alphaMap.
+  const atlasTexture = useScreensAtlasTexture();
+  const xLogoTexture = useMemo(
+    () => createAtlasTileTexture(atlasTexture, SCREENS_ATLAS_RECTS.xLogo),
+    [atlasTexture]
+  );
 
   useControls(
     'XSign',
@@ -118,14 +125,15 @@ const XSign = () => {
       <meshStandardMaterial
         ref={materialRef}
         map={xLogoTexture}
-        alphaTest={0.5}
+        alphaMap={xLogoTexture}
+        // The mask now rides a color channel, so it gets sRGB-decoded:
+        // 0.21 in linear ≈ the old 0.5 straight-alpha threshold
+        alphaTest={0.21}
         emissive={X_SIGN_EMISSIVE_COLOR}
         emissiveIntensity={X_SIGN_EMISSIVE_INTENSITY}
       />
     </mesh>
   );
 };
-
-useTexture.preload(xLogoImage);
 
 export { XSign };

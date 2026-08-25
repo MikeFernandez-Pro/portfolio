@@ -6,6 +6,7 @@ import { Howl } from 'howler';
 import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
 
+import { PerfPanel } from './debug/PerfPanel.jsx';
 import Joystick from '#controller/Joystick.jsx';
 import CharacterController from '#controller/CharacterController.jsx';
 import RespawnControls from '#controller/RespawnControls.jsx';
@@ -163,6 +164,7 @@ const Experience = () => {
         <OrbitControls target={IS_PHOTO_MODE ? [-1.35, 5, -15] : undefined} />
       )}
       {!IS_PHOTO_MODE && <StatsGl />}
+      {!IS_PHOTO_MODE && <PerfPanel />}
       {!IS_PHOTO_MODE && <RespawnControls />}
       {!IS_PHOTO_MODE && <Joystick />}
       {!IS_PHOTO_MODE && <Clouds />}

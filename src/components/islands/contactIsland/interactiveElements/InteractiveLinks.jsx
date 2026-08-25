@@ -1,10 +1,14 @@
 import { useMemo } from 'react';
-import { Merged, useTexture } from '@react-three/drei';
+import { Merged } from '@react-three/drei';
 import * as THREE from 'three';
 
 import { IS_MOBILE_DEVICE } from '#utils/utils.js';
 
-import InteractiveLinkImage from '#assets/textures/intertactive-link.webp';
+import {
+  useScreensAtlasTexture,
+  SCREENS_ATLAS_RECTS,
+  createAtlasTileTexture,
+} from '#utils/packedTextures.js';
 
 const INTERACTIVE_LINK_COLOR = new THREE.Color(10, 1.5, 1.0);
 
@@ -12,12 +16,22 @@ const InteractiveLinks = props => {
   const { interactiveElementsData, activePlateRef, interactionPromptRef } =
     props;
 
-  const interactiveLinkTexture = useTexture(InteractiveLinkImage, texture => {
+  // "Enter" tile of the screens atlas. The atlas has no alpha channel
+  // (flattened over black), so the white text's green channel doubles as the
+  // cutout mask through alphaMap. The clone keeps this material's own
+  // sampling setup without touching the shared atlas texture.
+  const atlasTexture = useScreensAtlasTexture();
+  const interactiveLinkTexture = useMemo(() => {
+    const texture = createAtlasTileTexture(
+      atlasTexture,
+      SCREENS_ATLAS_RECTS.interactiveLink
+    );
     texture.colorSpace = THREE.NoColorSpace;
     texture.magFilter = THREE.NearestFilter;
     texture.minFilter = THREE.NearestFilter;
     texture.generateMipmaps = false;
-  });
+    return texture;
+  }, [atlasTexture]);
 
   const interactionIndicatorMesh = useMemo(
     () =>
@@ -34,6 +48,7 @@ const InteractiveLinks = props => {
         new THREE.PlaneGeometry(1, 1),
         new THREE.MeshBasicMaterial({
           map: interactiveLinkTexture,
+          alphaMap: interactiveLinkTexture,
           color: INTERACTIVE_LINK_COLOR,
           transparent: true,
           depthWrite: false,
@@ -95,7 +110,5 @@ const InteractiveLinks = props => {
     </>
   );
 };
-
-useTexture.preload(InteractiveLinkImage);
 
 export { InteractiveLinks };

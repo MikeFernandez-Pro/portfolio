@@ -1,12 +1,12 @@
+import { useEffect, useMemo } from 'react';
 import {
   EffectComposer as EffectComposerR3F,
-  Bloom,
   SMAA,
   N8AO,
   ToneMapping,
   Vignette,
 } from '@react-three/postprocessing';
-import { ToneMappingMode } from 'postprocessing';
+import { BlendFunction, BloomEffect, ToneMappingMode } from 'postprocessing';
 import { useControls } from '#utils/useControls.jsx';
 
 import { CheapDofPass } from './CheapDofPass.jsx';
@@ -26,14 +26,88 @@ const EffectComposer = props => {
         value: 'performance',
         options: ['performance', 'low', 'medium', 'high', 'ultra'],
       },
-      aoSamples: { value: 16, min: 1, max: 16, step: 1 },
-      denoiseSamples: { value: 4, min: 1, max: 4, step: 1 },
+      aoSamples: { value: 6, min: 1, max: 16, step: 1 },
+      denoiseSamples: { value: 3, min: 1, max: 4, step: 1 },
       denoiseRadius: { value: 12, min: 1, max: 12, step: 1 },
       color: { value: '#bce3ff' },
       halfRes: true,
       depthAwareUpsampling: false,
       screenSpaceRadius: false,
       renderMode: { value: 0, options: [0, 1, 2, 3, 4] },
+    },
+    { collapsed: true }
+  );
+
+  // Built by hand (like SceneRevealer) instead of the <Bloom> wrapper: the
+  // v3 wrapper rebuilds the effect from JSON-serialized props and doesn't
+  // pick up control changes reliably, so the controls mutate the live effect
+  // instead. ADD is the blend the wrapper forced (BloomEffect's raw default
+  // is SCREEN).
+  const bloomEffect = useMemo(
+    () =>
+      new BloomEffect({
+        blendFunction: BlendFunction.ADD,
+        mipmapBlur: true,
+        luminanceThreshold: 2,
+        luminanceSmoothing: 1,
+        intensity: 2.5,
+        levels: 7,
+      }),
+    []
+  );
+
+  useEffect(() => () => bloomEffect.dispose(), [bloomEffect]);
+
+  // levels = mipmapBlur chain depth: each level costs a downsample + an
+  // upsample fullscreen pass and its own render target
+  useControls(
+    'Bloom',
+    {
+      intensity: {
+        value: 2.2,
+        min: 0,
+        max: 10,
+        step: 0.1,
+        onChange: value => {
+          bloomEffect.intensity = value;
+        },
+      },
+      levels: {
+        value: 7,
+        min: 1,
+        max: 9,
+        step: 1,
+        onChange: value => {
+          bloomEffect.mipmapBlurPass.levels = value;
+        },
+      },
+      radius: {
+        value: 0.85,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        onChange: value => {
+          bloomEffect.mipmapBlurPass.radius = value;
+        },
+      },
+      luminanceThreshold: {
+        value: 2,
+        min: 0,
+        max: 5,
+        step: 0.05,
+        onChange: value => {
+          bloomEffect.luminanceMaterial.threshold = value;
+        },
+      },
+      luminanceSmoothing: {
+        value: 1,
+        min: 0,
+        max: 2,
+        step: 0.05,
+        onChange: value => {
+          bloomEffect.luminanceMaterial.smoothing = value;
+        },
+      },
     },
     { collapsed: true }
   );
@@ -50,12 +124,7 @@ const EffectComposer = props => {
       <CheapDofPass cheapDofPassRef={cheapDofPassRef} />
     )}
   
-    <Bloom
-      mipmapBlur
-      luminanceThreshold={2}
-      luminanceSmoothing={1}
-      intensity={2}
-    />
+    <primitive object={bloomEffect} />
   
     <Vignette />
   

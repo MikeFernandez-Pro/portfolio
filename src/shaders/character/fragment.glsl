@@ -33,13 +33,14 @@ vec4 triplanar(sampler2D tex, vec3 p01, vec3 n, float repeat, vec2 uvOffset) {
 void main() {
     vec2 perlinScroll = vec2( uPerlinSpeed, -uTime * uPerlinSpeed * 0.5);
 
+    // perlin = green channel of the packed voronoi/perlin texture
     float perlin = triplanar(
         uPerlinTexture,
         vClampedPos,
         vNormalizedNormal,
         uPerlinScale,
         perlinScroll
-    ).r;
+    ).g;
     vec2 deform = vec2(perlin - 0.5) * uPerlinStrength;
 
     float vTex = triplanar(

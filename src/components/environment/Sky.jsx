@@ -1,13 +1,12 @@
 import { useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { useTexture } from '@react-three/drei';
 import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
 
 import starsVertexShader from '#shaders/stars/vertex.glsl';
 import starsFragmentShader from '#shaders/stars/fragment.glsl';
 
-import FireWorkTexture from '#assets/textures/star.png';
+import { useSpiralGrassHeightTexture } from '#utils/packedTextures.js';
 
 const SKY_RADIUS = 120;
 
@@ -64,10 +63,9 @@ const Experience = () => {
     { collapsed: true }
   );
 
-  const fireWorkTexture = useTexture(FireWorkTexture, texture => {
-    texture.colorSpace = THREE.NoColorSpace;
-    texture.flipY = false;
-  });
+  // Star sprite packed in the blue channel of the spiral/grass/star texture,
+  // sitting at UV origin (the fragment shader samples gl_PointCoord * 0.125)
+  const fireWorkTexture = useSpiralGrassHeightTexture();
 
   // Geometry
   const fireworksGeometry = useMemo(() => {
@@ -149,7 +147,5 @@ const Experience = () => {
     />
   );
 };
-
-useTexture.preload(FireWorkTexture);
 
 export default Experience;

@@ -146,8 +146,11 @@ void main() {
     vec2(-grassBladeWorldPos.x + uPositionX, grassBladeWorldPos.z - uPositionZ) /
       GRASS_PATCH_SIZE * 0.5 +
     0.5;
-  vec4 heightData = texture2D(uHeightDataTexture, patchUv);
-  float grassHeight = heightData.x;
+  // Green channel of the packed spiral/grass/star texture; the packed file
+  // uploads with the default flipY (the old standalone map used flipY=false),
+  // so v is flipped here
+  vec4 heightData = texture2D(uHeightDataTexture, vec2(patchUv.x, 1.0 - patchUv.y));
+  float grassHeight = heightData.g;
 
     
 
@@ -196,10 +199,10 @@ void main() {
   float z = 0.0;
 
   // Grass wind parameters
-float windStrength = texture2D(uPerlinNoiseTexture, 
-  vec2( 
+float windStrength = texture2D(uPerlinNoiseTexture,
+  vec2(
     vec3(-grassBladeWorldPos.x * uWindScale, grassBladeWorldPos.z * uWindScale, 0.0) + uTime * uWindSpeed
-  )).r; 
+  )).g; // perlin = green channel of the packed voronoi/perlin texture
   
   float windAngle = 0.0;
   vec3 windAxis = vec3(cos(windAngle), 0.0, sin(windAngle));
@@ -209,7 +212,7 @@ float windStrength = texture2D(uPerlinNoiseTexture,
         vec2(
             vec3(-grassBladeWorldPos.x * uWindScale * 1.3, grassBladeWorldPos.z * uWindScale * 1.3, 0.0) + uTime * uWindSpeed * 1.3
         )
-    ).r * (windStrength * 0.5 + 0.125);
+    ).g * (windStrength * 0.5 + 0.125);
 
   // Grass lean factor
   float leanFactor =

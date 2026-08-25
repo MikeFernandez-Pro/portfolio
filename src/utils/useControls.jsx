@@ -25,6 +25,7 @@ const FOLDER_TREE = {
   Postprocessing: {
     depthOfField: null,
     'Ambient Occlusion': null,
+    Bloom: null,
   },
   Sky: { Background: null, Stars: null },
   WorldLight: {

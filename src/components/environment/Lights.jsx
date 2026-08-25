@@ -138,6 +138,20 @@ const Lights = () => {
         max: 25,
         step: 0.1,
       },
+      // Shadow map resolution. Transient: the live shadow map must be
+      // disposed so three reallocates it at the new size on the next frame
+      mapSize: {
+        value: 2048,
+        options: [512, 1024, 2048, 4096],
+        onChange: value => {
+          const light = characterLightRef.current;
+          if (!light) return;
+
+          light.shadow.mapSize.set(value, value);
+          light.shadow.map?.dispose();
+          light.shadow.map = null;
+        },
+      },
     },
     { collapsed: true }
   );

@@ -1,12 +1,10 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useTexture } from '@react-three/drei';
 import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
 import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
 
-import voronoiImage from '#assets/textures/voronoi.webp';
-import perlinNoiseImage from '#assets/textures/perlin.png';
+import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
 import vertexShader from '#shaders/forgeLava/vertex.glsl';
 import fragmentShader from '#shaders/forgeLava/fragment.glsl';
 import {
@@ -49,23 +47,16 @@ const ForgeLavaPlane = ({ blowerMesh }) => {
   // never drift out of sync with the bellows
   const blowerIndex = blowerMesh?.morphTargetDictionary?.blowerClosed;
 
-  const [voronoiTexture, perlinNoiseTexture] = useTexture(
-    [voronoiImage, perlinNoiseImage],
-    textures => {
-      textures.forEach(texture => {
-        texture.wrapS = THREE.RepeatWrapping;
-        texture.wrapT = THREE.RepeatWrapping;
-        texture.colorSpace = THREE.NoColorSpace;
-      });
-    }
-  );
+  // Voronoi (R) and perlin (G) share one packed texture; both sampler
+  // uniforms point at it
+  const noiseTexture = useVoronoiPerlinTexture();
 
   const lavaMaterial = useMemo(() => {
     const material = new CustomShaderMaterial({
       baseMaterial: new THREE.MeshStandardMaterial(),
       uniforms: {
-        uVoronoiTexture: { value: voronoiTexture },
-        uPerlinNoise: { value: perlinNoiseTexture },
+        uVoronoiTexture: { value: noiseTexture },
+        uPerlinNoise: { value: noiseTexture },
         uTime: { value: 0 },
         uSize: { value: LAVA_DEFAULTS.size },
         uSpeed: { value: LAVA_DEFAULTS.speed },
@@ -84,7 +75,7 @@ const ForgeLavaPlane = ({ blowerMesh }) => {
     uniformsRef.current = material.uniforms;
 
     return material;
-  }, [voronoiTexture, perlinNoiseTexture]);
+  }, [noiseTexture]);
 
   const { posX, posY, posZ, rotationY, scaleX, scaleY } = useControls(
     'ForgeLava',

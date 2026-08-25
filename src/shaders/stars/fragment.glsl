@@ -8,8 +8,9 @@ varying float vColor;
 
 
 void main() {
-    vec4 textureColor = texture2D(uTexture, gl_PointCoord);
-    float alpha = textureColor.r;
+    // 64px star tile at the UV origin of the 512px packed texture (blue channel)
+    vec4 textureColor = texture2D(uTexture, gl_PointCoord * 0.125);
+    float alpha = textureColor.b;
 
     if(vColor < 0.33) {
         gl_FragColor = vec4(uColor1 * uBrightness , alpha);

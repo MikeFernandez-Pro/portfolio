@@ -18,7 +18,8 @@ varying vec2 vUv;
 void main() {
     float t = uTime * uSpeed;
 
-    float perlinNoisePattern = texture2D(uPerlinNoise, vUv * uSize + t).r;
+    // perlin = green channel of the packed voronoi/perlin texture
+    float perlinNoisePattern = texture2D(uPerlinNoise, vUv * uSize + t).g;
     perlinNoisePattern *= uPerlinNoiseStrength;
 
     float  lavaPattern = texture2D(uVoronoiTexture, vUv * uSize + perlinNoisePattern).r;

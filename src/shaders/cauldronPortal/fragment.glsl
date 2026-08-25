@@ -1,6 +1,6 @@
 // Ported from an earlier project's ending portal shader. Differences: perlin
-// noise comes from the repeating perlin.png texture instead of a packed
-// atlas, and the depth-intersection layer is dropped (no depth prepass here).
+// noise comes from the green channel of the repeating packed voronoi/perlin
+// texture, and the depth-intersection layer is dropped (no depth prepass here).
 // `saturate` and `PI` come from three's <common> chunk — do not redefine.
 
 uniform vec3 uDeepColor;
@@ -53,7 +53,7 @@ mat2 rotate2d(float angle) {
 }
 
 float samplePerlinNoise(vec2 uv) {
-  return texture2D(uPerlinNoise, uv).r;
+  return texture2D(uPerlinNoise, uv).g;
 }
 
 float stripeMask(float phase, float width, float softness) {

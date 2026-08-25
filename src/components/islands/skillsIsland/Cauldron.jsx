@@ -1,6 +1,5 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useTexture } from '@react-three/drei';
 import CustomShaderMaterial from 'three-custom-shader-material';
 import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
@@ -10,7 +9,7 @@ import portalFragmentShader from '#shaders/cauldronPortal/fragment.glsl';
 import bubblesVertexShader from '#shaders/cauldronBubbles/vertex.glsl';
 import bubblesFragmentShader from '#shaders/cauldronBubbles/fragment.glsl';
 
-import perlinNoiseImage from '#assets/textures/perlin.png';
+import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
 
 const SPEED = 0.5;
 const POTION_PLANE_HEIGHT = 0;
@@ -88,11 +87,7 @@ const Cauldron = props => {
   const bubblesPointsRef = useRef(null);
   const planeHeightRef = useRef(POTION_PLANE_HEIGHT);
 
-  const perlinNoiseTexture = useTexture(perlinNoiseImage, texture => {
-    texture.colorSpace = THREE.NoColorSpace;
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-  });
+  const perlinNoiseTexture = useVoronoiPerlinTexture();
 
   // The potion mesh has no UVs: the vertex shader maps the portal onto the
   // liquid disc from its local-space XZ bounds instead
@@ -429,6 +424,5 @@ const Cauldron = props => {
   );
 };
 
-useTexture.preload(perlinNoiseImage);
 
 export { Cauldron };

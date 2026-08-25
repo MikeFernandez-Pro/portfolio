@@ -19,7 +19,8 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor)
 
     // float perlinNoise = snoise(vec3(centeredUv.x * size, centeredUv.y * size, uTime * 0.15));
     vec2 perlinUv = vec2(centeredUv.x * size + uTime * 0.05, centeredUv.y * size + uTime * 0.05);
-    float perlinNoise = texture2D(uPerlinNoiseTexture, perlinUv).r; 
+    // perlin = green channel of the packed voronoi/perlin texture
+    float perlinNoise = texture2D(uPerlinNoiseTexture, perlinUv).g;
 
     if(distanceToCenter - perlinNoise * 0.5 > scaledProgress)
         discard;

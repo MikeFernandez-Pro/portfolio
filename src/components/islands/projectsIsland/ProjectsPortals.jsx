@@ -1,6 +1,6 @@
 import { useMemo, useEffect, useRef } from 'react';
-import { useFrame, useLoader } from '@react-three/fiber';
-import { Circle, useTexture } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
+import { Circle } from '@react-three/drei';
 import { useControls } from '#utils/useControls.jsx';
 import { Howl } from 'howler';
 import gsap from 'gsap';
@@ -21,12 +21,21 @@ import portalSparksFragmentShader from '#shaders/portalSparks/fragment.glsl';
 
 import PortalAudio from '#assets/sounds/portal.mp3';
 
-// Project images are wider than tall on purpose: the portal shows a centered
-// square crop and the spare width feeds the horizontal parallax
-import portalProjectImage from '#assets/textures/santa-clous-fighting.png';
-import seaProjectImage from '#assets/textures/doan-ten-con-.png';
-import halloweenProjectImage from '#assets/textures/halloween-scene.png';
-import perlinNoiseImage from '#assets/textures/perlin.png';
+// Project images live in the shared sRGB screens atlas; they are wider than
+// tall on purpose: the portal shows a centered square crop and the spare
+// width feeds the horizontal parallax
+import {
+  useScreensAtlasTexture,
+  useVoronoiPerlinTexture,
+  SCREENS_ATLAS_RECTS,
+} from '#utils/packedTextures.js';
+
+// Atlas rect shown by each pressure plate
+const PORTAL_PLATE_RECTS = {
+  portalPlate: SCREENS_ATLAS_RECTS.santaClousFighting,
+  seaPlate: SCREENS_ATLAS_RECTS.doanTenCon,
+  halloweenPlate: SCREENS_ATLAS_RECTS.halloweenScene,
+};
 
 const PORTAL_POSITION = new THREE.Vector3(-16.12, 6.95, -37.7);
 const PORTAL_OPEN_SIZE = 0.36;
@@ -104,32 +113,9 @@ const ProjectsPortals = props => {
   );
 
   // Textures
-  const portalsTextures = useMemo(
-    () => ({
-      portalPlate: useLoader(THREE.TextureLoader, portalProjectImage),
-      seaPlate: useLoader(THREE.TextureLoader, seaProjectImage),
-      halloweenPlate: useLoader(THREE.TextureLoader, halloweenProjectImage),
-    }),
-    [portalProjectImage, seaProjectImage, halloweenProjectImage]
-  );
+  const screensAtlasTexture = useScreensAtlasTexture();
 
-  // The project images are sRGB-authored; left on the default NoColorSpace
-  // they'd be sampled as linear and re-encoded by colorspace_fragment on
-  // output, washing the colors out
-  useEffect(() => {
-    Object.values(portalsTextures).forEach(texture => {
-      if (texture.colorSpace !== THREE.SRGBColorSpace) {
-        texture.colorSpace = THREE.SRGBColorSpace;
-        texture.needsUpdate = true;
-      }
-    });
-  }, [portalsTextures]);
-
-  const perlinTexture = useTexture(perlinNoiseImage, texture => {
-    texture.colorSpace = THREE.NoColorSpace;
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-  });
+  const perlinTexture = useVoronoiPerlinTexture();
 
   // Material
   const portalShaderMaterial = useMemo(
@@ -140,7 +126,11 @@ const ProjectsPortals = props => {
         uniforms: {
           uTime: { value: 0 },
           uSize: { value: -0.2 },
-          uTextureMap: { value: undefined },
+          uTextureMap: { value: screensAtlasTexture },
+          // Atlas rect of the active project image; set by the activePlate
+          // subscription before the portal ever opens
+          uTextureOffset: { value: new THREE.Vector2(0, 0) },
+          uTextureSize: { value: new THREE.Vector2(1, 1) },
           uSizePulseSpeed: { value: PORTAL_SHADER_DEFAULTS.sizePulseSpeed },
           uSizePulseMin: { value: PORTAL_SHADER_DEFAULTS.sizePulseMin },
           uSizePulseMax: { value: PORTAL_SHADER_DEFAULTS.sizePulseMax },
@@ -172,7 +162,7 @@ const ProjectsPortals = props => {
         },
         transparent: true,
       }),
-    [portalVertexShader, portalFragmentShader, perlinTexture]
+    [portalVertexShader, portalFragmentShader, perlinTexture, screensAtlasTexture]
   );
 
   const portalSparksMaterial = useMemo(
@@ -462,15 +452,15 @@ const ProjectsPortals = props => {
       }
     );
 
-    // Retrieve current activated plate and update shader texture accordingly
+    // Retrieve current activated plate and point the shader at its atlas rect
     const unsubActivaPlate = useStore.subscribe(
       state => state.activePlate,
       activePlate => {
         if (activePlate) {
-          const texture = portalsTextures[activePlate];
-          portalShaderMaterial.uniforms.uTextureMap.value = texture;
-          portalShaderMaterial.uniforms.uTextureAspect.value =
-            texture.image.width / texture.image.height;
+          const rect = PORTAL_PLATE_RECTS[activePlate];
+          portalShaderMaterial.uniforms.uTextureOffset.value.copy(rect.offset);
+          portalShaderMaterial.uniforms.uTextureSize.value.copy(rect.size);
+          portalShaderMaterial.uniforms.uTextureAspect.value = rect.aspect;
           portalScaleUpAnimation.restart();
           portalSoundEffect.play();
         }
@@ -500,7 +490,7 @@ const ProjectsPortals = props => {
       unsubCharacterPosition();
       portalScaleUpAnimation?.kill();
     };
-  }, [portalShaderMaterial, portalSoundEffect, portalsTextures]);
+  }, [portalShaderMaterial, portalSoundEffect]);
 
   useFrame(({ clock, size, viewport }, delta) => {
     portal.rotation.y += delta * 0.15;
@@ -579,12 +569,5 @@ const ProjectsPortals = props => {
     </>
   );
 };
-
-useTexture.preload({
-  portalProjectImage,
-  seaProjectImage,
-  halloweenProjectImage,
-  perlinNoiseImage,
-});
 
 export { ProjectsPortals };

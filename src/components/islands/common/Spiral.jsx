@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { useGLTF, useTexture } from '@react-three/drei';
+import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
 import spiralVertexShader from '#shaders/spiral/vertex.glsl';
 import spiralFragmentShader from '#shaders/spiral/fragment.glsl';
 
 import spiralModel from '#assets/models/island/Spiral.glb?url';
-import spiralTextureImage from '#assets/textures/spiralTexture.png';
+import { useSpiralGrassHeightTexture } from '#utils/packedTextures.js';
 
 import { useStore } from '#store/ZustandStorage.jsx';
 import { RESPAWN_DEFAULTS } from '#controller/respawnAnimation.js';
@@ -20,9 +20,8 @@ const Spiral = () => {
 
   const { nodes } = useGLTF(spiralModel);
 
-  const spiralTexture = useTexture(spiralTextureImage, texture => {
-    texture.colorSpace = THREE.SRGBColorSpace;
-  });
+  // Spiral mask lives in the red channel of the packed texture
+  const spiralTexture = useSpiralGrassHeightTexture();
 
   const uniforms = useMemo(
     () => ({
@@ -77,6 +76,5 @@ const Spiral = () => {
 };
 
 useGLTF.preload(spiralModel);
-useTexture.preload(spiralTextureImage);
 
 export { Spiral };

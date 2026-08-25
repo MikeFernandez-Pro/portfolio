@@ -1,11 +1,10 @@
 import { useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 
 import { useControls } from '#utils/useControls.jsx';
 import cloudShadowsChunk from '#shaders/includes/cloudShadows.glsl';
-import perlinNoiseImage from '#assets/textures/perlin.png';
+import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
 
 const CLOUD_SHADOW_DEFAULTS = {
   enabled: true,
@@ -78,11 +77,7 @@ const patchCloudShadows = material => {
  * Drives the shared cloud shadow uniforms: noise texture, time and controls.
  */
 const CloudShadows = () => {
-  const perlinNoiseTexture = useTexture(perlinNoiseImage, texture => {
-    texture.colorSpace = THREE.NoColorSpace;
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-  });
+  const perlinNoiseTexture = useVoronoiPerlinTexture();
 
   useEffect(() => {
     cloudShadowUniforms.uCloudShadowNoise.value = perlinNoiseTexture;
@@ -182,7 +177,5 @@ const CloudShadows = () => {
 
   return null;
 };
-
-useTexture.preload(perlinNoiseImage);
 
 export { CloudShadows, cloudShadowUniforms, patchCloudShadows };
