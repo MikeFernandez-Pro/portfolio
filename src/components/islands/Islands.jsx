@@ -21,9 +21,27 @@ import { ProjectIsland } from '#islands/projectsIsland/ProjectIsland';
 import { ResumeIsland } from '#islands/resumeIsland/ResumeIsland';
 import { CountriesFlags } from '#islands/resumeIsland/countryFlags/CountriesFlags';
 
-import islandModel from '#assets/models/island/island-no-ao.glb?url';
+import { useIslandTexture } from '#utils/packedTextures.js';
+
+import islandModel from '#assets/models/island/island.glb?url';
 
 const ISLAND_POSITION = new THREE.Vector3(-1.35, 2.25, -15);
+
+// island.glb materials that share islandTexture2k.ktx2 as baseColor map (the
+// GLB itself embeds no texture)
+const TEXTURED_MATERIALS = [
+  'islandTexture',
+  'magicBooks',
+  'magicLetters',
+  'seaPlate',
+  'halloweenPlate',
+  'portalPlate',
+  'signs',
+  'controls',
+  'britishFlag',
+  'frenchFlag',
+  'spainFlag',
+];
 
 // World-space cauldron position (GLB `pot` node through the island group
 // transform), smoke rises from just above the potion surface
@@ -50,6 +68,17 @@ const Islands = () => {
   const island = useGLTF(islandModel);
 
   const { nodes, materials, animations } = island;
+
+  // Assign the shared texture during render, before children mount: MagicBooks
+  // clones magicBooks, FloatingSkills reads magicLetters.map and CountryFlag
+  // copies the flags' map while rendering
+  const islandTexture = useIslandTexture();
+  useMemo(() => {
+    for (const name of TEXTURED_MATERIALS) {
+      materials[name].map = islandTexture;
+      materials[name].needsUpdate = true;
+    }
+  }, [materials, islandTexture]);
 
   // The GLB clips animate island_7, which is intentionally not mounted —
   // drop those tracks so the mixer doesn't warn about a missing node
@@ -161,7 +190,6 @@ const Islands = () => {
     if (islandMesh) {
       islandMesh.castShadow = !IS_MOBILE_DEVICE;
       islandMesh.receiveShadow = !IS_MOBILE_DEVICE;
-      islandMesh.material.aoMap = null;
       islandMesh.material.roughness = 1;
       patchCloudShadows(islandMesh.material);
       patchIslandPointLights(islandMesh.material);

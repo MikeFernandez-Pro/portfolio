@@ -133,6 +133,8 @@ const KTX_ENCODES = [
   },
 ];
 
+const kb = v => `${(v / 1024).toFixed(0)} kB`;
+
 if (spawnSync('ktx', ['--version']).error) {
   console.warn('\nktx CLI not found - skipping KTX2 encoding (PNGs still valid)');
 } else {
@@ -154,9 +156,43 @@ if (spawnSync('ktx', ['--version']).error) {
       throw new Error(`ktx create failed for ${source}:\n${result.stderr}`);
     }
 
-    const kb = v => `${(v / 1024).toFixed(0)} kB`;
     console.log(
       `${ktx2Path} (${kb(fs.statSync(ktx2Path).size)}, from ${kb(fs.statSync(sourcePath).size)} png)`
+    );
+  }
+
+  // Island baseColor atlas, applied in code to the island.glb materials
+  // (the GLB itself carries no texture). Unlike the entries above, NOT
+  // flipped: GLB UVs follow the glTF convention (flipY=false), which is
+  // also how KTX2 uploads — the extracted PNG is already in that
+  // orientation. RGBA: several island materials are alphaMode MASK and
+  // cut out through the atlas alpha.
+  {
+    const sourcePath = 'extracted-textures/islandTexture4k.png';
+    const resizedPath = path.join(TEXTURES_DIR, 'islandTexture2k.tmp.png');
+    const ktx2Path = path.join(TEXTURES_DIR, 'islandTexture2k.ktx2');
+
+    await sharp(sourcePath)
+      .resize(2048, 2048)
+      .png({ compressionLevel: 1 })
+      .toFile(resizedPath);
+
+    const result = spawnSync(
+      'ktx',
+      ['create', '--format', 'R8G8B8A8_SRGB', '--assign-tf', 'srgb',
+        '--encode', 'uastc', '--uastc-quality', '3',
+        '--uastc-rdo', '--uastc-rdo-l', '1.0', '--zstd', '19',
+        '--generate-mipmap', resizedPath, ktx2Path],
+      { encoding: 'utf8' }
+    );
+    fs.unlinkSync(resizedPath);
+
+    if (result.status !== 0) {
+      throw new Error(`ktx create failed for ${sourcePath}:\n${result.stderr}`);
+    }
+
+    console.log(
+      `${ktx2Path} (${kb(fs.statSync(ktx2Path).size)}, from ${kb(fs.statSync(sourcePath).size)} 4k png)`
     );
   }
 }

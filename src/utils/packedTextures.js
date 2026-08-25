@@ -5,6 +5,7 @@ import { useKTX2 } from '@react-three/drei';
 import spiralGrassHeightUrl from '#assets/textures/spiral-grassHeight.ktx2';
 import voronoiPerlinUrl from '#assets/textures/voronoi-perlin.ktx2';
 import screensAtlasUrl from '#assets/textures/screens-atlas.ktx2';
+import islandTextureUrl from '#assets/textures/islandTexture2k.ktx2';
 
 // Channel-packed KTX2 textures baked by scripts/pack-textures.mjs. The files
 // are baked vertically flipped (compressed textures cannot flipY at upload),
@@ -50,6 +51,15 @@ const configureScreensAtlas = texture => {
   texture.needsUpdate = true;
 };
 
+// islandTexture2k — sRGB baseColor atlas for the island.glb materials (the
+// GLB carries no texture, Islands.jsx assigns this map in code). Baked
+// UNFLIPPED, unlike the files above: GLB UVs follow the glTF convention
+// (flipY=false), which is also how compressed textures upload.
+const configureIslandTexture = texture => {
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+};
+
 const useSpiralGrassHeightTexture = () =>
   useConfiguredKtx2(spiralGrassHeightUrl, configureSpiralGrassHeight);
 
@@ -58,6 +68,9 @@ const useVoronoiPerlinTexture = () =>
 
 const useScreensAtlasTexture = () =>
   useConfiguredKtx2(screensAtlasUrl, configureScreensAtlas);
+
+const useIslandTexture = () =>
+  useConfiguredKtx2(islandTextureUrl, configureIslandTexture);
 
 const ATLAS_SIZE = 1024;
 
@@ -97,6 +110,7 @@ export {
   useSpiralGrassHeightTexture,
   useVoronoiPerlinTexture,
   useScreensAtlasTexture,
+  useIslandTexture,
   SCREENS_ATLAS_RECTS,
   createAtlasTileTexture,
 };
