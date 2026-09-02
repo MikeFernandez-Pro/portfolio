@@ -1,9 +1,11 @@
-import { useRef, useCallback, useLayoutEffect, useMemo } from 'react';
+import { useRef, useCallback, useEffect, useLayoutEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF, useAnimations } from '@react-three/drei';
-import { CapsuleCollider, RigidBody } from '@react-three/rapier';
 import gsap from 'gsap';
 import * as THREE from 'three';
+
+import { CharacterBody } from '#physics/CharacterBody.js';
+import { physicsWorld } from '#physics/world.js';
 
 import { useStore } from '#store/ZustandStorage.jsx';
 import { IS_MOBILE_DEVICE } from '#utils/utils.js';
@@ -28,7 +30,6 @@ import {
 import { playDespawnAnimation } from '#controller/despawnAnimation.js';
 import { useCharacterAnimation } from '#controller/hooks/useCharacterAnimation.js';
 import { updateMovement } from '#controller/movement/updateMovement.js';
-import SensorCollider from '#controller/SensorCollider.jsx';
 import FallingZoneSensor from '#controller/FallingZoneSensor.jsx';
 import {
   BODY_TYPE_DYNAMIC as DYNAMIC,
@@ -38,6 +39,7 @@ import {
   ANIMATION_SPRINT as SPRINT,
   ANIMATION_JUMP as JUMP,
   ANIMATION_FALLING as FALLING,
+  CHARACTER_JUMP_SPEED,
   DEFAULT_CHARACTER_SPEED,
   DEFAULT_CHARACTER_SPRINT_SPEED,
 } from '#controller/constants.js';
@@ -54,7 +56,6 @@ let characterJumping = false;
 let characterFalling = false;
 let characterSprinting = false;
 let characterRespawning = false;
-let groundedTime = 0;
 let deathTimeline = null;
 
 // Body pitch during the falling animation. The clip's hips rotation track is
@@ -88,10 +89,6 @@ const bakeFallingBodyAngle = ({ track, rest, chain }) => {
 // animation can be watched and tuned in place
 let fallingPreviewActive = false;
 
-// Seconds of ~zero vertical velocity before the grounded fallback re-enables
-// jumping (was 3 frames at 60fps)
-const GROUNDED_TIME_THRESHOLD = 0.05;
-
 // Fallback kill height: the death-zone sensor is the primary death trigger;
 // dropping below this despawns the character even if the sensor
 // intersection was missed
@@ -109,8 +106,31 @@ const CharacterController = () => {
   // Mobile
   const joystickAngleRef = useRef(useStore.getState().joystickAngle);
 
+  // Same body rapier built from <RigidBody position-y={0.7} type='fixed'
+  // lockRotations> + <CapsuleCollider args={[0.3, 0.25]} position-y={0.58}>.
+  // Starts FIXED; the frame loop switches it DYNAMIC on the first movement.
   const characterBody = useRef();
+  if (!characterBody.current) {
+    characterBody.current = new CharacterBody({
+      position: [0, 0.7, 0],
+      capsuleHalfHeight: 0.3,
+      capsuleRadius: 0.25,
+      capsuleOffsetY: 0.58,
+      bodyType: FIXED,
+    });
+  }
   const characterMesh = useRef();
+
+  // The group the physics step keeps in sync with the body (what the
+  // RigidBody wrapper did)
+  const characterGroupRef = useCallback(group => {
+    characterBody.current.setObject3D(group);
+  }, []);
+
+  useEffect(() => {
+    physicsWorld.setCharacterBody(characterBody.current);
+    return () => physicsWorld.setCharacterBody(null);
+  }, []);
 
   const { scene, animations } = useGLTF(CharacterModel);
 
@@ -287,10 +307,32 @@ const CharacterController = () => {
   // re-enable canJump while the body is held FIXED during the respawn)
   const characterJumpEvent = () => {
     if (!canJump || characterFalling || characterRespawning) return;
+    if (fallingPreviewActive) return;
     characterJumping = true;
     canJump = false;
-    groundedTime = 0;
-    characterBody.current.applyImpulse({ x: 0, y: 1.2, z: 0 });
+    // The body idles FIXED until the first movement (and after a window
+    // blur); wake it so a standstill jump actually leaves the ground instead
+    // of only playing the animation
+    if (characterBody.current.bodyType() === FIXED) {
+      characterBody.current.setBodyType(DYNAMIC);
+    }
+    // Kill the grounded grace window, or it would re-enable jumping for a
+    // few frames after takeoff
+    characterBody.current.clearGrounded();
+    // The frame loop only writes the store flag while canJump is still true,
+    // so a jump has to publish the takeoff itself (the grass trample releases
+    // the blades while airborne and stamps the landing)
+    useStore.setState({ characterGrounded: false });
+    // Uniform jump strength: the impulse cancels whatever vertical velocity
+    // the slope climb added, so takeoff speed is CHARACTER_JUMP_SPEED on any
+    // ground (adding a fixed impulse jumped visibly higher uphill)
+    characterBody.current.applyImpulse({
+      x: 0,
+      y:
+        (CHARACTER_JUMP_SPEED - characterBody.current.linvel().y) *
+        characterBody.current.mass(),
+      z: 0,
+    });
     updateCharacterAnimation(JUMP);
   };
 
@@ -360,22 +402,22 @@ const CharacterController = () => {
 
     characterPosition = characterBody.current.translation();
 
-    // Grounded fallback: intersection events from the ground sensor can be
-    // missed (thin trimesh + variable timestep), which leaves the jump
-    // animation stuck and jumping disabled. A short stretch of ~zero
-    // vertical velocity means we are standing on something again.
-    if (!canJump || characterJumping) {
-      if (Math.abs(characterBody.current.linvel().y) < 0.02) {
-        groundedTime += delta;
-        if (groundedTime >= GROUNDED_TIME_THRESHOLD) {
-          canJump = true;
-          characterJumping = false;
-          characterFalling = false;
-          useStore.setState({ characterGrounded: true });
-        }
-      } else {
-        groundedTime = 0;
-      }
+    // Grounded state straight from the contact solve (normals steeper than
+    // ~45° don't count; short grace for bumps and edges). Replaced the old
+    // ground trimesh sensor + zero-velocity fallback — contact normals can't
+    // miss events the way thin-trimesh sensor intersections did.
+    const characterGrounded = characterBody.current.isGrounded();
+    if (
+      characterGrounded &&
+      (!canJump || characterJumping || characterFalling)
+    ) {
+      canJump = true;
+      characterJumping = false;
+      characterFalling = false;
+      useStore.setState({ characterGrounded: true });
+    } else if (!characterGrounded && canJump) {
+      canJump = false;
+      useStore.setState({ characterGrounded: false });
     }
 
     // Primary death trigger is the death-zone sensor; this catches the
@@ -485,27 +527,19 @@ const CharacterController = () => {
   // Initialize third-person camera behavior
   useThirdPersonCamera(characterBody);
 
+  // Advance the physics AFTER the controller and camera useFrames, matching
+  // the update order of the rapier <Physics> wrapper (its step ran last, so
+  // the camera always read the previous step's translation)
+  useFrame((state, delta) => {
+    physicsWorld.step(delta);
+  });
+
   return (
     <>
       {/* Death disintegration burst (positioned + played by the death
           sequence above; outside the rigid body so the teleport to spawn
           never drags it along) */}
       <DeathParticles />
-      <SensorCollider
-        onEnter={state => {
-          // Only the character should toggle the grounded state
-          if (state.other.rigidBody !== characterBody.current) return;
-          canJump = true;
-          characterJumping = false;
-          characterFalling = false;
-          useStore.setState({ characterGrounded: true });
-        }}
-        onExit={state => {
-          if (state.other.rigidBody !== characterBody.current) return;
-          canJump = false;
-          useStore.setState({ characterGrounded: false });
-        }}
-      />
       {/* Fell off the world: the falling animation plays the moment the
           character crosses the zone under the island edges, then the death
           zone below (or the DEATH_HEIGHT fallback) kills it */}
@@ -514,6 +548,12 @@ const CharacterController = () => {
           if (state.other.rigidBody !== characterBody.current) return;
           if (characterRespawning || characterFalling) return;
           characterFalling = true;
+          // Falling off the edge with downward momentum can cross the zone
+          // while the grounded grace window is still open — without this the
+          // next frame would count as grounded, reset characterFalling and
+          // cancel the falling animation for the rest of the drop (the zone
+          // enter never re-fires)
+          characterBody.current.clearGrounded();
           runningSoundEffect.stop();
           updateCharacterAnimation(FALLING);
           useStore.setState({ isCharacterMoving: false });
@@ -523,16 +563,8 @@ const CharacterController = () => {
           killCharacter();
         }}
       />
-      <RigidBody
-        type={'fixed'}
-        lockRotations
-        ref={characterBody}
-        colliders={false}
-        position-y={0.7}
-        restitution={-10}
-        friction={0}
-      >
-        {/* Visual-only y offset of the mesh inside the rigid body (the
+      <group ref={characterGroupRef}>
+        {/* Visual-only y offset of the mesh inside the body group (the
             capsule collider and physics are untouched) */}
         <primitive
           ref={characterMesh}
@@ -541,8 +573,7 @@ const CharacterController = () => {
           rotation-y={Math.PI}
           position-y={-0.02}
         />
-        <CapsuleCollider args={[0.3, 0.25]} position={[0, 0.58, 0]} />
-      </RigidBody>
+      </group>
     </>
   );
 };

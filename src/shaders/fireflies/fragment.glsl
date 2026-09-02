@@ -11,7 +11,8 @@ void main() {
         return;
     }
     
-    float strengh = 0.05 / distanceToCenter - 0.1;
+    // max() guards the center texel (1/0); clamp already saturates below 0.05
+    float strengh = 0.05 / max(distanceToCenter, 0.001) - 0.1;
     strengh = clamp(strengh, 0.0, 1.0);
-    gl_FragColor = vec4(uColor, strengh) * uIntensity * vScale;
+    gl_FragColor = vec4(uColor, strengh) * uIntensity * max(vScale, 0.0);
 }

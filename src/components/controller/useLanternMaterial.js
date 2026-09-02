@@ -87,6 +87,7 @@ const useLanternMaterial = (characterScene, lanternMeshRef) => {
     // color * intensity, immune to lights, cloud shadows and tone mapping.
     // Chained last so the override lands after every other patch; only the
     // respawn dissolve still fades it (uCharFormProgress gate).
+    // Clamp: MSAA can extrapolate vPartMask past 0–1 and bloom those samples.
     const previousOnBeforeCompile = material.onBeforeCompile;
     material.onBeforeCompile = (shader, renderer) => {
       previousOnBeforeCompile?.call(material, shader, renderer);
@@ -95,7 +96,7 @@ const useLanternMaterial = (characterScene, lanternMeshRef) => {
         '#include <dithering_fragment>',
         `#include <dithering_fragment>
 vec3 unlitWhite = linearToOutputTexel(vec4(uWhiteColor * uWhiteIntensity, 1.0)).rgb;
-gl_FragColor.rgb = mix(gl_FragColor.rgb, unlitWhite, vPartMask.g * uCharFormProgress);`
+gl_FragColor.rgb = mix(gl_FragColor.rgb, unlitWhite, clamp(vPartMask.g, 0.0, 1.0) * uCharFormProgress);`
       );
     };
 

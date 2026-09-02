@@ -1,29 +1,30 @@
+#include ../includes/simplexNoise3d.glsl
 #include ../includes/rotate2d.glsl
 
 uniform float progress;
 uniform float size;
 uniform float aspectRatio;
 uniform float uTime;
-uniform sampler2D uPerlinNoiseTexture;
 
 void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
 
-    vec2 centeredUv = vUv - 0.5;
+    vec2 centeredUv = uv - 0.5;
     centeredUv.y /= aspectRatio;
 
-    float scaledProgress = progress / aspectRatio;
+    float safeProgress = max(abs(progress), 1e-5);
+    float distanceToCenter = length(centeredUv / safeProgress);
 
-    float distanceToCenter = length(centeredUv / scaledProgress);
+    centeredUv = rotate2d(sin(progress) * 3.141592) * centeredUv;
 
-    centeredUv = rotate2d(sin( -uTime * 0.05) * 3.141592) * centeredUv;
+    float perlinNoise = snoise(vec3(centeredUv.x * size, centeredUv.y * size, uTime * 0.15));
 
-    // float perlinNoise = snoise(vec3(centeredUv.x * size, centeredUv.y * size, uTime * 0.15));
-    vec2 perlinUv = vec2(centeredUv.x * size + uTime * 0.05, centeredUv.y * size + uTime * 0.05);
-    // perlin = green channel of the packed voronoi/perlin texture
-    float perlinNoise = texture2D(uPerlinNoiseTexture, perlinUv).g;
+    // Pixel-width AA on the radial field only — fwidth(noise) is unstable and
+    // turns the contour into stairs. Discard did the same (aliased iso-line).
+    float shape = distanceToCenter - progress;
+    float w = max(fwidth(shape), 1e-5);
+    float mask = 1.0 - smoothstep(-w, w, shape - perlinNoise * 0.1);
 
-    if(distanceToCenter - perlinNoise * 0.5 > scaledProgress)
-        discard;
-
-    outputColor = inputColor;
+    // The MSAA-resolved scene buffer can carry negative/NaN RGB (extrapolated
+    // varyings) — clamp so bloom's mip chain doesn't smear them into black
+    outputColor = vec4(max(inputColor.rgb, vec3(0.0)), inputColor.a) * mask;
 }

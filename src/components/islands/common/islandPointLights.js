@@ -153,7 +153,8 @@ const SPAWN_LIGHT_DEFAULTS = {
   height: 1.2,
 };
 
-// World-space flame positions, same as TORCHES_POSITIONS in TorchesSparks.jsx
+// World-space flame positions: the pre-offset coordinates noted next to each
+// sparks offset in TorchesSparks.jsx
 const TORCH_LIGHT_POSITIONS = [
   [-5.8, 1.7, -16.6],
   [-18.5, 5.9, -31],

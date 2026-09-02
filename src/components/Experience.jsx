@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import { GradientTexture, OrbitControls, StatsGl } from '@react-three/drei';
-import { Physics } from '@react-three/rapier';
 import { Howl } from 'howler';
 import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
 
 import { PerfPanel } from './debug/PerfPanel.jsx';
+import { PhysicsDebug } from './debug/PhysicsDebug.jsx';
 import Joystick from '#controller/Joystick.jsx';
 import CharacterController from '#controller/CharacterController.jsx';
 import RespawnControls from '#controller/RespawnControls.jsx';
@@ -24,23 +24,26 @@ import { InteractiveElements } from '#islands/contactIsland/interactiveElements/
 import { Grass } from '#islands/resumeIsland/grass/Grass.jsx';
 import Smoke from '#islands/resumeIsland/Smoke.jsx';
 import { useStore } from '#store/ZustandStorage.jsx';
+import { DEBUG_ENABLED } from '#utils/debug.js';
 import { IS_PHOTO_MODE } from '#utils/utils.js';
 import { SOUND_VOLUMES } from '#utils/soundVolumes.js';
 import runningSoundEffect from '#controller/audio/runningSound.js';
 
+import AmbientSoundEffectWebm from '#assets/sounds/ambient.webm';
 import AmbientSoundEffect from '#assets/sounds/ambient.mp3';
 
 var ambientSound = new Howl({
   // Music by Aleksey Chistilin
   // https://pixabay.com/fr/users/lexin_music-28841948/?utm_source=link-attribution&utm_medium=referral&utm_campaign=music&utm_content=116199
-  src: [AmbientSoundEffect],
+  // Opus first (30% smaller); Howler falls back to the mp3 where webm/opus
+  // isn't supported (older iOS Safari)
+  src: [AmbientSoundEffectWebm, AmbientSoundEffect],
   autoplay: false,
   loop: true,
   volume: SOUND_VOLUMES.ambient,
 });
 
 const Experience = () => {
-  const scene = useThree(state => state.scene);
   const camera = useThree(state => state.camera);
   const gameplayCameraRotationRef = useRef(null);
 
@@ -163,8 +166,12 @@ const Experience = () => {
         // In photo mode orbit around the islands instead of the world origin
         <OrbitControls target={IS_PHOTO_MODE ? [-1.35, 5, -15] : undefined} />
       )}
-      {!IS_PHOTO_MODE && <StatsGl />}
-      {!IS_PHOTO_MODE && <PerfPanel />}
+      {DEBUG_ENABLED && !IS_PHOTO_MODE && <StatsGl />}
+      {DEBUG_ENABLED && !IS_PHOTO_MODE && <PerfPanel />}
+      {DEBUG_ENABLED && !IS_PHOTO_MODE && <PhysicsDebug />}
+      {/* Stays mounted with debug off: its initial onChange calls set up the
+          respawn/spiral shader uniforms the real death animation uses; the
+          headless useControls renders no UI for it */}
       {!IS_PHOTO_MODE && <RespawnControls />}
       {!IS_PHOTO_MODE && <Joystick />}
       {!IS_PHOTO_MODE && <Clouds />}
@@ -188,11 +195,12 @@ const Experience = () => {
           />
         </meshBasicMaterial>
       </mesh>
-      <Physics timeStep="vary" gravity={[0, -29.43, 0]}>
-        <IslandCollider />
-        <CharacterController />
-        <InteractiveElements />
-      </Physics>
+      {/* Custom capsule-vs-BVH physics (src/physics): these register the
+          island collider, the sensor zones and the character body; the
+          world steps from a useFrame inside CharacterController */}
+      <IslandCollider />
+      <CharacterController />
+      <InteractiveElements />
     </>
   );
 };

@@ -42,19 +42,6 @@ const LARGE_TORCHES_SPARKS = {
   ],
 };
 
-const TORCHES_POSITIONS = [
-  [-5.8, 1.7, -16.6],
-  [-18.5, 5.9, -31],
-  [-18.3, 5.9, -35.7],
-  [-13.8, 5.9, -35.6],
-  [-10.9, 8.0, -46.9],
-  [-15.3, 7.8, -52.9],
-  [-4.7, 7.9, -53.0],
-  [-6.3, 8.5, -58.0],
-  [-13.2, 8.5, -58.0],
-  [-1.5, 7.1, -55.8],
-];
-
 const TorchesSparks = () => {
   const controls = useControls(
     'TorchesSparks',

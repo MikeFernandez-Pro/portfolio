@@ -14,13 +14,11 @@ import tunnel from 'tunnel-rat';
 import { Howler } from 'howler';
 import * as THREE from 'three';
 
-import { IS_MOBILE_DEVICE, IS_PHOTO_MODE } from '#utils/utils.js';
+import { IS_MOBILE_DEVICE, IS_PHOTO_MODE, MAX_DPR } from '#utils/utils.js';
 
 import soundOnIcon from '/icons/sound-on.svg';
 import soundOffIcon from '/icons/sound-off.svg';
 import { EffectComposer } from './components/effectComposer/EffectComposer.jsx';
-
-const MODELS_AMOUNT = 22;
 
 /* Tunnel */
 const ui = tunnel();
@@ -39,9 +37,10 @@ const App = () => {
   const soundOffIconRef = useRef();
   const startExperienceRef = useRef();
 
-  const [dpr, setDpr] = useState(1.5);
+  const [dpr, setDpr] = useState(MAX_DPR);
 
-  const { loaded } = useProgress();
+  // progress = loaded / total * 100, so new models never desync the loader
+  const { progress } = useProgress();
 
   const initiateExperience = useCallback(() => {
     hoverAnimation?.kill();
@@ -58,7 +57,7 @@ const App = () => {
     gsap.to(sceneRevealerRef.current?.uniforms.get('progress'), {
       value: 1.5,
       duration: 5,
-      ease: 'expo.isOut',
+      ease: 'expo.out',
     });
 
     gsap.to(soundOnIconRef.current?.style, {
@@ -126,12 +125,12 @@ const App = () => {
         }}
         gl={{
           powerPreference: 'high-performance',
-          antialias: true,
+          antialias: false,
           toneMapping: THREE.LinearToneMapping,
         }}
       >
         <PerformanceMonitor
-          onIncline={() => setDpr(2)}
+          onIncline={() => setDpr(MAX_DPR)}
           onDecline={() => setDpr(1)}
         />
         <AdaptiveDpr pixelated />
@@ -140,9 +139,7 @@ const App = () => {
             IS_PHOTO_MODE ? null : (
               <ui.In>
                 <div className="container">
-                  <p className="loader">
-                    {Math.ceil((loaded / MODELS_AMOUNT) * 100)}
-                  </p>
+                  <p className="loader">{Math.ceil(progress)}</p>
                 </div>
               </ui.In>
             )
@@ -162,7 +159,7 @@ const App = () => {
                   (hoverAnimation = gsap.to(
                     sceneRevealerRef.current?.uniforms.get('progress'),
                     {
-                      value: 0.35,
+                      value: 0.45,
                       duration: 0.5,
                       ease: 'power2.out',
                     }

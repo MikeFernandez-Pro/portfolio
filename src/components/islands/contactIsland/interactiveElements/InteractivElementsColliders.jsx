@@ -1,54 +1,49 @@
-import { useMemo } from 'react';
-import { InstancedRigidBodies } from '@react-three/rapier';
+import { useEffect } from 'react';
+import * as THREE from 'three';
 
-import { INTERACTIVE_ELEMENTS_COUNT } from './interactiveElementsData.js';
+import { buildWorldSpaceBvh } from '#physics/buildBvh.js';
+import { physicsWorld } from '#physics/world.js';
 import { useStore } from '#store/ZustandStorage.jsx';
 
+// One box sensor zone per interactive element (mailbox, plates, glyph...),
+// baked to world space from the same position/rotation/scale the instanced
+// rapier cuboids used. Entering/leaving one toggles the activated element.
 const InteractivElementsColliders = props => {
   const { interactiveElementsData } = props;
 
-  const instances = useMemo(
-    () =>
-      Object.entries(interactiveElementsData).map(([key, data], i) => ({
-        key: `instance_${i}`,
-        ...data,
-      })),
-    [interactiveElementsData]
-  );
+  useEffect(() => {
+    const unitBox = new THREE.BoxGeometry(1, 1, 1);
 
-  return (
-    <>
-      <InstancedRigidBodies
-        instances={instances}
-        colliders="cuboid"
-        type={'fixed'}
-        sensor
-        onIntersectionEnter={state => {
+    const handles = Object.values(interactiveElementsData).map(data =>
+      physicsWorld.addSensor({
+        bvh: buildWorldSpaceBvh(unitBox, data),
+        userData: data.userData,
+        onEnter: state => {
           useStore.setState({
             activatedInteractiveElement: {
               prev: useStore.getState().activatedInteractiveElement.current,
               current: state.target.rigidBody.userData.id,
             },
           });
-        }}
-        onIntersectionExit={() => {
+        },
+        onExit: () => {
           useStore.setState({
             activatedInteractiveElement: {
               prev: useStore.getState().activatedInteractiveElement.current,
               current: null,
             },
           });
-        }}
-      >
-        <instancedMesh
-          args={[undefined, undefined, INTERACTIVE_ELEMENTS_COUNT]}
-        >
-          <boxGeometry />
-          <meshBasicMaterial visible={false} />
-        </instancedMesh>
-      </InstancedRigidBodies>
-    </>
-  );
+        },
+      })
+    );
+
+    // The baked copies own their data
+    unitBox.dispose();
+
+    return () => handles.forEach(handle => handle.remove());
+  }, [interactiveElementsData]);
+
+  return null;
 };
 
 export { InteractivElementsColliders };

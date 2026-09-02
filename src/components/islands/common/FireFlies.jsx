@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { extend, useFrame, useThree } from '@react-three/fiber';
 import { shaderMaterial } from '@react-three/drei';
 import { useControls } from '#utils/useControls.jsx';
@@ -55,7 +55,6 @@ const FireFlies = () => {
   const width = useThree(state => state.size.width);
   const height = useThree(state => state.size.height);
   const pixelRatio = useThree(state => state.viewport.dpr);
-  const resolution = new THREE.Vector2(width * pixelRatio, height * pixelRatio);
 
   const firefliesRef = useRef();
 
@@ -81,11 +80,17 @@ const FireFlies = () => {
     { collapsed: true }
   );
 
+  // Created once: the resolution effect below keeps uResolution fresh, so
+  // a dpr change (adaptive 1 <-> 2) no longer rebuilds the material class
+  // and recompiles the shader
   const FirefliesShaderMaterial = useMemo(
     () =>
       shaderMaterial(
         {
-          uResolution: resolution,
+          uResolution: new THREE.Vector2(
+            width * pixelRatio,
+            height * pixelRatio
+          ),
           uSize: FIREFLIES_SIZE,
           uTime: 0,
           uVelocity: 0.17,
@@ -95,14 +100,21 @@ const FireFlies = () => {
         firefliesVertexShader,
         firefliesFragmentShader
       ),
-    [pixelRatio]
+    []
   );
 
   extend({ FirefliesShaderMaterial });
 
+  // Resolution only changes on resize / dpr switch, not per frame
+  useEffect(() => {
+    firefliesRef.current?.uniforms.uResolution.value.set(
+      width * pixelRatio,
+      height * pixelRatio
+    );
+  }, [width, height, pixelRatio]);
+
   useFrame(({ clock }) => {
     firefliesRef.current.uniforms.uTime.value = clock.elapsedTime;
-    firefliesRef.current.uniforms.uResolution.value = resolution;
   });
 
   return (

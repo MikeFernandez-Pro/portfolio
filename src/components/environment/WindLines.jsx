@@ -331,6 +331,8 @@ const WindLines = () => {
   }, [controls, uniforms]);
 
   useFrame(({ clock }) => {
+    // The mesh is hidden when disabled; no point animating it
+    if (!controls.enabled) return;
     uniforms.uTime.value = clock.elapsedTime;
   });
 

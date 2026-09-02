@@ -1,17 +1,19 @@
-import { useEffect, useMemo } from 'react';
+import { useRef } from 'react';
 import {
   EffectComposer as EffectComposerR3F,
   SMAA,
   N8AO,
   ToneMapping,
   Vignette,
+  Bloom,
 } from '@react-three/postprocessing';
-import { BlendFunction, BloomEffect, ToneMappingMode } from 'postprocessing';
+import { PredicationMode, SMAAPreset, ToneMappingMode } from 'postprocessing';
 import { useControls } from '#utils/useControls.jsx';
 
 import { CheapDofPass } from './CheapDofPass.jsx';
 import { SceneRevealer } from './SceneRevealer.jsx';
-import { IS_MOBILE_DEVICE, IS_PHOTO_MODE } from '#utils/utils.js';
+import { IS_MOBILE_DEVICE, IS_PHOTO_MODE, COMPOSER_MSAA } from '#utils/utils.js';
+import { useStore } from '#store/ZustandStorage.jsx';
 
 const EffectComposer = props => {
   const { sceneRevealerRef, cheapDofPassRef } = props;
@@ -38,29 +40,9 @@ const EffectComposer = props => {
     { collapsed: true }
   );
 
-  // Built by hand (like SceneRevealer) instead of the <Bloom> wrapper: the
-  // v3 wrapper rebuilds the effect from JSON-serialized props and doesn't
-  // pick up control changes reliably, so the controls mutate the live effect
-  // instead. ADD is the blend the wrapper forced (BloomEffect's raw default
-  // is SCREEN).
-  const bloomEffect = useMemo(
-    () =>
-      new BloomEffect({
-        blendFunction: BlendFunction.ADD,
-        mipmapBlur: true,
-        luminanceThreshold: 2,
-        luminanceSmoothing: 1,
-        intensity: 2.5,
-        levels: 7,
-      }),
-    []
-  );
-
-  useEffect(() => () => bloomEffect.dispose(), [bloomEffect]);
-
-  // levels = mipmapBlur chain depth: each level costs a downsample + an
-  // upsample fullscreen pass and its own render target
-  useControls(
+  // intensity is a live setter; levels/radius/luminance* go through Bloom's
+  // constructor args and reconstruct the effect when they change
+  const bloom = useControls(
     'Bloom',
     {
       intensity: {
@@ -68,44 +50,51 @@ const EffectComposer = props => {
         min: 0,
         max: 10,
         step: 0.1,
-        onChange: value => {
-          bloomEffect.intensity = value;
-        },
       },
       levels: {
         value: 7,
         min: 1,
         max: 9,
         step: 1,
-        onChange: value => {
-          bloomEffect.mipmapBlurPass.levels = value;
-        },
       },
       radius: {
         value: 0.85,
         min: 0,
         max: 1,
         step: 0.01,
-        onChange: value => {
-          bloomEffect.mipmapBlurPass.radius = value;
-        },
       },
       luminanceThreshold: {
         value: 2,
         min: 0,
         max: 5,
         step: 0.05,
-        onChange: value => {
-          bloomEffect.luminanceMaterial.threshold = value;
-        },
       },
       luminanceSmoothing: {
         value: 1,
         min: 0,
         max: 2,
         step: 0.05,
+      },
+    },
+    { collapsed: true }
+  );
+
+  const experienceStarted = useStore(state => state.experienceStarted);
+
+  // Live MSAA switch for A/B against SMAA-only. The prop below only seeds the
+  // composer; postprocessing exposes `multisampling` as a setter that
+  // disposes the HDR buffers so three recreates them with the new sample
+  // count on the next frame (no remount). Initial onChange equals
+  // COMPOSER_MSAA, which the setter early-outs on.
+  const composerRef = useRef();
+  useControls(
+    'Antialiasing',
+    {
+      msaa: {
+        value: COMPOSER_MSAA,
+        options: [0, 2, 4, 8],
         onChange: value => {
-          bloomEffect.luminanceMaterial.smoothing = value;
+          if (composerRef.current) composerRef.current.multisampling = value;
         },
       },
     },
@@ -113,24 +102,34 @@ const EffectComposer = props => {
   );
 
   return (
-    <EffectComposerR3F enableNormalPass={false} multisampling={0}>
+    <EffectComposerR3F
+      ref={composerRef}
+      enableNormalPass={false}
+      multisampling={COMPOSER_MSAA}
+    >
     <SceneRevealer sceneRevealerRef={sceneRevealerRef} />
-  
+
     {!IS_MOBILE_DEVICE && (
       <N8AO {...controls} quality={controls.quality} />
     )}
-  
+
     {!IS_MOBILE_DEVICE && !IS_PHOTO_MODE && (
-      <CheapDofPass cheapDofPassRef={cheapDofPassRef} />
+      <CheapDofPass
+        cheapDofPassRef={cheapDofPassRef}
+        enabled={experienceStarted}
+      />
     )}
-  
-    <primitive object={bloomEffect} />
-  
+
+    <Bloom mipmapBlur {...bloom} />
+
     <Vignette />
-  
+
     <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
-  
-    <SMAA />
+
+    {/* After tone mapping (SMAA wants LDR). ULTRA searches longer edges; depth
+        predication catches geometry edges the color detector misses. Sub-pixel
+        geometry is MSAA's job (COMPOSER_MSAA), SMAA cleans shader aliasing */}
+    <SMAA preset={SMAAPreset.ULTRA} predicationMode={PredicationMode.DEPTH} />
   </EffectComposerR3F>
   );
 };

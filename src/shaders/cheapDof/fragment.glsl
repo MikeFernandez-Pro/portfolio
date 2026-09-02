@@ -33,9 +33,10 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
         return;
     }
 
-    // In-focus pixels skip the blur loop entirely
+    // In-focus pixels skip the blur loop entirely. The MSAA-resolved input can
+    // carry negative/NaN RGB — clamp so it can't reach bloom's mip chain
     if (centerCoC < 0.01) {
-        outputColor = inputColor;
+        outputColor = vec4(max(inputColor.rgb, vec3(0.0)), inputColor.a);
         return;
     }
 
@@ -65,5 +66,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, const in float depth,
         weightSum += w;
     }
 
+    // Same clamp as the early-out: any tap may be negative/NaN pre-bloom
     outputColor = acc / weightSum;
+    outputColor.rgb = max(outputColor.rgb, vec3(0.0));
 }

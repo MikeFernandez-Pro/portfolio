@@ -8,7 +8,9 @@ attribute vec4 color;
 
 varying vec3 vClampedPos;
 varying vec3 vNormalizedNormal;
-varying vec3 vPartMask;
+// centroid: with MSAA the pixel center can sit outside a small triangle
+// and extrapolate vertex colors past 0–1, which blows up the unlit mix
+centroid varying vec3 vPartMask;
 
 void main() {
     vec3 size = max(uBoundsMax - uBoundsMin, vec3(1e-5));

@@ -172,6 +172,8 @@ const CloudShadows = () => {
   );
 
   useFrame(({ clock }) => {
+    // The shader ignores everything when disabled; skip the feed too
+    if (cloudShadowUniforms.uCloudShadowEnabled.value === 0) return;
     cloudShadowUniforms.uCloudShadowTime.value = clock.elapsedTime;
   });
 

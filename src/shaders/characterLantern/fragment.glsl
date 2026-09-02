@@ -21,10 +21,12 @@ uniform vec3 uRedColor;
 
 varying vec3 vClampedPos;
 varying vec3 vNormalizedNormal;
-varying vec3 vPartMask;
+centroid varying vec3 vPartMask;
 
 vec4 triplanar(sampler2D tex, vec3 p01, vec3 n, float repeat, vec2 uvOffset) {
-    vec3 w = pow(abs(normalize(n)), vec3(8.0));
+    // max: the interpolated normal can reach zero length (opposing vertex
+    // normals, MSAA extrapolation); normalize(0) is NaN
+    vec3 w = pow(abs(n) / max(length(n), 1e-5), vec3(8.0));
     w /= max(w.x + w.y + w.z, 1e-5);
 
     vec2 uvX = p01.zy * repeat + uvOffset;
@@ -60,15 +62,18 @@ void main() {
     ).r;
 
     float lower = 1.0 - uProgress;
-    vTex = smoothstep(lower, lower + uThickness, vTex);
+    // max: the despawn/respawn timelines set uThickness to 0; equal
+    // smoothstep edges are NaN where vTex lands exactly on them
+    vTex = smoothstep(lower, lower + max(uThickness, 1e-5), vTex);
 
     vec4 lavaColor = vec4(vec3(uIntensity * vTex * uColor), vTex);
 
     // Only white carries green, red carries red without green, black neither.
-    // Normalized so interpolated pixels on part borders still blend to 1
-    float whiteMask = vPartMask.g;
-    float redMask = vPartMask.r * (1.0 - vPartMask.g);
-    float blackMask = 1.0 - max(vPartMask.r, vPartMask.g);
+    // Normalized so interpolated pixels on part borders still blend to 1.
+    // clamp: MSAA can still nudge centroid samples slightly out of 0–1
+    float whiteMask = clamp(vPartMask.g, 0.0, 1.0);
+    float redMask = clamp(vPartMask.r, 0.0, 1.0) * (1.0 - whiteMask);
+    float blackMask = 1.0 - max(clamp(vPartMask.r, 0.0, 1.0), whiteMask);
     float maskSum = max(blackMask + whiteMask + redMask, 1e-4);
     vec3 partColor = (uBlackColor * blackMask + uWhiteColor * whiteMask + uRedColor * redMask) / maskSum;
 

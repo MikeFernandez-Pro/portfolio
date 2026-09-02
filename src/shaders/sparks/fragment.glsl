@@ -13,5 +13,6 @@ void main() {
     vec3 gradientColor = uColor * uIntensity / (max(0.1, vPosY) * 255.0);
 
     vec3 color = mix(vec3(0.0), gradientColor, strength);
-    gl_FragColor = vec4(color, 1.0) * min((10.0), max(0.1, 1.0 / (vPosY)));
+    // vPosY can be exactly 0.0 (mod in the vertex shader) — guard the division
+    gl_FragColor = vec4(color, 1.0) * min((10.0), max(0.1, 1.0 / max(vPosY, 0.0001)));
 }

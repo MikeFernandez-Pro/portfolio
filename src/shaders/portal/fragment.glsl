@@ -123,6 +123,9 @@ void main() {
     texColor.rgb *= uLighting;
     float luminance = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));
     texColor.rgb = mix(vec3(luminance), texColor.rgb, uSaturation);
+    // uSaturation > 1 extrapolates the mix — keep boosted colors from going
+    // negative (bloom smears negative RGB into black squares)
+    texColor.rgb = max(texColor.rgb, vec3(0.0));
 
     // Emissive rim added after the grade so its HDR color reaches the
     // Bloom pass untouched; flickers with the same noise as the edge

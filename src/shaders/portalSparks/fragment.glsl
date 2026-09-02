@@ -11,7 +11,8 @@ void main() {
     if (glow <= 0.0)
         discard;
 
-    gl_FragColor = vec4(uColor * uIntensity, glow * vAlpha);
+    // vAlpha can extrapolate below 0 under MSAA — keep additive output positive
+    gl_FragColor = vec4(uColor * uIntensity, glow * max(vAlpha, 0.0));
 
     #include <tonemapping_fragment>
     #include <colorspace_fragment>

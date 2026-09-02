@@ -65,9 +65,13 @@ const handleOrientationChange = joystick => {
 let joystick = undefined;
 
 const Joystick = () => {
-  if (!IS_MOBILE_DEVICE) return;
-
   useEffect(() => {
+    // Hooks must run unconditionally; the mobile gate lives inside instead
+    if (!IS_MOBILE_DEVICE) return;
+
+    // Kept so cleanup removes the listener that was actually registered
+    let orientationHandler;
+
     const unsubExperienceStarted = useStore.subscribe(
       state => state.experienceStarted,
       experienceStarted => {
@@ -85,10 +89,8 @@ const Joystick = () => {
           }
 
           // Trigger screen rotation and update joystick size and position
-          screen.orientation.addEventListener(
-            'change',
-            handleOrientationChange(joystick)
-          );
+          orientationHandler = handleOrientationChange(joystick);
+          screen.orientation.addEventListener('change', orientationHandler);
         }, 5000);
       }
     );
@@ -96,12 +98,13 @@ const Joystick = () => {
     // Cleanup subscriber and event listener
     return () => {
       unsubExperienceStarted();
-      screen.orientation.removeEventListener(
-        'change',
-        handleOrientationChange(joystick)
-      );
+      if (orientationHandler) {
+        screen.orientation.removeEventListener('change', orientationHandler);
+      }
     };
   }, []);
+
+  return null;
 };
 
 export default Joystick;

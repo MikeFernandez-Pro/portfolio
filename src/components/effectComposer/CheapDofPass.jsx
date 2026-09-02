@@ -12,7 +12,7 @@ const CHEAP_DOF_DEFAULTS = {
   focusDistance: 0,
   focusRange: 41,
   bokehRadius: 0.003,
-  samples:   16,
+  samples: 8,
   debugFocus: false,
 };
 
@@ -32,9 +32,11 @@ class CheapDofEffect extends Effect {
 }
 
 const CheapDofPass = props => {
-  const { cheapDofPassRef } = props;
+  const { cheapDofPassRef, enabled = true } = props;
 
   const cheapDofEffect = useMemo(() => new CheapDofEffect(), []);
+
+  cheapDofEffect.enabled = enabled;
 
   const numberControl = (uniform, value, min, max, step) => ({
     value,

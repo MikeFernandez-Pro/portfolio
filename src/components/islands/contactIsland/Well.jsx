@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF, Instances, Instance } from '@react-three/drei';
 import CustomShaderMaterial from 'three-custom-shader-material';
@@ -12,8 +12,6 @@ import fishVertexShader from '#shaders/fish/vertex.glsl';
 import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
 
 import fishModel from '#assets/models/island/fish.glb?url';
-
-const isDebugActive = window.location.hash === '#debug';
 
 // Water
 const FOAM_COLOR = '#ffffff';

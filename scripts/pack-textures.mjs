@@ -74,6 +74,22 @@ for (const [output, [rSource, gSource]] of PACKS) {
   console.log(`${outputPath} (${width}x${height}) — R: ${rSource}, G: ${gSource}`);
 }
 
+// Grass placement mask: the height map downscaled to a small grayscale PNG
+// that Grass.jsx reads back on the CPU (the KTX2 cannot be read) to spawn
+// blades only where there is grass. Row 0 is the image top, which is v = 1
+// under three's default flipY / the flipped KTX2 bake below - the mapping
+// grassPlacement.js relies on.
+const PLACEMENT = { source: 'grass-height-map.webp', output: 'grass-placement.png', size: 128 };
+{
+  const outputPath = path.join(TEXTURES_DIR, PLACEMENT.output);
+  await sharp(path.join(TEXTURES_DIR, PLACEMENT.source))
+    .extractChannel('red')
+    .resize(PLACEMENT.size, PLACEMENT.size, { kernel: 'lanczos3' })
+    .png({ compressionLevel: 9, palette: false })
+    .toFile(outputPath);
+  console.log(`${outputPath} (${PLACEMENT.size}x${PLACEMENT.size}) — grass placement mask from ${PLACEMENT.source}`);
+}
+
 const composites = await Promise.all(
   ATLAS.tiles.map(async ({ file, left, top }) => ({
     input: await sharp(path.join(TEXTURES_DIR, file)).ensureAlpha().png().toBuffer(),

@@ -6,9 +6,13 @@ import * as THREE from 'three';
 
 import { cloudShadowUniforms } from '#environment/CloudShadows.jsx';
 import { useStore } from '#store/ZustandStorage.jsx';
-import { IS_MOBILE_DEVICE } from '#utils/utils.js';
+import { IS_MOBILE_DEVICE, IS_PHOTO_MODE } from '#utils/utils.js';
+import { DEFAULT_CHARACTER_SPEED } from '#controller/constants.js';
+
+import { useGrassPlacement } from './grassPlacement.js';
 
 import grassFragmentShader from '#shaders/grass/fragment.glsl';
+import grassFragmentUnlitShader from '#shaders/grass/fragmentUnlit.glsl';
 import grassVertexShader from '#shaders/grass/vertex.glsl';
 
 import {
@@ -16,31 +20,36 @@ import {
   useVoronoiPerlinTexture,
 } from '#utils/packedTextures.js';
 
-// Trample map: a small buffer mapped onto the patch XZ. Each texel stores
-// the remaining crush influence (sampled directly by the vertex shader) and
-// fades linearly to zero, so a crushed blade starts straightening the moment
-// the character leaves and travels back to its rest pose in exactly
-// trailDuration seconds. Floats fade without 8-bit rounding residue; the
-// byte copy is what gets uploaded to the GPU.
+// Trample field: a small map over the patch XZ where each texel holds a
+// world-space push vector - the direction the blades lean, with its length
+// as the strength (0-1). Every frame the character's footprint presses its
+// texels toward a target push (radially away from the feet, blended with the
+// running direction), and every texel relaxes back to zero as a damped
+// spring. Blades fold under the feet, part around the stride, and stand back
+// up with a soft settle instead of the old linear fade. The simulation runs
+// on floats; the RG8 copy is what the vertex shader samples (byte 128 = 0).
 const TRAMPLE_SIZE = 128;
-const trampleValues = new Float32Array(TRAMPLE_SIZE * TRAMPLE_SIZE);
-const trampleData = new Uint8Array(TRAMPLE_SIZE * TRAMPLE_SIZE);
+const TRAMPLE_TEXELS = TRAMPLE_SIZE * TRAMPLE_SIZE;
+const trampleX = new Float32Array(TRAMPLE_TEXELS);
+const trampleZ = new Float32Array(TRAMPLE_TEXELS);
+const trampleVelocityX = new Float32Array(TRAMPLE_TEXELS);
+const trampleVelocityZ = new Float32Array(TRAMPLE_TEXELS);
+const trampleData = new Uint8Array(TRAMPLE_TEXELS * 2).fill(128);
 
-// Radial glow profile stamped at the character position (same stops as the
-// old canvas gradient). Kept tight (steep falloff): the crush follows it
-// directly, so a soft tail would read much larger than the glow itself.
-const glowProfile = r => {
-  if (r >= 1) return 0;
-  if (r < 0.5) return 1 - (r / 0.5) * 0.15; // 1 -> 0.85
-  if (r < 0.8) return 0.85 - ((r - 0.5) / 0.3) * 0.6; // 0.85 -> 0.25
-  return 0.25 - ((r - 0.8) / 0.2) * 0.25; // 0.25 -> 0
-};
+// Whether any texel still moves. Away from the patch the field is at rest and
+// the per-frame spring loop + GPU upload are skipped
+let trampleActive = false;
+// Displacement / velocity below this counts as settled
+const TRAMPLE_REST = 1e-3;
+// Step cap: keeps the semi-implicit spring stable and stops a frame hitch
+// from launching the blades
+const TRAMPLE_MAX_DT = 1 / 30;
 
 const trampleTexture = new THREE.DataTexture(
   trampleData,
   TRAMPLE_SIZE,
   TRAMPLE_SIZE,
-  THREE.RedFormat,
+  THREE.RGFormat,
   THREE.UnsignedByteType
 );
 trampleTexture.colorSpace = THREE.NoColorSpace;
@@ -50,33 +59,190 @@ trampleTexture.minFilter = THREE.LinearFilter;
 trampleTexture.magFilter = THREE.LinearFilter;
 trampleTexture.needsUpdate = true;
 
+// Presses the footprint into the field. Center and radius in texels; the
+// texel grid maps to the world as u -> -x, v -> +z (same mapping as patchUv
+// in the vertex shader), and the stored vectors are world-space xz.
+// - falloff (1 - r^2)^2: full push under the feet, zero slope at the rim
+// - direction: radial away from the feet, blended toward the running
+//   direction so a moving character lays the blades along its path instead
+//   of pointing them all back at where it stands
+// - blend: how much of the way to the target this frame (1 = snap)
+// - pressure: 0-1 weight on the target (how hard the character is treading:
+//   full at running speed, fading out as it slows down). Below 1, texels the
+//   target no longer holds down are left to the spring instead of being
+//   dragged, so a stop releases the blades continuously
+const pressFootprint = (
+  centerX,
+  centerY,
+  radius,
+  moveDirX,
+  moveDirZ,
+  directionality,
+  blend,
+  pressure
+) => {
+  const minX = Math.max(0, Math.floor(centerX - radius));
+  const maxX = Math.min(TRAMPLE_SIZE - 1, Math.ceil(centerX + radius));
+  const minY = Math.max(0, Math.floor(centerY - radius));
+  const maxY = Math.min(TRAMPLE_SIZE - 1, Math.ceil(centerY + radius));
+  const invRadiusSq = 1 / (radius * radius);
+
+  for (let iy = minY; iy <= maxY; iy++) {
+    for (let ix = minX; ix <= maxX; ix++) {
+      const dx = ix + 0.5 - centerX;
+      const dy = iy + 0.5 - centerY;
+      const r2 = (dx * dx + dy * dy) * invRadiusSq;
+      if (r2 >= 1) continue;
+      const falloff = (1 - r2) * (1 - r2);
+
+      // Radial world direction (texel +x is world -x, texel +y is world +z)
+      const r = Math.sqrt(dx * dx + dy * dy);
+      let dirX = r > 1e-4 ? -dx / r : moveDirX;
+      let dirZ = r > 1e-4 ? dy / r : moveDirZ;
+      dirX = dirX * (1 - directionality) + moveDirX * directionality;
+      dirZ = dirZ * (1 - directionality) + moveDirZ * directionality;
+      const dirLength = Math.hypot(dirX, dirZ);
+      if (dirLength < 1e-4) continue;
+      const targetLength = falloff * pressure;
+      const targetX = (dirX / dirLength) * targetLength;
+      const targetZ = (dirZ / dirLength) * targetLength;
+
+      const i = iy * TRAMPLE_SIZE + ix;
+      // Pressing mostly adds: a texel the trail already bent harder keeps its
+      // bend and only turns slowly toward the new direction. While the tread
+      // eases off, such texels are released to the spring entirely.
+      const current = Math.hypot(trampleX[i], trampleZ[i]);
+      let w = blend;
+      if (targetLength < current) {
+        if (pressure < 1) continue;
+        w = blend * 0.25;
+      }
+      trampleX[i] += (targetX - trampleX[i]) * w;
+      trampleZ[i] += (targetZ - trampleZ[i]) * w;
+      // The foot holds the blades still
+      trampleVelocityX[i] *= 1 - w;
+      trampleVelocityZ[i] *= 1 - w;
+    }
+  }
+};
+
+// One spring step over the whole field; returns whether anything still moves
+const relaxTrample = (dt, stiffness, damping) => {
+  let moving = false;
+  const restSq = TRAMPLE_REST * TRAMPLE_REST;
+  for (let i = 0; i < TRAMPLE_TEXELS; i++) {
+    let x = trampleX[i];
+    let z = trampleZ[i];
+    let vx = trampleVelocityX[i];
+    let vz = trampleVelocityZ[i];
+    if (x * x + z * z < restSq && vx * vx + vz * vz < restSq) {
+      trampleX[i] = 0;
+      trampleZ[i] = 0;
+      trampleVelocityX[i] = 0;
+      trampleVelocityZ[i] = 0;
+      continue;
+    }
+    vx += (-stiffness * x - damping * vx) * dt;
+    vz += (-stiffness * z - damping * vz) * dt;
+    x += vx * dt;
+    z += vz * dt;
+    // A blade can't lean past flat
+    const lengthSq = x * x + z * z;
+    if (lengthSq > 1) {
+      const inv = 1 / Math.sqrt(lengthSq);
+      x *= inv;
+      z *= inv;
+    }
+    trampleX[i] = x;
+    trampleZ[i] = z;
+    trampleVelocityX[i] = vx;
+    trampleVelocityZ[i] = vz;
+    moving = true;
+  }
+  return moving;
+};
+
+const encodeTrample = () => {
+  for (let i = 0; i < TRAMPLE_TEXELS; i++) {
+    trampleData[i * 2] = 128 + Math.round(trampleX[i] * 127);
+    trampleData[i * 2 + 1] = 128 + Math.round(trampleZ[i] * 127);
+  }
+  trampleTexture.needsUpdate = true;
+};
+
 const Grass = () => {
   const grassRef = useRef(null);
 
-  // Previous grounded state, to detect the landing frame after a jump
+  // Character tracking for the trample: previous grounded state (takeoff /
+  // landing detection) and a smoothed world-space velocity from position
+  // deltas. Takeoff and landing start an impulse press anchored where they
+  // happened, folding the blades over a few frames instead of one
   const wasGroundedRef = useRef(true);
+  const previousPositionRef = useRef(null);
+  const velocityRef = useRef(new THREE.Vector2());
+  const impulseRef = useRef({ timer: 0, u: 0, v: 0, radiusScale: 1, peak: 1 });
 
-  // Controls
-  const controls = useControls(
-    'Grass',
+  // Controls. The titles are subfolders of the "Grass" group in the debug
+  // pane (tweakpaneControls.jsx FOLDER_TREE)
+
+  // Blades: shape, colors, amount and where the patch sits
+  const bladeControls = useControls(
+    'Blades',
     {
-      colorBase: '#3bd532',
-      colorTop: '#d4ff3b',
-      redTipColor: '#ff0000',
-      redTipLength: { value: 0.44, min: 0, max: 1, step: 0.01 },
-      flowerAmount: { value: 0.0035, min: 0, max: 0.05, step: 0.0001 },
-      flowerHeight: { value: 0.447, min: 0, max: 1.5, step: 0.001 },
-      flowerWidth: { value: 0.083, min: 0, max: 0.5, step: 0.001 },
+      colorBase: '#15623b',
+      colorTop: '#5fc47f',
+      // Visible blades: placement only spawns them where the height mask has
+      // grass (~27% of the patch), so 22000 matches the density the old
+      // 80000-over-the-whole-square gave
+      count: { value: 22000, min: 0, max: 200000, step: 1 },
+      // 1 = a single quad per blade, no mid loop cut (the bend is carried by
+      // the shading normal instead of the silhouette)
+      segmentsCount: { value: 1, min: 1, max: 10, step: 1 },
+      width: { value: 0.129, min: 0, max: 0.2, step: 0.001 },
+      height: { value: 0.491, min: 0, max: 1, step: 0.001 },
+      squared: false,
+      patchSize: { value: 11.7, min: 11, max: 13, step: 0.001 },
+      position: { value: [-8.88, 6.83, -52.98], step: 0.001 },
+    },
+    { collapsed: true }
+  );
+
+  // Flowers: the rare squared blades with a red tip
+  const flowerControls = useControls(
+    'Flowers',
+    {
+      amount: { value: 0.0035, min: 0, max: 0.05, step: 0.0001 },
+      height: { value: 0.447, min: 0, max: 1.5, step: 0.001 },
+      width: { value: 0.083, min: 0, max: 0.5, step: 0.001 },
       // How close the two bottom vertices sit (fraction of the full width,
       // 1 = no pinch)
-      flowerBaseWidth: { value: 0.16, min: 0, max: 1, step: 0.01 },
-      count: { value: 80000, min: 0, max: 16 * 50000, step: 1 },
-      segmentsCount: { value: 3, min: 1, max: 10, step: 1 },
-      patchSize: { value: 11.7, min: 11, max: 13, step: 0.001 },
-      width: { value: 0.08, min: 0, max: 0.2, step: 0.001 },
-      height: { value: 0.417, min: 0, max: 1, step: 0.001 },
-      squared: false,
-      position: { value: [-8.88, 6.83, -52.98], step: 0.001 },
+      baseWidth: { value: 0.16, min: 0, max: 1, step: 0.01 },
+      tipColor: '#ff0000',
+      // Portion of the blade covered by the red tip (0-1)
+      tipLength: { value: 0.21, min: 0, max: 1, step: 0.01 },
+    },
+    { collapsed: true }
+  );
+
+  // Rendering: material, shading and the per-blade culls
+  const renderControls = useControls(
+    'Rendering',
+    {
+      // Base material: MeshBasicMaterial (unlit, cheapest, flat stylized
+      // color) or MeshStandardMaterial (scene lights + the smooth shading
+      // normal). Recreates the material.
+      lit: true,
+      // Lit only. Fake rounded cross-section: shading normal tilted toward
+      // the blade edges (0 = flat strip, 1 = 45 degrees at the edges)
+      normalRounding: { value: 0, min: 0, max: 1, step: 0.01 },
+      // Distance thinning, world units from the camera: full density up to
+      // thinStart, no blades past thinEnd (blades shrink out in between)
+      thinStart: { value: 18, min: 5, max: 60, step: 0.5 },
+      thinEnd: { value: 28, min: 5, max: 120, step: 0.5 },
+      // Half angle of the view cone blades survive, degrees off the camera
+      // axis. The camera fov is 40, so 84 leaves margin on any aspect ratio
+      // and for the blade height; 180 disables the cull
+      cullAngle: { value: 84, min: 30, max: 180, step: 1 },
     },
     { collapsed: true }
   );
@@ -91,57 +257,64 @@ const Grass = () => {
     { collapsed: true }
   );
 
-  const repulseControls = useControls(
-    'Repulse',
+  // Trample: how the blades react under and around the character
+  const trampleControls = useControls(
+    'Trample',
     {
-      strength: { value: 0.4, min: 0, max: 2, step: 0.01 }, // radians of tilt
-      squash: { value: 0.14, min: 0, max: 1, step: 0.01 },
-      // Trample map: how long the trail takes to fade out (seconds), glow
-      // diameter as a fraction of the patch, and how much the trail
-      // crushes the blades. trailDuration = seconds a crushed blade takes to
-      // travel back to its rest pose once the character leaves
-      trailDuration: { value: 0.3, min: 0.1, max: 6, step: 0.05 },
-      trailRadius: { value: 0.06, min: 0.002, max: 0.5, step: 0.001 },
-      trampleStrength: { value: 1, min: 0, max: 1, step: 0.01 },
+      // Max lean at full push, radians (PI/2 = flat on the ground)
+      strength: { value: 1.0, min: 0, max: 1.57, step: 0.01 },
+      // Extra height shortening at full push (0-1)
+      squash: { value: 0.2, min: 0, max: 1, step: 0.01 },
+      // Footprint radius, world units; landings press a wider ring
+      radius: { value: 0.7, min: 0.1, max: 3, step: 0.05 },
+      landingRadius: { value: 1.6, min: 1, max: 3, step: 0.05 },
+      // How fast a jump or landing folds the blades down (1/s); the impact
+      // press lasts ~3/x seconds instead of stamping flat in a single frame
+      impactFold: { value: 30, min: 5, max: 120, step: 1 },
+      // How fast blades fold under the feet (1/s)
+      pressSpeed: { value: 25, min: 1, max: 60, step: 1 },
+      // 0: blades lean straight away from the feet. 1: a running character
+      // lays them all along its direction of travel
+      directionality: { value: 0.6, min: 0, max: 1, step: 0.01 },
+      // Return spring: stiffness sets how fast blades stand back up, the
+      // damping ratio how much they wobble on the way (1 = no overshoot)
+      stiffness: { value: 60, min: 5, max: 300, step: 1 },
+      dampingRatio: { value: 0.6, min: 0.1, max: 1.5, step: 0.01 },
+      // Master amount (0 disables the crush without touching the field)
+      amount: { value: 1, min: 0, max: 1, step: 0.01 },
     },
     { collapsed: true, reset: true }
   );
 
-  // Geometry
+  // Blade roots, placed on the CPU where the mask has grass
+  const placement = useGrassPlacement(bladeControls.count);
+
+  // Geometry: one quad strip per blade, front face only (+z, CCW). The
+  // material is DoubleSide so the same triangles show from behind - half the
+  // vertices and triangles of the old front + back copy. No vertex
+  // attributes besides the per-instance root: the shader builds the blade
+  // from gl_VertexID.
   const grassGeometry = useMemo(() => {
-    const vertexNumber = (controls.segmentsCount + 1) * 2;
     const indices = [];
-
-    for (let i = 0; i < controls.segmentsCount; ++i) {
+    for (let i = 0; i < bladeControls.segmentsCount; ++i) {
       const vi = i * 2;
-      indices[i * 12] = vi;
-      indices[i * 12 + 1] = vi + 1;
-      indices[i * 12 + 2] = vi + 2;
-
-      indices[i * 12 + 3] = vi + 2;
-      indices[i * 12 + 4] = vi + 1;
-      indices[i * 12 + 5] = vi + 3;
-
-      const fi = vertexNumber + vi;
-      indices[i * 12 + 6] = fi + 2;
-      indices[i * 12 + 7] = fi + 1;
-      indices[i * 12 + 8] = fi;
-
-      indices[i * 12 + 9] = fi + 3;
-      indices[i * 12 + 10] = fi + 1;
-      indices[i * 12 + 11] = fi + 2;
+      indices.push(vi, vi + 1, vi + 2, vi + 2, vi + 1, vi + 3);
     }
 
     const grassGeometry = new THREE.InstancedBufferGeometry();
-    grassGeometry.instanceCount = controls.count;
+    grassGeometry.instanceCount = placement.length / 2;
     grassGeometry.setIndex(indices);
+    grassGeometry.setAttribute(
+      'aBladePosition',
+      new THREE.InstancedBufferAttribute(placement, 2)
+    );
     grassGeometry.boundingSphere = new THREE.Sphere(
       new THREE.Vector3(0, 0, 0),
-      1 + controls.patchSize * 2
+      1 + bladeControls.patchSize * 2
     );
 
     return grassGeometry;
-  }, [controls.segmentsCount, controls.patchSize, controls.count]);
+  }, [bladeControls.segmentsCount, bladeControls.patchSize, placement]);
 
   // Materials. The height map lives in the green channel of the packed
   // spiral/grass/star texture; it used to be loaded with flipY = false, so
@@ -152,208 +325,262 @@ const Grass = () => {
 
   const grassMaterial = useMemo(
     () =>
-      // Wraps MeshStandardMaterial so the blades receive the scene lighting
-      // (directional + ambient); the class (not an instance) is passed
-      // because CSM v6 mutates its baseMaterial
+      // Unlit MeshBasicMaterial by default; the `lit` control swaps in
+      // MeshStandardMaterial (scene lighting + smooth shading normal) and the
+      // matching fragment shader - CSM string-searches the csm_* keywords, so
+      // the unlit source must not even mention csm_Emissive/csm_FragNormal.
+      // The class (not an instance) is passed because CSM v6 mutates its
+      // baseMaterial.
       new CustomShaderMaterial({
-        baseMaterial: THREE.MeshStandardMaterial,
-        roughness: 1,
-        metalness: 0,
+        baseMaterial: renderControls.lit
+          ? THREE.MeshStandardMaterial
+          : THREE.MeshBasicMaterial,
+        ...(renderControls.lit ? { roughness: 1, metalness: 0 } : {}),
         // The trample map (texture + crush) is compiled out on mobile
         defines: IS_MOBILE_DEVICE ? {} : { USE_TRAMPLE: '' },
         uniforms: {
           uTime: { value: 0 },
           uGrassParameters: {
             value: new THREE.Vector4(
-              controls.segmentsCount,
-              controls.patchSize,
-              controls.width,
-              controls.height
+              bladeControls.segmentsCount,
+              bladeControls.patchSize,
+              bladeControls.width,
+              bladeControls.height
             ),
           },
-          uGrassBaseColor: { value: new THREE.Color(controls.colorBase) },
-          uGrassTopColor: { value: new THREE.Color(controls.colorTop) },
-          uRedTipColor: { value: new THREE.Color(controls.redTipColor) },
-          uRedTipLength: { value: controls.redTipLength },
-          uFlowerAmount: { value: controls.flowerAmount },
-          uFlowerHeight: { value: controls.flowerHeight },
-          uFlowerWidth: { value: controls.flowerWidth },
-          uFlowerBaseWidth: { value: controls.flowerBaseWidth },
-          // The stems match the blade tips
-          uFlowerStemColor: {
-            value: new THREE.Color(controls.colorTop),
-          },
-          uHeightDataTexture: { value: grassHeightTexture },
-          uPerlinNoiseTexture: { value: perlinNoiseTexture },
-          uSquareShape: { value: controls.squared },
+          uGrassBaseColor: { value: new THREE.Color(bladeControls.colorBase) },
+          uGrassTopColor: { value: new THREE.Color(bladeControls.colorTop) },
+          uSquareShape: { value: bladeControls.squared },
           uPositionX: { value: 0 },
           uPositionZ: { value: 0 },
-          uPlayerPosition: { value: new THREE.Vector3(0, 0, 0) },
+
+          uRedTipColor: { value: new THREE.Color(flowerControls.tipColor) },
+          uRedTipLength: { value: flowerControls.tipLength },
+          uFlowerAmount: { value: flowerControls.amount },
+          uFlowerHeight: { value: flowerControls.height },
+          uFlowerWidth: { value: flowerControls.width },
+          uFlowerBaseWidth: { value: flowerControls.baseWidth },
+          // The stems match the blade tips
+          uFlowerStemColor: {
+            value: new THREE.Color(bladeControls.colorTop),
+          },
+
+          uHeightDataTexture: { value: grassHeightTexture },
+          uPerlinNoiseTexture: { value: perlinNoiseTexture },
 
           uWindScale: { value: windControls.scale },
           uWindStrength: { value: windControls.strength },
           uWindSpeed: { value: windControls.speed },
 
-          uRepulseStrength: { value: repulseControls.strength },
-          uRepulseSquash: { value: repulseControls.squash },
+          // Photo mode orbits a free camera for screenshots: no thinning there
+          uThinDistance: {
+            value: IS_PHOTO_MODE
+              ? new THREE.Vector2(1e6, 1e6)
+              : new THREE.Vector2(
+                  renderControls.thinStart,
+                  renderControls.thinEnd
+                ),
+          },
+          uCullCos: {
+            value: Math.cos(THREE.MathUtils.degToRad(renderControls.cullAngle)),
+          },
+          uNormalRounding: { value: renderControls.normalRounding },
+
+          uRepulseStrength: { value: trampleControls.strength },
+          uRepulseSquash: { value: trampleControls.squash },
           uTrampleTexture: { value: trampleTexture },
-          uTrampleStrength: { value: repulseControls.trampleStrength },
+          uTrampleStrength: { value: trampleControls.amount },
 
           // Shared with the island material so the clouds line up
           ...cloudShadowUniforms,
         },
         vertexShader: grassVertexShader,
-        fragmentShader: grassFragmentShader,
-        side: THREE.FrontSide,
+        fragmentShader: renderControls.lit
+          ? grassFragmentShader
+          : grassFragmentUnlitShader,
+        // Single-sided strips seen from both sides; three flips the normal
+        // on back faces
+        side: THREE.DoubleSide,
       }),
-    [controls, windControls, repulseControls, grassHeightTexture]
+    [
+      bladeControls,
+      flowerControls,
+      renderControls,
+      windControls,
+      trampleControls,
+      grassHeightTexture,
+    ]
   );
 
-  // Update material uniforms from Leva controls - Can remove when controls are removed
+  // Keep the uniforms in sync with the controls
   useEffect(() => {
-    grassMaterial.uniforms.uGrassBaseColor.value = new THREE.Color(
-      controls.colorBase
-    );
-    grassMaterial.uniforms.uGrassTopColor.value = new THREE.Color(
-      controls.colorTop
-    );
-    grassMaterial.uniforms.uRedTipColor.value = new THREE.Color(
-      controls.redTipColor
-    );
-    grassMaterial.uniforms.uRedTipLength.value = controls.redTipLength;
-    grassMaterial.uniforms.uFlowerAmount.value = controls.flowerAmount;
-    grassMaterial.uniforms.uFlowerHeight.value = controls.flowerHeight;
-    grassMaterial.uniforms.uFlowerWidth.value = controls.flowerWidth;
-    grassMaterial.uniforms.uFlowerBaseWidth.value = controls.flowerBaseWidth;
-    grassMaterial.uniforms.uFlowerStemColor.value = new THREE.Color(
-      controls.colorTop
-    );
-    grassMaterial.uniforms.uHeightDataTexture.value = grassHeightTexture;
-    grassMaterial.uniforms.uGrassParameters.value.x = controls.segmentsCount;
-    grassMaterial.uniforms.uGrassParameters.value.y = controls.patchSize;
-    grassMaterial.uniforms.uGrassParameters.value.z = controls.width;
-    grassMaterial.uniforms.uGrassParameters.value.w = controls.height;
-    grassMaterial.uniforms.uSquareShape.value = controls.squared;
-    grassMaterial.uniforms.uWindScale.value = windControls.scale;
-    grassMaterial.uniforms.uWindStrength.value = windControls.strength;
-    grassMaterial.uniforms.uWindSpeed.value = windControls.speed;
-    grassMaterial.uniforms.uRepulseStrength.value = repulseControls.strength;
-    grassMaterial.uniforms.uRepulseSquash.value = repulseControls.squash;
-    grassMaterial.uniforms.uTrampleStrength.value =
-      repulseControls.trampleStrength;
-    grassMaterial.uniforms.uPositionX.value = controls.position[0];
-    grassMaterial.uniforms.uPositionZ.value = controls.position[2];
-  }, [controls, windControls, repulseControls, grassHeightTexture, grassMaterial]);
+    const { uniforms } = grassMaterial;
+    uniforms.uGrassBaseColor.value = new THREE.Color(bladeControls.colorBase);
+    uniforms.uGrassTopColor.value = new THREE.Color(bladeControls.colorTop);
+    uniforms.uFlowerStemColor.value = new THREE.Color(bladeControls.colorTop);
+    uniforms.uGrassParameters.value.x = bladeControls.segmentsCount;
+    uniforms.uGrassParameters.value.y = bladeControls.patchSize;
+    uniforms.uGrassParameters.value.z = bladeControls.width;
+    uniforms.uGrassParameters.value.w = bladeControls.height;
+    uniforms.uSquareShape.value = bladeControls.squared;
+    uniforms.uPositionX.value = bladeControls.position[0];
+    uniforms.uPositionZ.value = bladeControls.position[2];
 
-  useEffect(() => {
-    const unsubCharacterPosition = useStore.subscribe(
-      state => [state.characterPosition],
-      ([characterPosition]) => {
-        grassMaterial.uniforms.uPlayerPosition.value = characterPosition;
-      }
-    );
+    uniforms.uRedTipColor.value = new THREE.Color(flowerControls.tipColor);
+    uniforms.uRedTipLength.value = flowerControls.tipLength;
+    uniforms.uFlowerAmount.value = flowerControls.amount;
+    uniforms.uFlowerHeight.value = flowerControls.height;
+    uniforms.uFlowerWidth.value = flowerControls.width;
+    uniforms.uFlowerBaseWidth.value = flowerControls.baseWidth;
 
-    return () => {
-      unsubCharacterPosition();
-    };
-  }, [grassMaterial]);
+    uniforms.uHeightDataTexture.value = grassHeightTexture;
 
-  useFrame(({ clock }) => {
-    grassMaterial.uniforms.uTime.value = clock.elapsedTime;
-  });
+    uniforms.uWindScale.value = windControls.scale;
+    uniforms.uWindStrength.value = windControls.strength;
+    uniforms.uWindSpeed.value = windControls.speed;
 
-  // Update time for grass
-  useFrame(({ clock }, delta) => {
-    grassMaterial.uniforms.uTime.value = clock.elapsedTime;
-    if (grassRef.current) {
-      grassRef.current.position.set(
-        controls.position[0],
-        controls.position[1],
-        controls.position[2]
+    if (!IS_PHOTO_MODE) {
+      uniforms.uThinDistance.value.set(
+        renderControls.thinStart,
+        renderControls.thinEnd
       );
     }
+    uniforms.uCullCos.value = Math.cos(
+      THREE.MathUtils.degToRad(renderControls.cullAngle)
+    );
+    uniforms.uNormalRounding.value = renderControls.normalRounding;
 
-    // The whole trample pipeline (buffer work + texture upload) is off on
+    uniforms.uRepulseStrength.value = trampleControls.strength;
+    uniforms.uRepulseSquash.value = trampleControls.squash;
+    uniforms.uTrampleStrength.value = trampleControls.amount;
+  }, [
+    bladeControls,
+    flowerControls,
+    renderControls,
+    windControls,
+    trampleControls,
+    grassHeightTexture,
+    grassMaterial,
+  ]);
+
+  useFrame(({ clock }, delta) => {
+    grassMaterial.uniforms.uTime.value = clock.elapsedTime;
+
+    // The whole trample pipeline (simulation + texture upload) is off on
     // mobile, where the shader compiles without USE_TRAMPLE anyway
     if (IS_MOBILE_DEVICE) {
       return;
     }
 
-    // Trample map: fade every texel linearly, so a crushed blade starts
-    // straightening immediately and finishes its travel back to rest in
-    // exactly trailDuration seconds at any framerate
-    const fadeStep = delta / repulseControls.trailDuration;
-    for (let i = 0; i < trampleValues.length; i++) {
-      const faded = trampleValues[i] - fadeStep;
-      trampleValues[i] = faded > 0 ? faded : 0;
-    }
+    const dt = Math.min(delta, TRAMPLE_MAX_DT);
 
-    // The store subscription can leave the uniform undefined until the
-    // character controller publishes its first position. Airborne
-    // (jumping/falling) or idle character doesn't press the grass; the
-    // existing trail keeps fading out underneath, so blades stand back up
-    // under a character who stops moving. Landing (air -> ground
-    // transition) stamps once even when idle, with a bigger impact glow.
-    const playerPosition = grassMaterial.uniforms.uPlayerPosition.value;
-    const { characterGrounded, isCharacterMoving } = useStore.getState();
-    const grounded = characterGrounded !== false;
+    // Character state. The position is published by the camera hook every
+    // frame; the velocity is estimated from its deltas and smoothed so the
+    // press direction doesn't jitter with the physics substeps
+    const position = useStore.getState().characterPosition;
+    const grounded = useStore.getState().characterGrounded !== false;
     const justLanded = grounded && !wasGroundedRef.current;
+    const justJumped = !grounded && wasGroundedRef.current;
     wasGroundedRef.current = grounded;
 
-    if (playerPosition && grounded && (isCharacterMoving || justLanded)) {
-      const u =
-        ((-playerPosition.x + controls.position[0]) / controls.patchSize) *
-          0.5 +
-        0.5;
-      const v =
-        ((playerPosition.z - controls.position[2]) / controls.patchSize) *
-          0.5 +
-        0.5;
+    const velocity = velocityRef.current;
+    if (position && previousPositionRef.current && delta > 0) {
+      const previous = previousPositionRef.current;
+      const smoothing = 1 - Math.exp(-12 * delta);
+      velocity.x += ((position.x - previous.x) / delta - velocity.x) * smoothing;
+      velocity.y += ((position.z - previous.z) / delta - velocity.y) * smoothing;
+    }
+    previousPositionRef.current = position;
 
-      if (u > -0.1 && u < 1.1 && v > -0.1 && v < 1.1) {
-        // Stamp the glow at the character position (same patch mapping as
-        // the height map in the vertex shader), lighten-style: standing
-        // still keeps the blades pressed down
-        const glowRadius =
-          repulseControls.trailRadius *
-          TRAMPLE_SIZE *
-          (justLanded ? 1.5 : 1) *
-          0.5;
-        const centerX = u * TRAMPLE_SIZE;
-        const centerY = v * TRAMPLE_SIZE;
-        const minX = Math.max(0, Math.floor(centerX - glowRadius));
-        const maxX = Math.min(
-          TRAMPLE_SIZE - 1,
-          Math.ceil(centerX + glowRadius)
-        );
-        const minY = Math.max(0, Math.floor(centerY - glowRadius));
-        const maxY = Math.min(
-          TRAMPLE_SIZE - 1,
-          Math.ceil(centerY + glowRadius)
-        );
+    // Tread pressure from the smoothed speed: full when running, fading to 0
+    // as the character slows so a stop releases the blades over the same
+    // ~0.2s the velocity estimate decays, never on/off. Airborne (the jump
+    // handler clears the grounded flag) there is no tread press
+    const speed = velocity.length();
+    const treadPressure = THREE.MathUtils.smoothstep(speed, 0.15, 1.2);
+    const impulse = impulseRef.current;
+    if (position) {
+      const [patchX, , patchZ] = bladeControls.position;
+      const u = ((-position.x + patchX) / bladeControls.patchSize) * 0.5 + 0.5;
+      const v = ((position.z - patchZ) / bladeControls.patchSize) * 0.5 + 0.5;
+      const insidePatch = u > -0.1 && u < 1.1 && v > -0.1 && v < 1.1;
+      // World units -> texels (the map spans 2 * patchSize)
+      const texelsPerUnit = TRAMPLE_SIZE / (2 * bladeControls.patchSize);
 
-        for (let iy = minY; iy <= maxY; iy++) {
-          for (let ix = minX; ix <= maxX; ix++) {
-            const r =
-              Math.hypot(ix + 0.5 - centerX, iy + 0.5 - centerY) / glowRadius;
-            const glow = glowProfile(r);
-            const index = iy * TRAMPLE_SIZE + ix;
-            if (glow > trampleValues[index]) trampleValues[index] = glow;
-          }
-        }
+      // Takeoff and landing start an impulse press anchored at the feet: a
+      // purely radial ring folding at impactFold instead of stamping flat in
+      // one frame. Landing presses the wider landingRadius ring at full
+      // strength; takeoff a lighter puff barely wider than the footprint
+      if ((justLanded || justJumped) && insidePatch) {
+        impulse.timer = 3 / trampleControls.impactFold;
+        impulse.u = u;
+        impulse.v = v;
+        impulse.radiusScale = justLanded ? trampleControls.landingRadius : 1.2;
+        impulse.peak = justLanded ? 1 : 0.65;
+      }
+
+      if (impulse.timer > 0) {
+        impulse.timer -= dt;
+        pressFootprint(
+          impulse.u * TRAMPLE_SIZE,
+          impulse.v * TRAMPLE_SIZE,
+          trampleControls.radius * texelsPerUnit * impulse.radiusScale,
+          0,
+          0,
+          0,
+          1 - Math.exp(-trampleControls.impactFold * dt),
+          impulse.peak
+        );
+        trampleActive = true;
+      }
+
+      if (grounded && treadPressure > 0 && insidePatch) {
+        // Fully directional only at running speed, radial when idle
+        const moveFactor = Math.min(speed / DEFAULT_CHARACTER_SPEED, 1);
+        const moveDirX = speed > 0.05 ? velocity.x / speed : 0;
+        const moveDirZ = speed > 0.05 ? velocity.y / speed : 0;
+
+        pressFootprint(
+          u * TRAMPLE_SIZE,
+          v * TRAMPLE_SIZE,
+          trampleControls.radius * texelsPerUnit,
+          moveDirX,
+          moveDirZ,
+          trampleControls.directionality * moveFactor,
+          1 - Math.exp(-trampleControls.pressSpeed * dt),
+          treadPressure
+        );
+        trampleActive = true;
       }
     }
 
-    for (let i = 0; i < trampleValues.length; i++) {
-      trampleData[i] = trampleValues[i] * 255;
-    }
-    trampleTexture.needsUpdate = true;
+    if (!trampleActive) return;
+
+    // Damped spring back to rest. Critical damping is 2 * sqrt(k); the ratio
+    // control scales it (below 1 the blades overshoot and wobble a little)
+    const stiffness = trampleControls.stiffness;
+    const damping = 2 * Math.sqrt(stiffness) * trampleControls.dampingRatio;
+    trampleActive = relaxTrample(dt, stiffness, damping);
+
+    // The frame the field settles still uploads once (all zeros), then the
+    // pipeline goes quiet
+    encodeTrample();
   });
 
   const scene = useThree(state => state.scene);
 
   useEffect(() => {
     const grass = new THREE.Mesh(grassGeometry, grassMaterial);
+    // controls changes recreate the material, so this effect re-runs and
+    // keeps the position in sync — no need to set it per frame
+    grass.position.set(
+      bladeControls.position[0],
+      bladeControls.position[1],
+      bladeControls.position[2]
+    );
+
+    grass.castShadow = false;
+    grass.receiveShadow = false;
 
     scene.add(grass);
     grassRef.current = grass;
@@ -361,12 +588,12 @@ const Grass = () => {
     return () => {
       scene.remove(grass);
     };
-  }, [grassGeometry, grassMaterial, scene, controls.count]);
+  }, [grassGeometry, grassMaterial, scene, bladeControls.position]);
 
   return (
     <>
-      {/* <GrassSparkles scale={controls.patchSize} />
-    
+      {/* <GrassSparkles scale={bladeControls.patchSize} />
+
 
       <Butterfly position={[3, 0.5, 3]} scale={0.2} color="#ffffff" /> */}
     </>

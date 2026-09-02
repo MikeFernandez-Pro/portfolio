@@ -23,8 +23,10 @@ void main() {
     vec3 color = uColor;
 
     // uFadeHeight stretches the vertical fade, uOpacity scales the whole
-    // column (defaults 1.0 / 0.5 match the original hardcoded look)
-    float alpha = min(1.0, (uFadeHeight / positionY) * borderAlpha) * uOpacity;
+    // column (defaults 1.0 / 0.5 match the original hardcoded look).
+    // MSAA can extrapolate positionY/vUv past their range at plane edges:
+    // floor the divisor and clamp so alpha never goes negative or infinite
+    float alpha = clamp((uFadeHeight / max(positionY, 0.0001)) * borderAlpha, 0.0, 1.0) * uOpacity;
 
     // Soften the column base so it doesn't draw a hard line where the plane
     // intersects the surface it rises from (0 = off)

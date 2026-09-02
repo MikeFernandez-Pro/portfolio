@@ -16,7 +16,9 @@ varying vec3 vClampedPos;
 varying vec3 vNormalizedNormal;
 
 vec4 triplanar(sampler2D tex, vec3 p01, vec3 n, float repeat, vec2 uvOffset) {
-    vec3 w = pow(abs(normalize(n)), vec3(8.0));
+    // interpolated normals can cancel to ~zero length, and normalize() of a
+    // zero vector is NaN — same math, with the length floored
+    vec3 w = pow(abs(n) / max(length(n), 1e-5), vec3(8.0));
     w /= max(w.x + w.y + w.z, 1e-5);
 
     vec2 uvX = p01.zy * repeat + uvOffset;

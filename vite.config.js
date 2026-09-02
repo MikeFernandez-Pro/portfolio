@@ -15,6 +15,20 @@ export default defineConfig({
   build: {
     outDir: '../dist',
     emptyOutDir: true,
-    sourcemap: true,
+    // Cache-friendly vendor chunk: three is pinned and rarely changes
+    // between deploys, so it stays cached while the app chunk churns
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: 'three',
+              test: /node_modules[\\/]three[\\/]/,
+              priority: 10,
+            },
+          ],
+        },
+      },
+    },
   },
 });

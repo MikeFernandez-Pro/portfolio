@@ -46,7 +46,7 @@ const TorchSparks = ({ particlesCount, config, color, intensity, sizeScale = 1 }
   const pixelRatio = useThree(state => state.viewport.dpr);
   const resolution = new THREE.Vector2(width * pixelRatio, height * pixelRatio);
 
-  useFrame((state, delta) => {
+  useFrame(state => {
     sparksRef.current.material.uniforms.uTime.value = state.clock.elapsedTime;
     sparksRef.current.material.uniforms.uResolution.value = resolution;
   });

@@ -1,4 +1,8 @@
+import { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+
 import { useControls } from '#utils/useControls.jsx';
+import { DEBUG_ENABLED } from '#utils/debug.js';
 
 import {
   TORCH_LIGHTS_DEFAULTS,
@@ -26,6 +30,28 @@ import {
   forgeLavaLightSettings,
   spawnLightSettings,
 } from './islandPointLights.js';
+
+// Debug marker at a fake light's position: a small unlit sphere in the
+// light color plus an axes cross, copying the position uniform every frame so
+// the position control moves it live. Debug only (DEBUG_ENABLED gate at the
+// call site), never mounted in production.
+const LightPositionHelper = ({ positionUniform, colorUniform }) => {
+  const groupRef = useRef();
+
+  useFrame(() => {
+    groupRef.current?.position.copy(positionUniform.value);
+  });
+
+  return (
+    <group ref={groupRef}>
+      <mesh>
+        <sphereGeometry args={[0.08, 12, 8]} />
+        <meshBasicMaterial color={colorUniform.value} toneMapped={false} />
+      </mesh>
+      <axesHelper args={[0.5]} />
+    </group>
+  );
+};
 
 // Debug folders for the point lights injected into the island material
 // (the portal light folder lives in ProjectsPortals, the magic portal one
@@ -174,9 +200,12 @@ const IslandPointLightsControls = () => {
     { collapsed: true, reset: true }
   );
 
-  useControls(
+  // showHelper has no onChange so it comes back as state and re-renders the
+  // marker below; the position input (x/y/z fields) moves it live
+  const { showHelper: showForgeLavaHelper } = useControls(
     'ForgeLavaLight',
     {
+      showHelper: false,
       ...groupSchema(
         forgeLavaLightUniforms,
         'ForgeLava',
@@ -249,7 +278,16 @@ const IslandPointLightsControls = () => {
     { collapsed: true, reset: true }
   );
 
-  return null;
+  return (
+    <>
+      {DEBUG_ENABLED && showForgeLavaHelper && (
+        <LightPositionHelper
+          positionUniform={forgeLavaLightUniforms.uForgeLavaLightPosition}
+          colorUniform={forgeLavaLightUniforms.uForgeLavaLightColor}
+        />
+      )}
+    </>
+  );
 };
 
 export { IslandPointLightsControls };

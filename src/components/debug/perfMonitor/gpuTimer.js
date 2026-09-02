@@ -44,6 +44,21 @@ export class GpuTimer {
 
   /** Start timing this frame. No-op when every query is still in flight. */
   begin() {
+    if (this.active) {
+      // The previous frame aborted between begin() and end(): an exception
+      // in the useFrame chain skips the end() subscriber, leaving the query
+      // active on the context — beginQuery would fail every frame after.
+      // Close and recycle it (its measurement is garbage) and let the real
+      // exception surface in the console.
+      this.gl.endQuery(this.ext.TIME_ELAPSED_EXT);
+      this.free.push(this.active);
+      this.active = null;
+      console.warn(
+        'GpuTimer: previous frame aborted between begin() and end() — ' +
+          'a useFrame subscriber threw. Check the console for the exception.'
+      );
+    }
+
     const query = this.free.pop();
 
     if (!query) {

@@ -7,7 +7,6 @@ uniform sampler2D uPerlinNoiseTexture;
 uniform bool uSquareShape;
 uniform float uPositionX;
 uniform float uPositionZ;
-uniform vec3 uPlayerPosition;
 uniform sampler2D uTrampleTexture;
 uniform float uTrampleStrength;
 
@@ -25,12 +24,35 @@ uniform vec3 uFlowerStemColor;
 uniform float uRepulseStrength; // max tilt angle in radians (PI/2 = flat on the ground)
 uniform float uRepulseSquash; // extra height shortening at full influence (0-1)
 
+// Distance thinning, world units from the camera: full density up to .x,
+// none past .y (blades shrink out over a per-blade band instead of popping)
+uniform vec2 uThinDistance;
+// cos of the view-cone half angle: blade roots further off the camera axis
+// than this collapse before any texture fetch
+uniform float uCullCos;
+
+// Fake rounded cross-section: tilt of the shading normal toward the blade
+// edges (0 = flat strip, 1 = 45 degrees at the edges)
+uniform float uNormalRounding;
+
+// Blade root in patch space ([-1, 1] on x/z). Placed on the CPU only where the
+// height mask has grass and sorted spatially (grassPlacement.js), so the
+// culls below agree across neighbouring instances.
+attribute vec2 aBladePosition;
+
 // CSM composes this shader with three's chunks: `saturate` and `PI` come
 // from <common> (do not redefine), and the varyings are prefixed to avoid
 // colliding with the standard material's vUv/vColor/vWorldPosition
-varying vec3 vGrassColor;
-varying vec2 vGrassUv;
-varying vec3 vGrassWorldPos;
+// centroid: the blades are thin triangles; with MSAA the pixel center can
+// fall outside them and extrapolate the varyings past their vertex range
+centroid varying vec3 vGrassColor;
+centroid varying vec2 vGrassUv;
+centroid varying vec3 vGrassWorldPos;
+// Smooth shading, view space: normal following the bezier bend, and the
+// edge tilt of the fake rounding (the fragment shader flips only the first
+// on back faces)
+centroid varying vec3 vGrassBendNormal;
+centroid varying vec3 vGrassSideTilt;
 
 // inverseLerp and remap are for remapping values
 float inverseLerp(float v, float minValue, float maxValue) {
@@ -43,27 +65,6 @@ float remap(float v, float inMin, float inMax, float outMin, float outMax) {
 
 float easeOut(float x, float t) {
   return 1.0 - pow(1.0 - x, t);
-}
-
-// hash21 and murmurHash21 are for hashing the instance ID to a vec2 for position offset
-uvec2 murmurHash21(uint src) {
-  const uint M = 0x5bd1e995u;
-  uvec2 h = uvec2(1190494759u, 2147483647u);
-  src *= M;
-  src ^= src >> 24u;
-  src *= M;
-  h *= M;
-  h ^= src;
-  h ^= h >> 13u;
-  h *= M;
-  h ^= h >> 15u;
-  return h;
-}
-
-// 1 input -> 2 output
-vec2 hash21(float src) {
-  uvec2 h = murmurHash21(floatBitsToUint(src));
-  return uintBitsToFloat((h & 0x007fffffu) | 0x3f800000u) - 1.0;
 }
 
 // The MIT License
@@ -91,6 +92,12 @@ vec3 bezier(vec3 P0, vec3 P1, vec3 P2, vec3 P3, float t) {
   3.0 * (1.0 - t) * (1.0 - t) * t * P1 +
   3.0 * (1.0 - t) * t * t * P2 +
   t * t * t * P3;
+}
+
+// Derivative of the curve above: the blade tangent at t
+vec3 bezierTangent(vec3 P0, vec3 P1, vec3 P2, vec3 P3, float t) {
+  float u = 1.0 - t;
+  return 3.0 * u * u * (P1 - P0) + 6.0 * u * t * (P2 - P1) + 3.0 * t * t * (P3 - P2);
 }
 
 // Rotation matrix functions
@@ -123,6 +130,15 @@ float rand(float n) {
   return fract(sin(n) * 43758.5453123);
 }
 
+// Zero-area blade: all its vertices at the origin rasterize nothing
+void collapse() {
+  csm_Position = vec3(0.0);
+  vGrassColor = vec3(0.0);
+  vGrassUv = vec2(0.0);
+  vGrassBendNormal = vec3(0.0, 0.0, 1.0);
+  vGrassSideTilt = vec3(0.0);
+}
+
 void main() {
   int GRASS_SEGMENTS = int(uGrassParameters.x);
   int GRASS_VERTICES = (GRASS_SEGMENTS + 1) * 2;
@@ -130,16 +146,30 @@ void main() {
   float GRASS_WIDTH = uGrassParameters.z;
   float GRASS_HEIGHT = uGrassParameters.w;
 
-  // Generate grass local position
-  vec2 hashedInstanceID = hash21(float(gl_InstanceID)) * 2.0 - 1.0; // generate 2D coords from instance ID of the grass blade
+  // Blade root: CPU placement in patch space scaled to the patch
   vec3 grassOffset =
-    vec3(hashedInstanceID.x, 0.0, hashedInstanceID.y) * GRASS_PATCH_SIZE; // grass offset with patch size
+    vec3(aBladePosition.x, 0.0, aBladePosition.y) * GRASS_PATCH_SIZE;
 
-  // Generate hash for lean value for the grass blade
   vec3 grassBladeWorldPos = (modelMatrix * vec4(grassOffset, 1.0)).xyz; // get the world position of the grass blade
-  vec3 hashVal = hash(grassBladeWorldPos); // generate hash value from the world position
-
   vGrassWorldPos = grassBladeWorldPos; // for cloud shadows (per blade is enough)
+
+  // --- Early culls, before any texture fetch or hashing. Collapsed blades
+  // cost only the lines above; with the instances sorted spatially, whole
+  // warps take the same branch.
+  vec3 toBlade = grassBladeWorldPos - cameraPosition;
+  float bladeDistance = length(toBlade);
+  // Third row of the view matrix is the camera's +z (backwards) in world space
+  vec3 cameraForward = -vec3(viewMatrix[0].z, viewMatrix[1].z, viewMatrix[2].z);
+  // Distance thinning: density falls from 1 at uThinDistance.x to 0 at .y;
+  // each blade compares it against its own threshold and shrinks over a
+  // 0.1-wide band so the transition never pops
+  float keep = 1.0 - smoothstep(uThinDistance.x, uThinDistance.y, bladeDistance);
+  float thinScale = saturate((keep - rand(float(gl_InstanceID) + 2000.0)) / 0.1);
+  // View cone: the root is what's tested, the angle margin covers the blade
+  if (dot(toBlade, cameraForward) < uCullCos * bladeDistance || thinScale <= 0.0) {
+    collapse();
+    return;
+  }
 
   // Height data texture (patchUv also samples the trample map below)
   vec2 patchUv =
@@ -152,23 +182,22 @@ void main() {
   vec4 heightData = texture2D(uHeightDataTexture, vec2(patchUv.x, 1.0 - patchUv.y));
   float grassHeight = heightData.g;
 
-    
+  // Outside the grass area (only the mask edges get here now that placement
+  // follows the same map): collapse before the wind fetches
+  if (grassHeight < 0.25) {
+    collapse();
+    return;
+  }
 
+  // Generate hash for lean value for the grass blade
+  vec3 hashVal = hash(grassBladeWorldPos); // generate hash value from the world position
 
-
-
-  // Figure out vertex id, > GRASS_VERTICES is other side
-  int vertFB_ID = gl_VertexID % (GRASS_VERTICES * 2);
-  int vertID = vertFB_ID % GRASS_VERTICES; // even - left, odd - right
-
-  // 0 = left, 1 = right
+  // Vertex id along the strip: even - left, odd - right, pairs stack up the
+  // blade. One side only; the material is DoubleSide.
+  int vertID = gl_VertexID % GRASS_VERTICES;
   int xTest = vertID & 0x1;
-  int zTest = vertFB_ID >= GRASS_VERTICES ? 1 : -1;
   float xSide = float(xTest);
-  float zSide = float(zTest);
   float heightPercent = float(vertID - xTest) / (float(GRASS_SEGMENTS) * 2.0);
-
-
 
   // Rnadom height
   float randomHeight = (rand(float(gl_InstanceID + 1000)) * 2.0 - 1.0) * 0.1;
@@ -185,7 +214,7 @@ void main() {
     width = GRASS_WIDTH + 0.1;
   } else {
     width = GRASS_WIDTH * easeOut(1.06 - heightPercent, 3.0) * grassHeight;
-  } 	
+  }
 
   // Flowers grow around their own average height; grassHeight and
   // randomHeight keep each one a different size
@@ -193,22 +222,25 @@ void main() {
     ? uFlowerHeight * grassHeight + randomHeight
     : GRASS_HEIGHT * grassHeight + randomHeight;
 
+  // Distance thinning shrinks the blade into the ground
+  height *= thinScale;
+
   // Calculate the vertex position
   float x = (xSide - 0.5) * width;
   float y = heightPercent * height;
   float z = 0.0;
 
   // Grass wind parameters
-float windStrength = texture2D(uPerlinNoiseTexture,
-  vec2(
-    vec3(-grassBladeWorldPos.x * uWindScale, grassBladeWorldPos.z * uWindScale, 0.0) + uTime * uWindSpeed
-  )).g; // perlin = green channel of the packed voronoi/perlin texture
-  
+  float windStrength = texture2D(uPerlinNoiseTexture,
+    vec2(
+      vec3(-grassBladeWorldPos.x * uWindScale, grassBladeWorldPos.z * uWindScale, 0.0) + uTime * uWindSpeed
+    )).g; // perlin = green channel of the packed voronoi/perlin texture
+
   float windAngle = 0.0;
   vec3 windAxis = vec3(cos(windAngle), 0.0, sin(windAngle));
   float windLeanAngle = windStrength * uWindStrength * heightPercent;
-  float randomLeanAnimation = 
-    texture2D(uPerlinNoiseTexture, 
+  float randomLeanAnimation =
+    texture2D(uPerlinNoiseTexture,
         vec2(
             vec3(-grassBladeWorldPos.x * uWindScale * 1.3, grassBladeWorldPos.z * uWindScale * 1.3, 0.0) + uTime * uWindSpeed * 1.3
         )
@@ -220,30 +252,26 @@ float windStrength = texture2D(uPerlinNoiseTexture,
 
   float angle = remap(hashVal.x, -1.0, 1.0, -PI / 4.0, PI / 4.0); // randomize blades initial rotation
 
-
-  // Crush amplitude comes straight from the trample map: it fades linearly
-  // in Grass.jsx, so the value IS the remaining influence and blades travel
-  // from crushed back to their rest pose over exactly the trail duration.
+  // Trample field (Grass.jsx): each texel holds a world-space xz push vector,
+  // the direction the blades lean with its length as the strength, pressed by
+  // the character and spring-damped back to rest on the CPU. Byte 128 = 0.
   // USE_TRAMPLE is left out on mobile: no vertex fetch, the crush block
   // below compiles away entirely.
   #ifdef USE_TRAMPLE
-  float repulseInfluence =
-    texture2D(uTrampleTexture, patchUv).r * uTrampleStrength;
+  vec2 trample = (texture2D(uTrampleTexture, patchUv).rg * 255.0 - 128.0) / 127.0;
+  float repulseInfluence = min(length(trample), 1.0) * uTrampleStrength;
   #else
+  vec2 trample = vec2(0.0);
   float repulseInfluence = 0.0;
   #endif
 
   vec3 crushAxis = vec3(1.0, 0.0, 0.0);
   if (repulseInfluence > 0.001) {
-    vec2 awayXZ = grassBladeWorldPos.xz - uPlayerPosition.xz;
-    // Degenerate case: player exactly on the blade -> push in the blade's hashed direction
-    vec3 awayDir = length(awayXZ) < 1e-4
-      ? normalize(vec3(hashVal.x, 0.0, hashVal.z))
-      : normalize(vec3(awayXZ.x, 0.0, awayXZ.y));
+    vec3 pushDir = normalize(vec3(trample.x, 0.0, trample.y));
 
-    // rotateAxis() rotates clockwise around the axis, so cross(awayDir, up)
-    // tilts the blade away from the player
-    crushAxis = normalize(cross(awayDir, vec3(0.0, 1.0, 0.0)));
+    // rotateAxis() rotates clockwise around the axis, so cross(pushDir, up)
+    // tilts the blade along the push
+    crushAxis = normalize(cross(pushDir, vec3(0.0, 1.0, 0.0)));
 
     height *= 1.0 - repulseInfluence * uRepulseSquash; // crushed blades also compress a bit
   }
@@ -254,6 +282,11 @@ float windStrength = texture2D(uPerlinNoiseTexture,
   vec3 p3 = vec3(0.0, 0.66, 0.0);
   vec3 p4 = vec3(0.0, cos(leanFactor), sin(leanFactor));
   vec3 curve = bezier(p1, p2, p3, p4, heightPercent);
+  // Shading normal following the bend (perpendicular to the tangent in the
+  // blade plane): smooth shading along the curve instead of one flat normal
+  // per blade. Straight up -> (0, 0, 1), the front face.
+  vec3 tangent = bezierTangent(p1, p2, p3, p4, heightPercent);
+  vec3 bendNormal = normalize(vec3(0.0, -tangent.z, tangent.y));
 
   y = curve.y * height; // change Y coord with curve
   z = curve.z * height; // change Z coord with curve
@@ -266,15 +299,18 @@ float windStrength = texture2D(uPerlinNoiseTexture,
     grassMat = rotateAxis(crushAxis, repulseInfluence * uRepulseStrength) * grassMat;
   }
 
-
   // Calculate the final position
   vec3 grassLocalPosition = grassMat * vec3(x, y, z) + grassOffset; // change initial XYZ coords with offset and rotation matrix
 
-  // Viewspace thicken
+  // Viewspace thicken. The strip's front face (CCW winding) points +z; seen
+  // from behind, `facing` flips sign so the widening still goes outwards in
+  // screen space (the old back copy did this with its own vertices)
   vec3 viewDir = normalize(cameraPosition - grassBladeWorldPos);
-  vec3 grassFaceNormal = grassMat * vec3(0.0, 0.0, -zSide);
+  vec3 grassFaceNormal = grassMat * vec3(0.0, 0.0, 1.0);
 
-  float viewDotNormal = saturate(dot(grassFaceNormal, viewDir));
+  float facing = dot(grassFaceNormal, viewDir);
+  float viewDotNormal = abs(facing);
+  float thickenSide = facing >= 0.0 ? 1.0 : -1.0;
   float viewSpaceThickenFactor =
     easeOut(1.0 - viewDotNormal, 4.0) * smoothstep(0.0, 0.2, viewDotNormal);
 
@@ -284,17 +320,21 @@ float windStrength = texture2D(uPerlinNoiseTexture,
   // scale, so world and local axes match.
   vec3 cameraRight = vec3(viewMatrix[0].x, viewMatrix[1].x, viewMatrix[2].x);
   grassLocalPosition +=
-    cameraRight * (viewSpaceThickenFactor * (xSide - 0.5) * width * 0.5 * -zSide);
-
-  if (grassHeight < 0.25) {
-    // Collapse the blade to a point: zero-area triangles rasterize nothing
-    csm_Position = vec3(0.0);
-    vGrassColor = vec3(0.0);
-    return;
-  }
+    cameraRight * (viewSpaceThickenFactor * (xSide - 0.5) * width * 0.5 * thickenSide);
 
   csm_Position = grassLocalPosition;
-  csm_Normal = grassFaceNormal;
+
+  // Smooth shading normal (bend + crush through grassMat), lit materials
+  // only - MeshBasicMaterial ignores normals. The fragment shader flips the
+  // bend part on back faces; the edge tilt of the fake rounding stays, so
+  // both sides read as the same rounded blade
+  #ifndef IS_MESHBASICMATERIAL
+  vec3 shadingNormal = grassMat * bendNormal;
+  vGrassBendNormal = normalize(normalMatrix * shadingNormal);
+  vGrassSideTilt = normalMatrix *
+    (grassMat * vec3((xSide * 2.0 - 1.0) * uNormalRounding, 0.0, 0.0));
+  csm_Normal = shadingNormal;
+  #endif
 
   // Pass the color to the fragment shader; flowers use their own green
   vGrassColor = mix(

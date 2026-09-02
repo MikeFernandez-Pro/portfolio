@@ -47,9 +47,10 @@ const TEXTURED_MATERIALS = [
 // transform), smoke rises from just above the potion surface
 const CAULDRON_SMOKE_POSITION = [8.64, 3.1, -29.73];
 
-// World-space torch smoke positions: the torch flames (TORCHES_POSITIONS in
-// TorchesSparks.jsx) minus the bonfire, which already has its own Smoke
-// component, with the hand-tuned per-torch offsets baked in
+// World-space torch smoke positions: the torch flames (the coordinates noted
+// next to each sparks offset in TorchesSparks.jsx) minus the bonfire, which
+// already has its own Smoke component, with the hand-tuned per-torch offsets
+// baked in
 const TORCH_SMOKE_POSITIONS = [
   [-5.78, 1.7, -16.55],
   [-18.51, 5.8, -30.99],

@@ -13,6 +13,12 @@ export const ANIMATION_FALLING = 'Falling';
 export const DEFAULT_CHARACTER_SPEED = 4;
 export const DEFAULT_CHARACTER_SPRINT_SPEED = 6;
 
+// Vertical takeoff speed: the rapier-era jump applyImpulse(1.2) / capsule
+// mass (0.18326). The controller SETS the vertical velocity to this on jump
+// instead of adding the impulse, so slope-climb vertical speed doesn't stack
+// into the jump — same jump strength on any ground
+export const CHARACTER_JUMP_SPEED = 6.548089504241943;
+
 // Camera defaults
 export const CAMERA_FOLLOW_HEIGHT = 5.2;
 export const CAMERA_FOLLOW_DISTANCE_MOBILE = 7.5;
