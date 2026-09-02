@@ -90,6 +90,22 @@ const PLACEMENT = { source: 'grass-height-map.webp', output: 'grass-placement.pn
   console.log(`${outputPath} (${PLACEMENT.size}x${PLACEMENT.size}) — grass placement mask from ${PLACEMENT.source}`);
 }
 
+// Standalone 512 perlin (perlin-clouds.png) for the cloud shadows, which
+// magnify the noise far beyond any other consumer — the 128 perlin.png the
+// pack above uses pixelates there. Lossless webp, not KTX2: block
+// compression bands on smooth gradients once thresholded, and a plain
+// texture uploads with three's default flipY like every other PNG/webp.
+const CLOUD_PERLIN = { source: 'perlin-clouds.png', output: 'perlin-clouds.webp' };
+{
+  const outputPath = path.join(TEXTURES_DIR, CLOUD_PERLIN.output);
+  await sharp(path.join(TEXTURES_DIR, CLOUD_PERLIN.source))
+    .webp({ lossless: true })
+    .toFile(outputPath);
+  console.log(
+    `${outputPath} (${(fs.statSync(outputPath).size / 1024).toFixed(0)} kB) — lossless cloud-shadow perlin from ${CLOUD_PERLIN.source}`
+  );
+}
+
 const composites = await Promise.all(
   ATLAS.tiles.map(async ({ file, left, top }) => ({
     input: await sharp(path.join(TEXTURES_DIR, file)).ensureAlpha().png().toBuffer(),

@@ -130,10 +130,10 @@ const Lights = () => {
         value: 0.13,
         min: 0,
         max: 0.2,
-        step: 0.001,
+          step: 0.001,
       },
       radius: {
-        value: 8.2,
+        value:4,
         min: 0,
         max: 25,
         step: 0.1,

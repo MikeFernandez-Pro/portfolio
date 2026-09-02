@@ -4,7 +4,7 @@ import * as THREE from 'three';
 
 import { useControls } from '#utils/useControls.jsx';
 import cloudShadowsChunk from '#shaders/includes/cloudShadows.glsl';
-import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
+import { usePerlinCloudsTexture } from '#utils/packedTextures.js';
 
 const CLOUD_SHADOW_DEFAULTS = {
   enabled: true,
@@ -13,8 +13,8 @@ const CLOUD_SHADOW_DEFAULTS = {
   scale: 0.013,
   layers: 2,
   coverage: 0.4,
-  softness: 0.013,
-  darkness: 0.70,
+  softness: 0.025,
+  darkness: 0.76,
   power: 1.5,
 };
 
@@ -77,7 +77,9 @@ const patchCloudShadows = material => {
  * Drives the shared cloud shadow uniforms: noise texture, time and controls.
  */
 const CloudShadows = () => {
-  const perlinNoiseTexture = useVoronoiPerlinTexture();
+  // Standalone 512 perlin bake: the packed 128 copy pixelates at cloud
+  // magnification
+  const perlinNoiseTexture = usePerlinCloudsTexture();
 
   useEffect(() => {
     cloudShadowUniforms.uCloudShadowNoise.value = perlinNoiseTexture;

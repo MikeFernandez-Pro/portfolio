@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
-import { useKTX2 } from '@react-three/drei';
+import { useKTX2, useTexture } from '@react-three/drei';
 
 import spiralGrassHeightUrl from '#assets/textures/spiral-grassHeight.ktx2';
 import voronoiPerlinUrl from '#assets/textures/voronoi-perlin.ktx2';
+import perlinCloudsUrl from '#assets/textures/perlin-clouds.webp';
 import screensAtlasUrl from '#assets/textures/screens-atlas.ktx2';
 import islandTextureUrl from '#assets/textures/islandTexture2k.ktx2';
 
@@ -43,6 +44,17 @@ const configureVoronoiPerlin = texture => {
   texture.needsUpdate = true;
 };
 
+// perlin-clouds — standalone 512 lossless webp for the cloud shadows only:
+// they magnify the noise far beyond the 128 packed copy, and both KTX2
+// variants lost the A/B (UASTC bands on the thresholded gradients, raw R8
+// arrives as a NEAREST-filtered DataTexture).
+const configurePerlinClouds = texture => {
+  texture.colorSpace = THREE.NoColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.needsUpdate = true;
+};
+
 // screens-atlas — sRGB-authored images shown on screen (project portal
 // screenshots, interactive link, X logo), flattened over black. No alpha
 // channel: cutout consumers use the green channel as mask instead.
@@ -65,6 +77,13 @@ const useSpiralGrassHeightTexture = () =>
 
 const useVoronoiPerlinTexture = () =>
   useConfiguredKtx2(voronoiPerlinUrl, configureVoronoiPerlin);
+
+// useTexture caches by URL like useKTX2, so consumers share one instance
+const usePerlinCloudsTexture = () => {
+  const texture = useTexture(perlinCloudsUrl);
+  useMemo(() => configurePerlinClouds(texture), [texture]);
+  return texture;
+};
 
 const useScreensAtlasTexture = () =>
   useConfiguredKtx2(screensAtlasUrl, configureScreensAtlas);
@@ -109,6 +128,7 @@ const createAtlasTileTexture = (atlasTexture, rect) => {
 export {
   useSpiralGrassHeightTexture,
   useVoronoiPerlinTexture,
+  usePerlinCloudsTexture,
   useScreensAtlasTexture,
   useIslandTexture,
   SCREENS_ATLAS_RECTS,
