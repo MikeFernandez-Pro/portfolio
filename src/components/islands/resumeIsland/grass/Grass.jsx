@@ -191,6 +191,9 @@ const Grass = () => {
     {
       colorBase: '#15623b',
       colorTop: '#5fc47f',
+      // Scales both grass colors (and the flower stems): < 1 darkens,
+      // > 1 brightens past the picked colors (HDR, can feed bloom)
+      brightness: { value: 1, min: 0, max: 2, step: 0.01 },
       // Visible blades: placement only spawns them where the height mask has
       // grass (~27% of the patch), so 22000 matches the density the old
       // 80000-over-the-whole-square gave
@@ -415,9 +418,12 @@ const Grass = () => {
   // Keep the uniforms in sync with the controls
   useEffect(() => {
     const { uniforms } = grassMaterial;
-    uniforms.uGrassBaseColor.value = new THREE.Color(bladeControls.colorBase);
-    uniforms.uGrassTopColor.value = new THREE.Color(bladeControls.colorTop);
-    uniforms.uFlowerStemColor.value = new THREE.Color(bladeControls.colorTop);
+    uniforms.uGrassBaseColor.value = new THREE.Color(bladeControls.colorBase)
+      .multiplyScalar(bladeControls.brightness);
+    uniforms.uGrassTopColor.value = new THREE.Color(bladeControls.colorTop)
+      .multiplyScalar(bladeControls.brightness);
+    uniforms.uFlowerStemColor.value = new THREE.Color(bladeControls.colorTop)
+      .multiplyScalar(bladeControls.brightness);
     uniforms.uGrassParameters.value.x = bladeControls.segmentsCount;
     uniforms.uGrassParameters.value.y = bladeControls.patchSize;
     uniforms.uGrassParameters.value.z = bladeControls.width;
