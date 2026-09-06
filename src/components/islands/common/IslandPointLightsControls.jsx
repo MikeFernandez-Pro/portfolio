@@ -240,7 +240,7 @@ const IslandPointLightsControls = () => {
       intensity: {
         value: FORGE_LAVA_LIGHT_DEFAULTS.intensity,
         min: 0,
-        max: 10,
+        max: 100,
         step: 0.05,
         onChange: v => {
           forgeLavaLightSettings.intensity = v;

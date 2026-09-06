@@ -189,11 +189,11 @@ const Grass = () => {
   const bladeControls = useControls(
     'Blades',
     {
-      colorBase: '#15623b',
-      colorTop: '#5fc47f',
+      colorBase: '#00893d',
+      colorTop: '#00fa2e',
       // Scales both grass colors (and the flower stems): < 1 darkens,
       // > 1 brightens past the picked colors (HDR, can feed bloom)
-      brightness: { value: 1, min: 0, max: 2, step: 0.01 },
+      brightness: { value: 0.78, min: 0, max: 2, step: 0.01 },
       // Visible blades: placement only spawns them where the height mask has
       // grass (~27% of the patch), so 22000 matches the density the old
       // 80000-over-the-whole-square gave

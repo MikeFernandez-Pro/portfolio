@@ -65,12 +65,12 @@ const INDICATOR_LIGHTS_DEFAULTS = {
 
 const FORGE_LAVA_LIGHT_DEFAULTS = {
   color: '#f47053',
-  intensity: 6.9,
-  decay: 0.23,
-  decayPower: 5.7,
+  intensity: 10,
+  decay: 0.455,
+  decayPower: 5.5,
   specularPower: 1,
   // Slightly above the lava plane (ForgeLavaPlane sits at y 1.39)
-  position: [-7.59, 1.8, -14.13],
+  position: [-7.4, 1.69, -13.91],
 };
 
 const SWORD_LIGHT_DEFAULTS = {

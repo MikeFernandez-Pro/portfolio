@@ -50,8 +50,8 @@ const Experience = () => {
   const controls = useControls(
     'Background',
     {
-      bottomColor: '#203e71',
-      topColor: '#d998fd',
+      bottomColor: '#007bff',
+      topColor: '#20003b',
     },
     { collapsed: true }
   );
