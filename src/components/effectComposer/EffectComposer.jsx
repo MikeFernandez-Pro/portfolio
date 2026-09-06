@@ -127,8 +127,8 @@ const EffectComposer = props => {
     <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
 
     {/* After tone mapping (SMAA wants LDR). ULTRA searches longer edges; depth
-        predication catches geometry edges the color detector misses. Sub-pixel
-        geometry is MSAA's job (COMPOSER_MSAA), SMAA cleans shader aliasing */}
+        predication catches geometry edges the color detector misses. Sole AA
+        since COMPOSER_MSAA went to 0 (ANGLE Metal spill/reload, see utils.js) */}
     <SMAA preset={SMAAPreset.ULTRA} predicationMode={PredicationMode.DEPTH} />
   </EffectComposerR3F>
   );
