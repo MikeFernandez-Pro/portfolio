@@ -44,6 +44,17 @@ const BELT_LANTERN_LIGHT_DEFAULTS = {
   offset: [-0.03, -0.11, -0.12],
 };
 
+const HOUSE_LANTERN_LIGHT_DEFAULTS = {
+  // Standalone lantern near the house on the first island, not part of
+  // LANTERN_LIGHT_POSITIONS; warmer orange than the grouped street lanterns
+  color: '#ff9d00',
+  intensity: 3.75,
+  decay: 0.525,
+  decayPower: 1.95,
+  specularPower: 64,
+  position: [-4.02, 1.82, -15.92],
+};
+
 const INDICATOR_LIGHTS_DEFAULTS = {
   color: '#ffb27d',
   intensity: 0.9,
@@ -270,6 +281,13 @@ const beltLanternLightSettings = {
   offset: [...BELT_LANTERN_LIGHT_DEFAULTS.offset],
 };
 
+const houseLanternLightUniforms = {
+  ...createLightUniforms('HouseLantern', HOUSE_LANTERN_LIGHT_DEFAULTS),
+  uHouseLanternLightPosition: {
+    value: new THREE.Vector3(...HOUSE_LANTERN_LIGHT_DEFAULTS.position),
+  },
+};
+
 const indicatorLightsUniforms = createLightUniforms(
   'Indicator',
   INDICATOR_LIGHTS_DEFAULTS
@@ -431,6 +449,7 @@ const patchIslandPointLights = material => {
       torchLightsUniforms,
       lanternLightsUniforms,
       beltLanternLightUniforms,
+      houseLanternLightUniforms,
       indicatorLightsUniforms,
       forgeLavaLightUniforms,
       swordLightUniforms,
@@ -464,6 +483,8 @@ ${lightUniformsGlsl('Torch')}
 ${lightUniformsGlsl('Lantern')}
 ${lightUniformsGlsl('BeltLantern')}
 uniform vec3 uBeltLanternLightPosition;
+${lightUniformsGlsl('HouseLantern')}
+uniform vec3 uHouseLanternLightPosition;
 ${lightUniformsGlsl('Indicator')}
 ${lightUniformsGlsl('ForgeLava')}
 uniform vec3 uForgeLavaLightPosition;
@@ -520,6 +541,7 @@ for (int i = 0; i < LANTERN_LIGHT_COUNT; i++) {
   ${lightCallGlsl('Lantern', 'LANTERN_LIGHT_POSITIONS[i]')}
 }
 ${lightCallGlsl('BeltLantern', 'uBeltLanternLightPosition')}
+${lightCallGlsl('HouseLantern', 'uHouseLanternLightPosition')}
 for (int i = 0; i < INDICATOR_LIGHT_COUNT; i++) {
   ${lightCallGlsl('Indicator', 'INDICATOR_LIGHT_POSITIONS[i]')}
 }
@@ -558,6 +580,7 @@ export {
   TORCH_LIGHTS_DEFAULTS,
   LANTERN_LIGHTS_DEFAULTS,
   BELT_LANTERN_LIGHT_DEFAULTS,
+  HOUSE_LANTERN_LIGHT_DEFAULTS,
   INDICATOR_LIGHTS_DEFAULTS,
   FORGE_LAVA_LIGHT_DEFAULTS,
   SWORD_LIGHT_DEFAULTS,
@@ -578,6 +601,7 @@ export {
   lanternLightsUniforms,
   beltLanternLightUniforms,
   beltLanternLightSettings,
+  houseLanternLightUniforms,
   indicatorLightsUniforms,
   forgeLavaLightUniforms,
   swordLightUniforms,

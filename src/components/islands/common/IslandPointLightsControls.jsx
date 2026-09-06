@@ -7,6 +7,7 @@ import { DEBUG_ENABLED } from '#utils/debug.js';
 import {
   TORCH_LIGHTS_DEFAULTS,
   LANTERN_LIGHTS_DEFAULTS,
+  HOUSE_LANTERN_LIGHT_DEFAULTS,
   INDICATOR_LIGHTS_DEFAULTS,
   FORGE_LAVA_LIGHT_DEFAULTS,
   SWORD_LIGHT_DEFAULTS,
@@ -18,6 +19,7 @@ import {
   CANDLE_LIGHTS_DEFAULTS,
   torchLightsUniforms,
   lanternLightsUniforms,
+  houseLanternLightUniforms,
   indicatorLightsUniforms,
   forgeLavaLightUniforms,
   swordLightUniforms,
@@ -111,6 +113,28 @@ const IslandPointLightsControls = () => {
   useControls(
     'LanternLights',
     groupSchema(lanternLightsUniforms, 'Lantern', LANTERN_LIGHTS_DEFAULTS),
+    { collapsed: true, reset: true }
+  );
+
+  // Standalone lantern near the house on the first island, not part of the
+  // grouped LanternLights; showHelper marks the position while tuning it
+  const { showHelper: showHouseLanternHelper } = useControls(
+    'HouseLanternLight',
+    {
+      showHelper: false,
+      ...groupSchema(
+        houseLanternLightUniforms,
+        'HouseLantern',
+        HOUSE_LANTERN_LIGHT_DEFAULTS
+      ),
+      position: {
+        value: HOUSE_LANTERN_LIGHT_DEFAULTS.position,
+        step: 0.01,
+        onChange: v => {
+          houseLanternLightUniforms.uHouseLanternLightPosition.value.set(...v);
+        },
+      },
+    },
     { collapsed: true, reset: true }
   );
 
@@ -284,6 +308,12 @@ const IslandPointLightsControls = () => {
         <LightPositionHelper
           positionUniform={forgeLavaLightUniforms.uForgeLavaLightPosition}
           colorUniform={forgeLavaLightUniforms.uForgeLavaLightColor}
+        />
+      )}
+      {DEBUG_ENABLED && showHouseLanternHelper && (
+        <LightPositionHelper
+          positionUniform={houseLanternLightUniforms.uHouseLanternLightPosition}
+          colorUniform={houseLanternLightUniforms.uHouseLanternLightColor}
         />
       )}
     </>

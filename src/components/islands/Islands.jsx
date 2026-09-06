@@ -11,6 +11,7 @@ import {
 } from '#islands/common/islandPointLights.js';
 import { IslandPointLightsControls } from '#islands/common/IslandPointLightsControls.jsx';
 import { SmokeColumns } from '#islands/common/SmokeColumns.jsx';
+import { CauldronSmoke } from '#islands/common/CauldronSmoke.jsx';
 import { LanternsAndHome } from '#islands/common/LanternsAndHome';
 import { WindowRay } from '#islands/common/WindowRay';
 import { IslandMaterialsControls } from '#islands/common/IslandMaterialsControls';
@@ -325,20 +326,27 @@ const Islands = () => {
       <LanternsAndHome island={island} />
       <IslandMaterialsControls materials={materials} />
       <IslandPointLightsControls />
-      <SmokeColumns
+      <CauldronSmoke
         folderName="CauldronSmoke"
-        positions={[CAULDRON_SMOKE_POSITION]}
+        position={CAULDRON_SMOKE_POSITION}
         defaults={{
-          color: '#00d14c',
-          opacity: 0.53,
-          fadeHeight: 1,
-          baseFade: 1.2,
+          color: '#00ff67',
+          opacity: 1,
+          density: 0.6,
+          speed: 0,
+          edgeFade: 0.5,
+          topFadeStart: 0.48,
+          topFadeEnd: 1,
+          bottomFadeStart: 0.31,
+          bottomFadeEnd: 0.41,
+          sway: true,
           timeOffsetStrength: 1,
-          swayScale: 2.8,
-          swayPower: 1.6,
-          width: 0.73,
-          height: 7,
-          offset: [0, 0, 0],
+          swayScale: 2.16,
+          swayPower: 3,
+          swayAmplitude: 0.16,
+          width: 1.94,
+          height: 2.8,
+          offset: [0, 0.83, 0],
         }}
       />
       <SmokeColumns

@@ -135,7 +135,7 @@ const SmokeColumns = props => {
       material={smokeMaterial}
       frustumCulled={false}
     >
-      <planeGeometry args={[1, 10, 16, 64]} />
+      <planeGeometry args={[1, 10, 4, 16]} />
     </instancedMesh>
   );
 };
