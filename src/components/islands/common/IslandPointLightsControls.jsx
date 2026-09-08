@@ -224,26 +224,41 @@ const IslandPointLightsControls = () => {
     { collapsed: true, reset: true }
   );
 
+  // The intensity uniform is driven every frame by the bellows gasp in
+  // ForgeLavaPlane, sweeping minIntensity..maxIntensity — drop the base
+  // intensity control in favor of the range below
+  const forgeLavaLightSchema = groupSchema(
+    forgeLavaLightUniforms,
+    'ForgeLava',
+    FORGE_LAVA_LIGHT_DEFAULTS
+  );
+  delete forgeLavaLightSchema.intensity;
+
   // showHelper has no onChange so it comes back as state and re-renders the
   // marker below; the position input (x/y/z fields) moves it live
   const { showHelper: showForgeLavaHelper } = useControls(
     'ForgeLavaLight',
     {
       showHelper: false,
-      ...groupSchema(
-        forgeLavaLightUniforms,
-        'ForgeLava',
-        FORGE_LAVA_LIGHT_DEFAULTS
-      ),
-      // The uniform is driven every frame by the bellows gasp in
-      // ForgeLavaPlane; the control only sets the base intensity
-      intensity: {
-        value: FORGE_LAVA_LIGHT_DEFAULTS.intensity,
+      ...forgeLavaLightSchema,
+      // Resting intensity (bellows open)
+      minIntensity: {
+        value: FORGE_LAVA_LIGHT_DEFAULTS.minIntensity,
         min: 0,
         max: 100,
         step: 0.05,
         onChange: v => {
-          forgeLavaLightSettings.intensity = v;
+          forgeLavaLightSettings.minIntensity = v;
+        },
+      },
+      // Gasp peak intensity (bellows fully closed)
+      maxIntensity: {
+        value: FORGE_LAVA_LIGHT_DEFAULTS.maxIntensity,
+        min: 0,
+        max: 100,
+        step: 0.05,
+        onChange: v => {
+          forgeLavaLightSettings.maxIntensity = v;
         },
       },
       position: {

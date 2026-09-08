@@ -3,11 +3,27 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import gsap from 'gsap';
 
+import { useControls } from '#utils/useControls.jsx';
 import TextFont from '#assets/fonts/metamorphous.woff';
 
 const LETTERS_COUNT = 3;
 const BASE_POSITION = [-11.36, 7.62, -60.64];
 const BASE_ROTATION = [0, 0.4, -0.1];
+
+const SLEEP_TEXT_DEFAULTS = {
+  // Seconds for one letter to rise and grow through its full cycle; the
+  // letters are staggered by duration / LETTERS_COUNT so the looping cycle
+  // always keeps them perfectly evenly spaced
+  duration: 0.5,
+  // How far above BASE_POSITION the letters rise
+  riseHeight: 0.88,
+  // Scale at spawn and at the top of the rise
+  minScale: 0.05,
+  maxScale: 0.15,
+  // Side-to-side sine sway
+  swayAmplitude: 0.05,
+  swayFrequency: 2,
+};
 
 function drawLetter(canvas) {
   const ctx = canvas.getContext('2d');
@@ -35,6 +51,58 @@ const SleepText = () => {
   const lettersRefs = useRef([]);
   const texture = useMemo(() => createLetterTexture(), []);
 
+  // No onChange: the values come back as state so the tween effect below
+  // rebuilds on every panel change (fixed at the defaults in production)
+  const {
+    duration,
+    riseHeight,
+    minScale,
+    maxScale,
+    swayAmplitude,
+    swayFrequency,
+  } = useControls(
+    'SleepText',
+    {
+      duration: {
+        value: SLEEP_TEXT_DEFAULTS.duration,
+        min: 0.2,
+        max: 8,
+        step: 0.1,
+      },
+      riseHeight: {
+        value: SLEEP_TEXT_DEFAULTS.riseHeight,
+        min: 0,
+        max: 3,
+        step: 0.01,
+      },
+      minScale: {
+        value: SLEEP_TEXT_DEFAULTS.minScale,
+        min: 0,
+        max: 1,
+        step: 0.005,
+      },
+      maxScale: {
+        value: SLEEP_TEXT_DEFAULTS.maxScale,
+        min: 0,
+        max: 1,
+        step: 0.005,
+      },
+      swayAmplitude: {
+        value: SLEEP_TEXT_DEFAULTS.swayAmplitude,
+        min: 0,
+        max: 0.5,
+        step: 0.005,
+      },
+      swayFrequency: {
+        value: SLEEP_TEXT_DEFAULTS.swayFrequency,
+        min: 0,
+        max: 10,
+        step: 0.1,
+      },
+    },
+    { collapsed: true, reset: true }
+  );
+
   useLayoutEffect(() => {
     let cancelled = false;
     const font = new FontFace('Metamorphous', `url(${TextFont})`);
@@ -46,50 +114,69 @@ const SleepText = () => {
       texture.needsUpdate = true;
     });
 
-    const tweens = [];
+    return () => {
+      cancelled = true;
+    };
+  }, [texture]);
+
+  useLayoutEffect(() => {
+    // One letter spawns every duration / LETTERS_COUNT: each timeline lasts
+    // exactly `duration` and repeats, so the letters stay perfectly evenly
+    // spaced through the whole loop
+    const interval = duration / LETTERS_COUNT;
+    // Quick pop-down to nothing at the top of the rise, so the letter never
+    // visibly teleports back to the bottom
+    const shrinkDuration = Math.min(0.15, duration * 0.25);
+    const growDuration = duration - shrinkDuration;
+    const timelines = [];
     for (let i = 0; i < LETTERS_COUNT; i++) {
       const letter = lettersRefs.current[i];
       if (!letter) continue;
 
-      tweens.push(
-        gsap.fromTo(
-          letter.position,
-          { y: 7.62 },
-          { y: 8.5, duration: 2, delay: i / 1.5, repeat: -1, ease: 'linear' }
-        ),
-        gsap.fromTo(
-          letter.scale,
-          { x: 0.05, y: 0.05, z: 0.05 },
-          {
-            x: 0.15,
-            y: 0.15,
-            z: 0.15,
-            duration: 2,
-            delay: i / 1.5,
-            repeat: -1,
-            ease: 'linear',
-          }
-        )
+      const timeline = gsap.timeline({ repeat: -1, delay: i * interval });
+      timeline.fromTo(
+        letter.position,
+        { y: BASE_POSITION[1] },
+        {
+          y: BASE_POSITION[1] + riseHeight,
+          duration,
+          ease: 'linear',
+        },
+        0
       );
+      timeline.fromTo(
+        letter.scale,
+        { x: minScale, y: minScale, z: minScale },
+        {
+          x: maxScale,
+          y: maxScale,
+          z: maxScale,
+          duration: growDuration,
+          ease: 'linear',
+        },
+        0
+      );
+      timeline.to(
+        letter.scale,
+        { x: 0, y: 0, z: 0, duration: shrinkDuration, ease: 'power2.in' },
+        growDuration
+      );
+      timelines.push(timeline);
     }
 
     return () => {
-      cancelled = true;
-      tweens.forEach(tween => tween.kill());
+      timelines.forEach(timeline => timeline.kill());
     };
-  }, [texture]);
+  }, [duration, riseHeight, minScale, maxScale]);
 
   useFrame(state => {
-    const amplitude = 0.05;
-    const frequency = 2;
-    const offset = -11.35;
-
     for (let i = 0; i < LETTERS_COUNT; i++) {
       const letter = lettersRefs.current[i];
       if (letter) {
         letter.position.x =
-          offset +
-          amplitude * Math.sin(frequency * state.clock.elapsedTime + i * 3);
+          BASE_POSITION[0] +
+          swayAmplitude *
+            Math.sin(swayFrequency * state.clock.elapsedTime + i * 3);
       }
     }
   });
@@ -100,7 +187,7 @@ const SleepText = () => {
       ref={el => {
         lettersRefs.current[index] = el;
       }}
-      scale={0.05}
+      scale={SLEEP_TEXT_DEFAULTS.minScale}
       position={BASE_POSITION}
       rotation={BASE_ROTATION}
     >
@@ -108,7 +195,7 @@ const SleepText = () => {
       <meshBasicMaterial
         map={texture}
         transparent
-        depthWrite={false}
+        depthWrite={true}
         side={THREE.DoubleSide}
       />
     </mesh>

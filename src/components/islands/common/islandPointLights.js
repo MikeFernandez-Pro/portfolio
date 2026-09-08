@@ -65,7 +65,11 @@ const INDICATOR_LIGHTS_DEFAULTS = {
 
 const FORGE_LAVA_LIGHT_DEFAULTS = {
   color: '#f47053',
-  intensity: 10,
+  // intensity only seeds the uniform; ForgeLavaPlane drives it every frame
+  // between minIntensity (bellows open) and maxIntensity (fully closed)
+  intensity: 20,
+  minIntensity: 20,
+  maxIntensity: 40,
   decay: 0.455,
   decayPower: 5.5,
   specularPower: 1,
@@ -232,7 +236,8 @@ const portalLightSettings = {
   intensity: PORTAL_LIGHT_DEFAULTS.intensity,
 };
 const forgeLavaLightSettings = {
-  intensity: FORGE_LAVA_LIGHT_DEFAULTS.intensity,
+  minIntensity: FORGE_LAVA_LIGHT_DEFAULTS.minIntensity,
+  maxIntensity: FORGE_LAVA_LIGHT_DEFAULTS.maxIntensity,
 };
 const magicPortalLightSettings = {
   intensity: MAGIC_PORTAL_LIGHT_DEFAULTS.intensity,

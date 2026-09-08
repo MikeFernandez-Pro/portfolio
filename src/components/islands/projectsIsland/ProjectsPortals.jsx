@@ -330,6 +330,7 @@ const ProjectsPortals = props => {
 
   const sparksGeometryRef = useRef(null);
   const sparksPointsRef = useRef(null);
+  const portalDiscRef = useRef(null);
 
   useControls(
     'PortalSparks',
@@ -435,6 +436,16 @@ const ProjectsPortals = props => {
   // Animation
 
   useEffect(() => {
+    // Every portal visual (GLB swirl mesh, shader disc, sparks) stays hidden
+    // until the first plate press; the store remembers the pressed plate, so
+    // a remount keeps an already-opened portal visible
+    const applyPortalVisibility = visible => {
+      portal.visible = visible;
+      if (portalDiscRef.current) portalDiscRef.current.visible = visible;
+      if (sparksPointsRef.current) sparksPointsRef.current.visible = visible;
+    };
+    applyPortalVisibility(Boolean(useStore.getState().activePlate));
+
     // Animate a progress value and scale by the (tweakable) open size, so
     // the animation target doesn't get baked in at creation time
     const openProgress = { value: 0 };
@@ -458,6 +469,7 @@ const ProjectsPortals = props => {
       state => state.activePlate,
       activePlate => {
         if (activePlate) {
+          applyPortalVisibility(true);
           const rect = PORTAL_PLATE_RECTS[activePlate];
           portalShaderMaterial.uniforms.uTextureOffset.value.copy(rect.offset);
           portalShaderMaterial.uniforms.uTextureSize.value.copy(rect.size);
@@ -494,8 +506,11 @@ const ProjectsPortals = props => {
   }, [portalShaderMaterial, portalSoundEffect]);
 
   useFrame(({ clock, size, viewport }, delta) => {
-    // The disc is never fully hidden (idle size pulse in the fragment
-    // shader), so its rotation and time always tick
+    // Hidden until the first plate press (the activePlate subscription flips
+    // the visibility): skip the rotation and the whole uniform feed. The
+    // portal light is initialized off, so it waits too.
+    if (!portal.visible) return;
+
     portal.rotation.y += delta * 0.15;
     portalShaderMaterial.uniforms.uTime.value = clock.elapsedTime;
 
@@ -510,14 +525,6 @@ const ProjectsPortals = props => {
         1
       )
     );
-
-    // Until the first plate press the ratchet sits at 0: the sparks are
-    // invisible (vAlpha scales with uOpenFactor) and the portal light is
-    // initialized off, so their uniform feed — and the sparks draw call —
-    // wait for the first opening
-    const opened = openFactor > 0;
-    if (sparksPointsRef.current) sparksPointsRef.current.visible = opened;
-    if (!opened) return;
 
     portalSparksMaterial.uniforms.uTime.value = clock.elapsedTime;
     portalSparksMaterial.uniforms.uOpenFactor.value = openFactor;
@@ -534,6 +541,7 @@ const ProjectsPortals = props => {
   return (
     <>
       <Circle
+        ref={portalDiscRef}
         args={[0.8, 32]}
         material={portalShaderMaterial}
         position={[-16.12, 6.95, -37.7]}

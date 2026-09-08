@@ -189,11 +189,34 @@ const Grass = () => {
   const bladeControls = useControls(
     'Blades',
     {
-      colorBase: '#00893d',
-      colorTop: '#00fa2e',
-      // Scales both grass colors (and the flower stems): < 1 darkens,
-      // > 1 brightens past the picked colors (HDR, can feed bloom)
-      brightness: { value: 0.78, min: 0, max: 2, step: 0.01 },
+      // Single root -> tip color gradient shared by all blades; the patch
+      // noise at each blade root picks one of two variants (~half the field
+      // each), grouping neighbouring blades into patches
+      colorBottom: '#014f16',
+      colorTop: '#00ff51',
+      // Gradient lighting of each patch variant: darkens (< 1) or lightens
+      // (> 1) the root and tip colors evenly, keeping their hues
+      lighting1: { value: 0.36, min: 0, max: 3, step: 0.01 },
+      lighting2: { value: 0.98, min: 0, max: 3, step: 0.01 },
+      // World-space scale of the color noise (higher = smaller patches)
+      colorNoiseScale: { value: 0.028, min: 0, max: 0.5, step: 0.001 },
+      // 0 = wide soft blends between patches, 1 = hard edges
+      colorSharpness: { value: 0.45, min: 0, max: 1, step: 0.01 },
+      // Voronoi patches: procedural cells (vertex.glsl) where each cell
+      // takes one flat variant, ~half the cells each, with perlin-warped
+      // borders. Blends with the perlin patch selector:
+      // 0 = pure perlin blobs, 1 = pure voronoi cells
+      voronoiMix: { value: 0.65, min: 0, max: 1, step: 0.01 },
+      // Cell density, cells per world unit (higher = smaller patches)
+      voronoiScale: { value: 0.29, min: 0.05, max: 2, step: 0.01 },
+      // Perlin warp bending the cell borders, in cell units
+      // (0 = straight voronoi edges)
+      voronoiWarpStrength: { value: 0.98, min: 0, max: 3, step: 0.01 },
+      // Scale of the warping perlin (lower = broader, smoother bends)
+      voronoiWarpScale: { value: 0.08, min: 0, max: 0.5, step: 0.001 },
+      // Scales the two gradient colors: < 1 darkens, > 1 brightens past the
+      // picked colors (HDR, can feed bloom)
+      brightness: { value: 1.52, min: 0, max: 2, step: 0.01 },
       // Visible blades: placement only spawns them where the height mask has
       // grass (~27% of the patch), so 22000 matches the density the old
       // 80000-over-the-whole-square gave
@@ -238,6 +261,11 @@ const Grass = () => {
       // Lit only. Fake rounded cross-section: shading normal tilted toward
       // the blade edges (0 = flat strip, 1 = 45 degrees at the edges)
       normalRounding: { value: 0, min: 0, max: 1, step: 0.01 },
+      // Lit only. Blend of the shading normal toward world up: at 0 the sun
+      // lights every blade differently (their normals point sideways in
+      // random directions), at 1 all blades are lit like the ground plane so
+      // identical palette colors render identical blades
+      normalUp: { value: 1, min: 0, max: 1, step: 0.01 },
       // Distance thinning, world units from the camera: full density up to
       // thinStart, no blades past thinEnd (blades shrink out in between)
       thinStart: { value: 18, min: 5, max: 60, step: 0.5 },
@@ -351,8 +379,16 @@ const Grass = () => {
               bladeControls.height
             ),
           },
-          uGrassBaseColor: { value: new THREE.Color(bladeControls.colorBase) },
-          uGrassTopColor: { value: new THREE.Color(bladeControls.colorTop) },
+          uColorBottom: { value: new THREE.Color(bladeControls.colorBottom) },
+          uColorTop: { value: new THREE.Color(bladeControls.colorTop) },
+          uLighting1: { value: bladeControls.lighting1 },
+          uLighting2: { value: bladeControls.lighting2 },
+          uColorNoiseScale: { value: bladeControls.colorNoiseScale },
+          uColorSharpness: { value: bladeControls.colorSharpness },
+          uVoronoiMix: { value: bladeControls.voronoiMix },
+          uVoronoiScale: { value: bladeControls.voronoiScale },
+          uVoronoiWarpStrength: { value: bladeControls.voronoiWarpStrength },
+          uVoronoiWarpScale: { value: bladeControls.voronoiWarpScale },
           uSquareShape: { value: bladeControls.squared },
           uPositionX: { value: 0 },
           uPositionZ: { value: 0 },
@@ -363,10 +399,6 @@ const Grass = () => {
           uFlowerHeight: { value: flowerControls.height },
           uFlowerWidth: { value: flowerControls.width },
           uFlowerBaseWidth: { value: flowerControls.baseWidth },
-          // The stems match the blade tips
-          uFlowerStemColor: {
-            value: new THREE.Color(bladeControls.colorTop),
-          },
 
           uHeightDataTexture: { value: grassHeightTexture },
           uPerlinNoiseTexture: { value: perlinNoiseTexture },
@@ -388,6 +420,7 @@ const Grass = () => {
             value: Math.cos(THREE.MathUtils.degToRad(renderControls.cullAngle)),
           },
           uNormalRounding: { value: renderControls.normalRounding },
+          uNormalUp: { value: renderControls.normalUp },
 
           uRepulseStrength: { value: trampleControls.strength },
           uRepulseSquash: { value: trampleControls.squash },
@@ -418,12 +451,20 @@ const Grass = () => {
   // Keep the uniforms in sync with the controls
   useEffect(() => {
     const { uniforms } = grassMaterial;
-    uniforms.uGrassBaseColor.value = new THREE.Color(bladeControls.colorBase)
-      .multiplyScalar(bladeControls.brightness);
-    uniforms.uGrassTopColor.value = new THREE.Color(bladeControls.colorTop)
-      .multiplyScalar(bladeControls.brightness);
-    uniforms.uFlowerStemColor.value = new THREE.Color(bladeControls.colorTop)
-      .multiplyScalar(bladeControls.brightness);
+    uniforms.uColorBottom.value = new THREE.Color(
+      bladeControls.colorBottom
+    ).multiplyScalar(bladeControls.brightness);
+    uniforms.uColorTop.value = new THREE.Color(
+      bladeControls.colorTop
+    ).multiplyScalar(bladeControls.brightness);
+    uniforms.uLighting1.value = bladeControls.lighting1;
+    uniforms.uLighting2.value = bladeControls.lighting2;
+    uniforms.uColorNoiseScale.value = bladeControls.colorNoiseScale;
+    uniforms.uColorSharpness.value = bladeControls.colorSharpness;
+    uniforms.uVoronoiMix.value = bladeControls.voronoiMix;
+    uniforms.uVoronoiScale.value = bladeControls.voronoiScale;
+    uniforms.uVoronoiWarpStrength.value = bladeControls.voronoiWarpStrength;
+    uniforms.uVoronoiWarpScale.value = bladeControls.voronoiWarpScale;
     uniforms.uGrassParameters.value.x = bladeControls.segmentsCount;
     uniforms.uGrassParameters.value.y = bladeControls.patchSize;
     uniforms.uGrassParameters.value.z = bladeControls.width;
@@ -455,6 +496,7 @@ const Grass = () => {
       THREE.MathUtils.degToRad(renderControls.cullAngle)
     );
     uniforms.uNormalRounding.value = renderControls.normalRounding;
+    uniforms.uNormalUp.value = renderControls.normalUp;
 
     uniforms.uRepulseStrength.value = trampleControls.strength;
     uniforms.uRepulseSquash.value = trampleControls.squash;

@@ -23,12 +23,13 @@ const LAVA_DEFAULTS = {
   speed: 0.06,  
   crustColor: '#290d07',
   glowColor: '#f47053',
-  intensity: 10,
+  // Glow intensity range: min at rest, max when the bellows fully close
+  minIntensity: 10,
+  maxIntensity: 40,
   contrast: 1.5,
   borderThicknessX: 0.05,
   borderThicknessY: 0.09,
   perlinNoiseStrength: 0.22,
-  gaspPeakIntensity: 40,
 };
 
 /**
@@ -38,8 +39,8 @@ const LAVA_DEFAULTS = {
 const ForgeLavaPlane = ({ blowerMesh }) => {
   const uniformsRef = useRef(null);
   const gaspParamsRef = useRef({
-    base: LAVA_DEFAULTS.intensity,
-    peak: LAVA_DEFAULTS.gaspPeakIntensity,
+    base: LAVA_DEFAULTS.minIntensity,
+    peak: LAVA_DEFAULTS.maxIntensity,
   });
 
   // Gasp: uIntensity is driven each frame by the blowerClosed morph weight
@@ -62,7 +63,7 @@ const ForgeLavaPlane = ({ blowerMesh }) => {
         uSpeed: { value: LAVA_DEFAULTS.speed },
         uCrustColor: { value: new THREE.Color(LAVA_DEFAULTS.crustColor) },
         uGlowColor: { value: new THREE.Color(LAVA_DEFAULTS.glowColor) },
-        uIntensity: { value: LAVA_DEFAULTS.intensity },
+        uIntensity: { value: LAVA_DEFAULTS.minIntensity },
         uContrast: { value: LAVA_DEFAULTS.contrast },
         uBorderThicknessX: { value: LAVA_DEFAULTS.borderThicknessX },
         uBorderThicknessY: { value: LAVA_DEFAULTS.borderThicknessY },
@@ -146,8 +147,9 @@ const ForgeLavaPlane = ({ blowerMesh }) => {
           if (uniformsRef.current) uniformsRef.current.uGlowColor.value.set(value);
         },
       },
-      intensity: {
-        value: LAVA_DEFAULTS.intensity,
+      // Resting glow intensity (bellows open)
+      minIntensity: {
+        value: LAVA_DEFAULTS.minIntensity,
         min: 0,
         max: 30,
         step: 0.01,
@@ -155,8 +157,9 @@ const ForgeLavaPlane = ({ blowerMesh }) => {
           gaspParamsRef.current.base = value;
         },
       },
-      gaspPeakIntensity: {
-        value: LAVA_DEFAULTS.gaspPeakIntensity,
+      // Gasp peak intensity (bellows fully closed)
+      maxIntensity: {
+        value: LAVA_DEFAULTS.maxIntensity,
         min: 0,
         max: 60,
         step: 0.01,
@@ -213,18 +216,17 @@ const ForgeLavaPlane = ({ blowerMesh }) => {
     uniformsRef.current.uTime.value += delta;
 
     const influences = blowerMesh?.morphTargetInfluences;
+    const gasp =
+      influences && blowerIndex !== undefined ? influences[blowerIndex] : 0;
 
-    if (influences && blowerIndex !== undefined) {
-      const { base, peak } = gaspParamsRef.current;
-      uniformsRef.current.uIntensity.value =
-        base + (peak - base) * influences[blowerIndex];
-    }
+    const { base, peak } = gaspParamsRef.current;
+    uniformsRef.current.uIntensity.value = base + (peak - base) * gasp;
 
-    // The fake point light gasps along, proportionally to the lava glow
+    // The fake point light gasps along the same bellows factor, sweeping
+    // its own min/max intensity range
+    const { minIntensity, maxIntensity } = forgeLavaLightSettings;
     forgeLavaLightUniforms.uForgeLavaLightIntensity.value =
-      forgeLavaLightSettings.intensity *
-      (uniformsRef.current.uIntensity.value /
-        Math.max(gaspParamsRef.current.base, 0.0001));
+      minIntensity + (maxIntensity - minIntensity) * gasp;
   });
 
   return (

@@ -211,9 +211,11 @@ if (spawnSync('ktx', ['--version']).error) {
 
     const result = spawnSync(
       'ktx',
+      // No RDO: it banded the atlas's smooth gradients (RDO trades block
+      // quality for zstd size; dropping it costs ~0.4 MB on disk, GPU
+      // memory is unchanged)
       ['create', '--format', 'R8G8B8A8_SRGB', '--assign-tf', 'srgb',
-        '--encode', 'uastc', '--uastc-quality', '3',
-        '--uastc-rdo', '--uastc-rdo-l', '1.0', '--zstd', '19',
+        '--encode', 'uastc', '--uastc-quality', '4', '--zstd', '19',
         '--generate-mipmap', resizedPath, ktx2Path],
       { encoding: 'utf8' }
     );

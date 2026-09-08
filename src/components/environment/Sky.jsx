@@ -21,12 +21,12 @@ const Experience = () => {
     'Stars',
     {
       count: {
-        value: 5000,
+        value: 6000,
         min: 0,
         max: 10000,
       },
       pointSize: {
-        value: 1.2,
+        value: 0.8,
         min: 0,
         max: 10,
         onChange: value => {

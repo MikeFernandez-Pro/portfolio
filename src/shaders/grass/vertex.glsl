@@ -1,6 +1,21 @@
 uniform vec4 uGrassParameters;
-uniform vec3 uGrassBaseColor;
-uniform vec3 uGrassTopColor;
+// Patch shading: a single bottom (root) -> top (tip) color gradient and two
+// patch variants (~half the field each, picked by noise at the blade root).
+// Each variant scales the whole gradient by its own lighting factor, so a
+// patch darkens or lightens the root and tip colors evenly.
+uniform vec3 uColorBottom;
+uniform vec3 uColorTop;
+uniform float uLighting1; // gradient lighting of patch variant 1 (1 = base colors)
+uniform float uLighting2; // gradient lighting of patch variant 2
+uniform float uColorNoiseScale;
+uniform float uColorSharpness; // 0 = wide soft blends between patches, 1 = hard edges
+// Voronoi patches: procedural cells where each cell picks one flat palette
+// color from a per-cell random id (uniform id -> ~a third of the cells per
+// color); a perlin warp bends their borders organic
+uniform float uVoronoiMix; // 0 = pure perlin patches, 1 = pure voronoi cells
+uniform float uVoronoiScale; // cells per world unit (higher = smaller cells)
+uniform float uVoronoiWarpStrength; // how far the perlin pushes the cell borders (cell units)
+uniform float uVoronoiWarpScale; // scale of the warping perlin
 uniform float uTime;
 uniform sampler2D uHeightDataTexture;
 uniform sampler2D uPerlinNoiseTexture;
@@ -19,7 +34,6 @@ uniform float uFlowerHeight;
 uniform float uFlowerWidth;
 // Base pinch: fraction of the full width separating the two bottom vertices
 uniform float uFlowerBaseWidth;
-uniform vec3 uFlowerStemColor;
 
 uniform float uRepulseStrength; // max tilt angle in radians (PI/2 = flat on the ground)
 uniform float uRepulseSquash; // extra height shortening at full influence (0-1)
@@ -84,6 +98,35 @@ vec3 hash(
   );
 
   return -1.0 + 2.0 * fract(sin(p) * 43758.5453123);
+}
+
+// Voronoi cell ids: nearest + second-nearest feature point in a 3x3 grid
+// neighbourhood. Returns (id1, id2, edge) — per-cell random ids in [0, 1]
+// and the border distance F2 - F1 (0 exactly on a cell border).
+vec3 voronoiCells(vec2 p) {
+  vec2 ip = floor(p);
+  vec2 fp = fract(p);
+  float f1 = 8.0, f2 = 8.0;
+  float id1 = 0.0, id2 = 0.0;
+  for (int y = -1; y <= 1; y++) {
+    for (int x = -1; x <= 1; x++) {
+      vec2 g = vec2(float(x), float(y));
+      vec3 h = hash(vec3(ip + g, 0.0)); // -1..1
+      vec2 offset = g + 0.5 + 0.5 * h.xy; // feature point in that cell
+      vec2 d = fp - offset;
+      float dist = dot(d, d);
+      if (dist < f1) {
+        f2 = f1;
+        id2 = id1;
+        f1 = dist;
+        id1 = h.z * 0.5 + 0.5;
+      } else if (dist < f2) {
+        f2 = dist;
+        id2 = h.z * 0.5 + 0.5;
+      }
+    }
+  }
+  return vec3(id1, id2, sqrt(f2) - sqrt(f1));
 }
 
 // Bezier curve function for bending the grass blade
@@ -336,12 +379,39 @@ void main() {
   csm_Normal = shadingNormal;
   #endif
 
-  // Pass the color to the fragment shader; flowers use their own green
-  vGrassColor = mix(
-    uGrassBaseColor,
-    randomFlowers ? uFlowerStemColor : uGrassTopColor,
-    heightPercent
-  );
+  // Patch variant selector at the root (flower stems included), 0 = variant
+  // 1, 1 = variant 2: neighbouring blades read the same noise and group into
+  // patches, ~half the field each. Perlin (free blobs, same packed texture
+  // as the wind but static UVs and an independent scale) blended with
+  // voronoi cells - evenly sized patches, one flat variant per cell, borders
+  // perlin-warped organic. The sharpness control sets the blend band on both
+  // paths; the uniform branch skips the warp fetches and the cell search
+  // while the mix is off.
+  vec2 colorUv = vec2(-grassBladeWorldPos.x, grassBladeWorldPos.z);
+  float colorNoise = texture2D(uPerlinNoiseTexture,
+    colorUv * uColorNoiseScale).g;
+  float colorBlendBand = mix(0.35, 0.02, uColorSharpness);
+  float variant =
+    smoothstep(0.5 - colorBlendBand, 0.5 + colorBlendBand, colorNoise);
+  if (uVoronoiMix > 0.0) {
+    vec2 warpUv = colorUv * uVoronoiWarpScale;
+    vec2 warp = vec2(
+      texture2D(uPerlinNoiseTexture, warpUv).g,
+      texture2D(uPerlinNoiseTexture, warpUv + vec2(0.37, 0.71)).g
+    ) - 0.5;
+    vec3 cells = voronoiCells(
+      colorUv * uVoronoiScale + warp * uVoronoiWarpStrength);
+    float band = mix(0.5, 0.03, uColorSharpness);
+    float cellVariant = mix(step(0.5, cells.y), step(0.5, cells.x),
+      0.5 + 0.5 * smoothstep(0.0, band, cells.z));
+    variant = mix(variant, cellVariant, uVoronoiMix);
+  }
+  // One lighting factor per variant, darkening or lightening the root and
+  // tip colors together so a patch keeps the gradient's hues
+  float patchLighting = mix(uLighting1, uLighting2, variant);
+  // Root -> tip gradient; heightPercent is linear along the blade, so the
+  // varying interpolation matches a per-fragment mix
+  vGrassColor = mix(uColorBottom, uColorTop, heightPercent) * patchLighting;
 
   // x: flower flag, y: height percent along the blade
   vGrassUv = vec2(randomFlowers ? 1.0 : 0.0, heightPercent);

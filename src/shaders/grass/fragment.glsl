@@ -7,6 +7,12 @@
 centroid varying vec3 vGrassBendNormal;
 centroid varying vec3 vGrassSideTilt;
 
+// Blend of the shading normal toward world up. Each blade is a plane whose
+// normal points sideways in a random direction, so at 0 the sun brightens or
+// darkens every blade differently; at 1 all blades are lit like the ground
+// plane and identical palette colors render identical blades.
+uniform float uNormalUp;
+
 void main() {
   float cloudShadow = cloudShadowFactor(vGrassWorldPos.xz);
   float tipMask = grassTipMask();
@@ -16,6 +22,10 @@ void main() {
   // max: extrapolated samples can cancel the sum, and normalize(0) is NaN
   vec3 fragNormal =
     vGrassBendNormal * (gl_FrontFacing ? 1.0 : -1.0) + vGrassSideTilt;
+  // The up bias comes after the back-face flip: flipping an up-pointing
+  // normal would light back faces from below. World up -> view space.
+  vec3 upView = normalize((viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz);
+  fragNormal = mix(fragNormal / max(length(fragNormal), 1e-5), upView, uNormalUp);
   csm_FragNormal = fragNormal / max(length(fragNormal), 1e-5);
 
   // The tip goes through the emissive slot (added after the lighting

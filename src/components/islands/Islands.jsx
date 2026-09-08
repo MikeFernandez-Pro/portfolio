@@ -330,10 +330,10 @@ const Islands = () => {
         folderName="CauldronSmoke"
         position={CAULDRON_SMOKE_POSITION}
         defaults={{
-          color: '#00ff67',
+          color: '#00ffd4',
           opacity: 1,
           density: 0.6,
-          speed: 0,
+          speed: 0.07,
           edgeFade: 0.5,
           topFadeStart: 0.48,
           topFadeEnd: 1,

@@ -43,6 +43,10 @@ var ambientSound = new Howl({
   volume: SOUND_VOLUMES.ambient,
 });
 
+// Width of the sky gradient's bottom→top blend band, in sphere V units —
+// 0.65 is the original hardcoded 0.35→1 stops
+const SKY_MIX_BAND = 0.65;
+
 const Experience = () => {
   const camera = useThree(state => state.camera);
   const gameplayCameraRotationRef = useRef(null);
@@ -50,11 +54,24 @@ const Experience = () => {
   const controls = useControls(
     'Background',
     {
-      bottomColor: '#007bff',
-      topColor: '#20003b',
+      bottomColor: '#000649',
+      topColor: '#0077ff',
+      // 0 = the whole sky is bottomColor, 1 = all topColor; in between the
+      // blend band slides proportionally
+      mixHeight: { value: 0.3, min: 0, max: 1, step: 0.01 },
     },
     { collapsed: true }
   );
+
+  // The gradient's blend band (fixed width) slides with mixHeight, past the
+  // zenith at 0 (bottomColor fills the sphere) and past the horizon at 1
+  // (topColor fills it), so the extremes really reach 100% of one color
+  const skyMixCenter =
+    (1 - controls.mixHeight) * (1 + SKY_MIX_BAND) - SKY_MIX_BAND / 2;
+  const skyStops = [
+    THREE.MathUtils.clamp(skyMixCenter - SKY_MIX_BAND / 2, 0, 1),
+    THREE.MathUtils.clamp(skyMixCenter + SKY_MIX_BAND / 2, 0, 1),
+  ];
 
   const { freeCamera } = useControls(
     'Camera',
@@ -189,7 +206,7 @@ const Experience = () => {
         <sphereGeometry args={[125]} />
         <meshBasicMaterial side={THREE.BackSide}>
           <GradientTexture
-            stops={[0.35, 1]}
+            stops={skyStops}
             colors={[controls.bottomColor, controls.topColor]}
             size={1024}
           />
