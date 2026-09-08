@@ -31,6 +31,11 @@ const SparksMaterial = ({ size, color = COLOR, intensity = INTENSITY }) => {
   extend({ SparksShaderMaterial });
 
   return (
+    // transparent puts the sparks in the transparent render list - required
+    // for the points' renderOrder to place them after the smoke columns
+    // (opaque objects draw before all transparent ones, whatever their
+    // renderOrder), so the additive glow reads through the smoke instead of
+    // being painted over by it
     <sparksShaderMaterial
       uSize={size}
       uColor={color}

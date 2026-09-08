@@ -52,7 +52,15 @@ const TorchSparks = ({ particlesCount, config, color, intensity, sizeScale = 1 }
   });
 
   return (
-    <points ref={sparksRef} scale={config.scale} frustumCulled={false}>
+    // renderOrder 1: drawn after the renderOrder-0 transparent smoke, whose
+    // normal alpha blend would otherwise paint over the sparks (they write no
+    // depth, so the draw order is all that layers them)
+    <points
+      ref={sparksRef}
+      scale={config.scale}
+      frustumCulled={false}
+      renderOrder={1}
+    >
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
