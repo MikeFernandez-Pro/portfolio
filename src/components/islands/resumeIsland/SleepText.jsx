@@ -14,7 +14,7 @@ const SLEEP_TEXT_DEFAULTS = {
   // Seconds for one letter to rise and grow through its full cycle; the
   // letters are staggered by duration / LETTERS_COUNT so the looping cycle
   // always keeps them perfectly evenly spaced
-  duration: 0.5,
+  duration: 5,
   // How far above BASE_POSITION the letters rise
   riseHeight: 0.88,
   // Scale at spawn and at the top of the rise
@@ -192,9 +192,16 @@ const SleepText = () => {
       rotation={BASE_ROTATION}
     >
       <planeGeometry args={[1, 1]} />
+      {/* alphaTest discards the transparent quad around the glyph before it
+          can write depth (depth rectangles punched into smoke/sparks), while
+          the glyph pixels keep writing theirs - the depth-driven cheap DoF
+          and the depth-predicated SMAA need it, or letters over bare sky get
+          defocused to the far plane (and lose their bloom, since DoF runs
+          before Bloom) */}
       <meshBasicMaterial
         map={texture}
         transparent
+        alphaTest={0.5}
         depthWrite={true}
         side={THREE.DoubleSide}
       />
