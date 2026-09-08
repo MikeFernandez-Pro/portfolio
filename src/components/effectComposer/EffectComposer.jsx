@@ -33,7 +33,11 @@ const EffectComposer = props => {
       denoiseRadius: { value: 12, min: 1, max: 12, step: 1 },
       color: { value: '#bce3ff' },
       halfRes: true,
-      depthAwareUpsampling: false,
+      // Without it the half-res AO upsamples naively and bleeds across depth
+      // edges: up close, dark haloes from surrounding geometry land on
+      // emissive surfaces, dropping them below the bloom threshold (AO runs
+      // in its own pass before bloom reads its luminance)
+      depthAwareUpsampling: true,
       screenSpaceRadius: false,
       renderMode: { value: 0, options: [0, 1, 2, 3, 4] },
     },
@@ -46,7 +50,7 @@ const EffectComposer = props => {
     'Bloom',
     {
       intensity: {
-        value: 2.2,
+        value: 2,
         min: 0,
         max: 10,
         step: 0.1,
