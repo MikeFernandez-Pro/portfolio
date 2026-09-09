@@ -111,8 +111,6 @@ const EffectComposer = props => {
       enableNormalPass={false}
       multisampling={COMPOSER_MSAA}
     >
-    <SceneRevealer sceneRevealerRef={sceneRevealerRef} />
-
     {!IS_MOBILE_DEVICE && (
       <N8AO {...controls} quality={controls.quality} />
     )}
@@ -129,6 +127,12 @@ const EffectComposer = props => {
     <Vignette />
 
     <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+
+    {/* After Bloom on purpose: the mask must also cover the glow, or bright
+        emissives bleed onto the unrevealed black (and on mobile, where no
+        pass separates them, a merged revealer+bloom EffectPass makes bloom
+        sample the *unmasked* scene). Before SMAA so the contour gets AA'd */}
+    <SceneRevealer sceneRevealerRef={sceneRevealerRef} />
 
     {/* After tone mapping (SMAA wants LDR). ULTRA searches longer edges; depth
         predication catches geometry edges the color detector misses. Sole AA

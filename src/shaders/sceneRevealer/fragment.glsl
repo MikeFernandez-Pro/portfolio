@@ -25,6 +25,7 @@ void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor)
     float mask = 1.0 - smoothstep(-w, w, shape - perlinNoise * 0.1);
 
     // The MSAA-resolved scene buffer can carry negative/NaN RGB (extrapolated
-    // varyings) — clamp so bloom's mip chain doesn't smear them into black
+    // varyings) — keep the clamp even though this now runs post-bloom, so the
+    // debug MSAA A/B doesn't feed them to SMAA
     outputColor = vec4(max(inputColor.rgb, vec3(0.0)), inputColor.a) * mask;
 }
