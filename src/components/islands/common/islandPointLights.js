@@ -264,10 +264,7 @@ const portalLightUniforms = {
 // Off until the first portal opening
 portalLightUniforms.uPortalLightIntensity.value = 0;
 
-const torchLightsUniforms = createLightUniforms(
-  'Torch',
-  TORCH_LIGHTS_DEFAULTS
-);
+const torchLightsUniforms = createLightUniforms('Torch', TORCH_LIGHTS_DEFAULTS);
 
 const lanternLightsUniforms = createLightUniforms(
   'Lantern',
@@ -366,21 +363,12 @@ const MAX_CANDLE_LIGHTS = 16;
 const candleLightsUniforms = {
   ...createLightUniforms('Candle', CANDLE_LIGHTS_DEFAULTS),
   uCandleLightPositions: {
-    value: Array.from(
-      { length: MAX_CANDLE_LIGHTS },
-      () => new THREE.Vector3()
-    ),
+    value: Array.from({ length: MAX_CANDLE_LIGHTS }, () => new THREE.Vector3()),
   },
   uCandleLightCount: { value: 0 },
 };
 
 const setCandleLightPositions = positions => {
-  if (positions.length > MAX_CANDLE_LIGHTS) {
-    console.warn(
-      `islandPointLights: ${positions.length} candle lights, ` +
-        `capped at ${MAX_CANDLE_LIGHTS}`
-    );
-  }
   const count = Math.min(positions.length, MAX_CANDLE_LIGHTS);
   for (let i = 0; i < count; i++) {
     candleLightsUniforms.uCandleLightPositions.value[i].set(
@@ -405,8 +393,7 @@ const plateLightsUniforms = {
 const toGlslVec3Array = positions =>
   positions
     .map(
-      ([x, y, z]) =>
-        `vec3(${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)})`
+      ([x, y, z]) => `vec3(${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)})`
     )
     .join(',\n    ');
 

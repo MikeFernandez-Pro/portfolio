@@ -41,6 +41,10 @@ const App = () => {
 
   // progress = loaded / total * 100, so new models never desync the loader
   const { progress } = useProgress();
+  // The LoadingManager resets between batches, dropping progress back to 0
+  // after 100 — clamp the displayed value to the highest reached
+  const maxProgressRef = useRef(0);
+  maxProgressRef.current = Math.max(maxProgressRef.current, progress);
 
   const initiateExperience = useCallback(() => {
     hoverAnimation?.kill();
@@ -139,7 +143,7 @@ const App = () => {
             IS_PHOTO_MODE ? null : (
               <ui.In>
                 <div className="container">
-                  <p className="loader">{Math.ceil(progress)}</p>
+                  <p className="loader">{Math.ceil(maxProgressRef.current)}</p>
                 </div>
               </ui.In>
             )
