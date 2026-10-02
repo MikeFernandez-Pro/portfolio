@@ -7,6 +7,7 @@ import starsVertexShader from '#shaders/stars/vertex.glsl';
 import starsFragmentShader from '#shaders/stars/fragment.glsl';
 
 import { useSpiralGrassHeightTexture } from '#utils/packedTextures.js';
+import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 
 const SKY_RADIUS = 120;
 
@@ -136,6 +137,8 @@ const Experience = () => {
   );
 
   useFrame(({ clock }) => {
+    // Reduced motion: frozen time = static star sizes, no twinkle
+    if (REDUCED_MOTION_AT_LOAD) return;
     fireworksMaterial.uniforms.uTime.value = clock.elapsedTime;
   });
 

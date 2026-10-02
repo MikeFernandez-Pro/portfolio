@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { useControls } from '#utils/useControls.jsx';
+import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 import cloudShadowsChunk from '#shaders/includes/cloudShadows.glsl';
 import { usePerlinCloudsTexture } from '#utils/packedTextures.js';
 
@@ -174,7 +175,9 @@ const CloudShadows = () => {
   );
 
   useFrame(({ clock }) => {
-    // The shader ignores everything when disabled; skip the feed too
+    // The shader ignores everything when disabled; skip the feed too.
+    // Reduced motion: freeze the time - static dapples instead of drift
+    if (REDUCED_MOTION_AT_LOAD) return;
     if (cloudShadowUniforms.uCloudShadowEnabled.value === 0) return;
     cloudShadowUniforms.uCloudShadowTime.value = clock.elapsedTime;
   });

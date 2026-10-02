@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { cloudShadowUniforms } from '#environment/CloudShadows.jsx';
 import { useStore } from '#store/ZustandStorage.jsx';
 import { IS_MOBILE_DEVICE, IS_PHOTO_MODE } from '#utils/utils.js';
+import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 import { DEFAULT_CHARACTER_SPEED } from '#controller/constants.js';
 
 import { useGrassPlacement } from './grassPlacement.js';
@@ -28,6 +29,10 @@ import {
 // spring. Blades fold under the feet, part around the stride, and stand back
 // up with a soft settle instead of the old linear fade. The simulation runs
 // on floats; the RG8 copy is what the vertex shader samples (byte 128 = 0).
+// Idle wind is unsolicited motion: damp its amplitude under reduced motion
+// (trample stays untouched - the character's own footsteps are earned)
+const WIND_REDUCTION = REDUCED_MOTION_AT_LOAD ? 0.25 : 1;
+
 const TRAMPLE_SIZE = 128;
 const TRAMPLE_TEXELS = TRAMPLE_SIZE * TRAMPLE_SIZE;
 const trampleX = new Float32Array(TRAMPLE_TEXELS);
@@ -404,7 +409,7 @@ const Grass = () => {
           uPerlinNoiseTexture: { value: perlinNoiseTexture },
 
           uWindScale: { value: windControls.scale },
-          uWindStrength: { value: windControls.strength },
+          uWindStrength: { value: windControls.strength * WIND_REDUCTION },
           uWindSpeed: { value: windControls.speed },
 
           // Photo mode orbits a free camera for screenshots: no thinning there
@@ -483,7 +488,7 @@ const Grass = () => {
     uniforms.uHeightDataTexture.value = grassHeightTexture;
 
     uniforms.uWindScale.value = windControls.scale;
-    uniforms.uWindStrength.value = windControls.strength;
+    uniforms.uWindStrength.value = windControls.strength * WIND_REDUCTION;
     uniforms.uWindSpeed.value = windControls.speed;
 
     if (!IS_PHOTO_MODE) {

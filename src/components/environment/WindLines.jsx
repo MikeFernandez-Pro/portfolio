@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { useControls } from '#utils/useControls.jsx';
+import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 
 const LINE_SEGMENTS = 20;
 const WIND_TIME_OFFSET_MAX = 100;
@@ -330,9 +331,12 @@ const WindLines = () => {
     uniforms.uColor.value.set(controls.color);
   }, [controls, uniforms]);
 
+  // The streaks are pure drifting motion - off entirely under reduced motion
+  const enabled = controls.enabled && !REDUCED_MOTION_AT_LOAD;
+
   useFrame(({ clock }) => {
     // The mesh is hidden when disabled; no point animating it
-    if (!controls.enabled) return;
+    if (!enabled) return;
     uniforms.uTime.value = clock.elapsedTime;
   });
 
@@ -341,7 +345,7 @@ const WindLines = () => {
       name="WindLines"
       geometry={geometry}
       material={material}
-      visible={controls.enabled}
+      visible={enabled}
       frustumCulled={false}
       renderOrder={WIND_LINES_RENDER_ORDER}
     />

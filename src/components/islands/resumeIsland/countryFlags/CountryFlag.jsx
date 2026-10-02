@@ -4,6 +4,7 @@ import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
 import * as THREE from 'three';
 
 import countryFlagVertexShader from '#shaders/countryFlag/vertex.glsl';
+import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 
 // Grade shared by the three flags, driven by the Flags > Grade debug folder
 // in CountriesFlags
@@ -84,6 +85,8 @@ diffuseColor.rgb *= uFlagTint;`
   }, [baseMaterial, country]);
 
   useFrame(({ clock }) => {
+    // Reduced motion: frozen time = a fixed billow instead of the flutter
+    if (REDUCED_MOTION_AT_LOAD) return;
     countryFlagShaderMaterial.uniforms.uTime.value = clock.elapsedTime;
   });
 

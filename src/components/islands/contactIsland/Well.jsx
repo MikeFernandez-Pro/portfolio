@@ -10,6 +10,7 @@ import wellFragmentShader from '#shaders/well/fragment.glsl';
 import fishVertexShader from '#shaders/fish/vertex.glsl';
 
 import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
+import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 
 import fishModel from '#assets/models/island/fish.glb?url';
 
@@ -29,13 +30,14 @@ const OUTER_PERLIN_STRENGTH = 0.03;
 // Fishes
 const FISHES_COLOR = '#00f6d0';
 const FISHES_INTENSITY = 12.61;
-const FISHES_SPEED = 0.5;
+// Reduced motion: park the orbit (fish hover in place), keep a slow tail sway
+const FISHES_SPEED = REDUCED_MOTION_AT_LOAD ? 0 : 0.5;
 const BIG_FISH_AMPLITUDE = 0.88;
 const SMALL_FISH_AMPLITUDE = 0.66;
 const SMALL_FISH_OFFSET = 3;
 // Max bend angle (radians) at the tail tip
 const FISH_DEFORMATION_STRENGTH = 0.32;
-const FISH_WIGGLE_SPEED = 7;
+const FISH_WIGGLE_SPEED = REDUCED_MOTION_AT_LOAD ? 2 : 7;
 
 const Well = () => {
   const bigFishRef = useRef(null);

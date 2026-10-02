@@ -6,6 +6,10 @@ import * as THREE from 'three';
 import { useStore } from '#store/ZustandStorage.jsx';
 import { IS_MOBILE_DEVICE } from '#utils/utils.js';
 import {
+  prefersReducedMotion,
+  REDUCED_MOTION_AT_LOAD,
+} from '#utils/reducedMotion.js';
+import {
   CAMERA_FOLLOW_HEIGHT,
   CAMERA_FOLLOW_DISTANCE_MOBILE,
   CAMERA_FOLLOW_DISTANCE_DESKTOP,
@@ -66,26 +70,45 @@ export function useThirdPersonCamera(characterBodyRef) {
       state => state.experienceStarted,
       experienceStarted => {
         if (experienceStarted) {
+          const followDistance = IS_MOBILE_DEVICE
+            ? CAMERA_FOLLOW_DISTANCE_MOBILE
+            : CAMERA_FOLLOW_DISTANCE_DESKTOP;
+
+          // Reduced motion: cut to the gameplay angle instead of the 5s pan.
+          // Snap the lerp target too, or the follow damping would still swoop
+          if (prefersReducedMotion()) {
+            CAMERA_OFFSET.set(0, 4, followDistance);
+            const characterPosition = characterBodyRef.current?.translation();
+            if (characterPosition) {
+              LERP_CAMERA_POSITION.set(
+                characterPosition.x,
+                Math.max(characterPosition.y, 0),
+                characterPosition.z
+              ).add(CAMERA_OFFSET);
+            }
+            return;
+          }
+
           gsap.to(CAMERA_OFFSET, {
             duration: 5,
             x: 0,
             y: 4,
-            z: IS_MOBILE_DEVICE
-              ? CAMERA_FOLLOW_DISTANCE_MOBILE
-              : CAMERA_FOLLOW_DISTANCE_DESKTOP,
+            z: followDistance,
             ease: 'power3.out',
           });
         }
       }
     );
 
-    if (!IS_MOBILE_DEVICE) {
+    // Pointer parallax is decorative camera motion — off under reduced motion
+    const parallaxEnabled = !IS_MOBILE_DEVICE && !REDUCED_MOTION_AT_LOAD;
+    if (parallaxEnabled) {
       window.addEventListener('mousemove', cameraOffsetOnMouseMove);
     }
 
     return () => {
       unsubExperienceStarted();
-      if (!IS_MOBILE_DEVICE) {
+      if (parallaxEnabled) {
         window.removeEventListener('mousemove', cameraOffsetOnMouseMove);
       }
     };

@@ -15,6 +15,7 @@ import { Howler } from 'howler';
 import * as THREE from 'three';
 
 import { IS_MOBILE_DEVICE, IS_PHOTO_MODE, MAX_DPR } from '#utils/utils.js';
+import { prefersReducedMotion } from '#utils/reducedMotion.js';
 
 import soundOnIcon from '/icons/sound-on.svg';
 import soundOffIcon from '/icons/sound-off.svg';
@@ -23,9 +24,15 @@ import { EffectComposer } from './components/effectComposer/EffectComposer.jsx';
 /* Tunnel */
 const ui = tunnel();
 
-// Visibility Change
-const visibilityChangeHandler = () =>
-  Howler.mute(document.visibilityState === 'hidden');
+// Mute = the user's sound toggle OR a hidden tab, so coming back to the tab
+// never overrides a sound the user turned off
+let userMuted = false;
+const applyMute = () =>
+  Howler.mute(userMuted || document.visibilityState === 'hidden');
+const setUserMuted = muted => {
+  userMuted = muted;
+  applyMute();
+};
 
 // Animations
 let hoverAnimation = undefined;
@@ -60,8 +67,12 @@ const App = () => {
 
     gsap.to(sceneRevealerRef.current?.uniforms.get('progress'), {
       value: 1.5,
-      duration: 5,
+      // Reduced motion: quick reveal instead of the 5s sweep (the opacity
+      // fades above are fine — reduced motion targets movement, not fades)
+      duration: prefersReducedMotion() ? 1 : 5,
       ease: 'expo.out',
+      // Kill the loading peek tween if it is still running on the same uniform
+      overwrite: true,
     });
 
     gsap.to(soundOnIconRef.current?.style, {
@@ -72,16 +83,16 @@ const App = () => {
   }, []);
 
   useEffect(() => {
-    document.addEventListener('visibilitychange', visibilityChangeHandler);
+    document.addEventListener('visibilitychange', applyMute);
 
     // Photo mode: no intro/sound UI is rendered, so start silently right away
     if (IS_PHOTO_MODE) {
-      Howler.mute(true);
+      setUserMuted(true);
       useStore.setState({ experienceStarted: true });
     }
 
     return () => {
-      removeEventListener('visibilitychange', visibilityChangeHandler);
+      document.removeEventListener('visibilitychange', applyMute);
     };
   }, []);
 
@@ -99,7 +110,7 @@ const App = () => {
         onClick={() => {
           soundOnIconRef.current.style.display = 'none';
           soundOffIconRef.current.style.display = 'block';
-          Howler.mute(true);
+          setUserMuted(true);
         }}
       />
       <img
@@ -111,7 +122,7 @@ const App = () => {
         onClick={() => {
           soundOffIconRef.current.style.display = 'none';
           soundOnIconRef.current.style.display = 'block';
-          Howler.mute(false);
+          setUserMuted(false);
         }}
       />
       </>

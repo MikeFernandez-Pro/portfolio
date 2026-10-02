@@ -18,7 +18,8 @@ const InteractiveElements = () => {
           const activatedInteractiveElementData =
             interactiveElementsData[activatedInteractiveElement];
 
-          activatedInteractiveElementData.userData?.activateLink(
+          // Glyph and plates have no link to open
+          activatedInteractiveElementData.userData?.activateLink?.(
             activePlateRef
           );
         }
@@ -43,7 +44,8 @@ const InteractiveElements = () => {
         if (activatedInteractiveElement.prev) {
           const activatedInteractiveElementData =
             interactiveElementsData[activatedInteractiveElement.prev];
-          activatedInteractiveElementData.userData?.closeInteraction(
+          // Glyph and plates have nothing to close
+          activatedInteractiveElementData.userData?.closeInteraction?.(
             activatedInteractiveElementData,
             interactionPromptRef
           );

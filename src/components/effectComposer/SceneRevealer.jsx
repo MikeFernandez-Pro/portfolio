@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import sceneRevealerFragmentShader from '#shaders/sceneRevealer/fragment.glsl';
 
 import { IS_PHOTO_MODE } from '#utils/utils.js';
+import { prefersReducedMotion } from '#utils/reducedMotion.js';
 
 class sceneRevealerEffect extends Effect {
   constructor(aspectRatio) {
@@ -32,6 +33,12 @@ const SceneRevealer = props => {
     if (IS_PHOTO_MODE) {
       effect.uniforms.get('progress').value = 1.5;
       effect.enabled = false;
+      return;
+    }
+
+    // Reduced motion: open the loading peek without the iris animation
+    if (prefersReducedMotion()) {
+      effect.uniforms.get('progress').value = 0.35;
       return;
     }
 

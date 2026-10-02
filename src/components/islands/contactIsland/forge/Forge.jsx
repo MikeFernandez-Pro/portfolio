@@ -6,11 +6,15 @@ import * as THREE from 'three';
 import { ForgeSparks } from './ForgeSparks.jsx';
 import { useStore } from '#store/ZustandStorage.jsx';
 import { SOUND_VOLUMES } from '#utils/soundVolumes.js';
+import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 
 import HammerSoundEffect from '#assets/sounds/hammer.mp3';
 
 const HAMMER_POSITION = new THREE.Vector3(-5.8, 1.8, -10.8);
 const HAMMER_MAX_DISTANCE = 17;
+// Reduced motion: strike half as often. The sparks stay - they are the
+// impact itself, a hammer hitting nothing would read as broken
+const HAMMER_INTERVAL = REDUCED_MOTION_AT_LOAD ? 4000 : 2000;
 
 const Forge = props => {
   const { islandAnimations } = props;
@@ -67,7 +71,7 @@ const Forge = props => {
     /**
      * Sounds Effects
      */
-    // Play forge hammer sound and anvil animation each 2s
+    // Play forge hammer sound and anvil animation each HAMMER_INTERVAL
 
     const forgeHammerInterval = setInterval(() => {
       islandAnimations.actions['anvilAnimation'].reset().play();
@@ -84,13 +88,14 @@ const Forge = props => {
 
       if (!experienceStartedRef.current) return;
       hammerSoundEffect.play();
-    }, 2000);
+    }, HAMMER_INTERVAL);
 
     // Clear animations, interval and subscriptions on unmount
     return () => {
       islandAnimations.actions['anvilAnimation'].stop();
       // islandAnimations.actions["magicPotAnimation"].getMixer().uncacheAction(islandAnimations.actions["magicPotAnimation"]);
-      forgeHammerAnimationRef.current.kill();
+      // Unset until the first strike
+      forgeHammerAnimationRef.current?.kill();
       forgeHammerAnimationRef.current = null;
 
       unsubExperienceStarted();

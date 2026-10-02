@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import gsap from 'gsap';
 
 import { useControls } from '#utils/useControls.jsx';
+import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 import TextFont from '#assets/fonts/metamorphous.woff';
 
 const LETTERS_COUNT = 3;
@@ -124,6 +125,20 @@ const SleepText = () => {
     // exactly `duration` and repeats, so the letters stay perfectly evenly
     // spaced through the whole loop
     const interval = duration / LETTERS_COUNT;
+
+    // Reduced motion: a static trail of evenly spaced, growing Zs instead of
+    // the rise loop (three letters at the same spot would z-fight)
+    if (REDUCED_MOTION_AT_LOAD) {
+      for (let i = 0; i < LETTERS_COUNT; i++) {
+        const letter = lettersRefs.current[i];
+        if (!letter) continue;
+        const t = (i + 0.5) / LETTERS_COUNT;
+        letter.position.y = BASE_POSITION[1] + riseHeight * t;
+        letter.scale.setScalar(minScale + (maxScale - minScale) * t);
+      }
+      return;
+    }
+
     // Quick pop-down to nothing at the top of the rise, so the letter never
     // visibly teleports back to the bottom
     const shrinkDuration = Math.min(0.15, duration * 0.25);
@@ -170,6 +185,7 @@ const SleepText = () => {
   }, [duration, riseHeight, minScale, maxScale]);
 
   useFrame(state => {
+    if (REDUCED_MOTION_AT_LOAD) return;
     for (let i = 0; i < LETTERS_COUNT; i++) {
       const letter = lettersRefs.current[i];
       if (letter) {

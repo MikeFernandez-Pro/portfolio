@@ -6,6 +6,10 @@ import * as THREE from 'three';
 
 import firefliesVertexShader from '#shaders/fireflies/vertex.glsl';
 import firefliesFragmentShader from '#shaders/fireflies/fragment.glsl';
+import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
+
+// Reduced motion: the fireflies drift at a third of their usual pace
+const FIREFLIES_TIME_SCALE = REDUCED_MOTION_AT_LOAD ? 0.3 : 1;
 
 const FIREFLIES_POSITIONS = [
   [-0.7, 2.3, -3.8],
@@ -114,7 +118,8 @@ const FireFlies = () => {
   }, [width, height, pixelRatio]);
 
   useFrame(({ clock }) => {
-    firefliesRef.current.uniforms.uTime.value = clock.elapsedTime;
+    firefliesRef.current.uniforms.uTime.value =
+      clock.elapsedTime * FIREFLIES_TIME_SCALE;
   });
 
   return (

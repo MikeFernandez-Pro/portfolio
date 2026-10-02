@@ -10,8 +10,10 @@ import bubblesVertexShader from '#shaders/cauldronBubbles/vertex.glsl';
 import bubblesFragmentShader from '#shaders/cauldronBubbles/fragment.glsl';
 
 import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
+import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 
-const SPEED = 0.5;
+// Pot self-rotation is idle motion; the liquid/bubbles stay animated
+const SPEED = REDUCED_MOTION_AT_LOAD ? 0 : 0.5;
 const POTION_PLANE_HEIGHT = 0;
 const BUBBLES_SURFACE_OFFSET = 0.02;
 
