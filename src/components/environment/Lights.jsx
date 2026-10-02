@@ -118,7 +118,7 @@ const Lights = () => {
         max: 40,
       },
       color: {
-        value: '#356eff',
+        value: '#3d72f7',
       },
       bias: {
         value: 0,

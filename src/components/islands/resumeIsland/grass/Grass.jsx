@@ -198,7 +198,7 @@ const Grass = () => {
       // noise at each blade root picks one of two variants (~half the field
       // each), grouping neighbouring blades into patches
       colorBottom: '#014f16',
-      colorTop: '#00ff51',
+      colorTop: '#00ff3a',
       // Gradient lighting of each patch variant: darkens (< 1) or lightens
       // (> 1) the root and tip colors evenly, keeping their hues
       lighting1: { value: 0.36, min: 0, max: 3, step: 0.01 },
