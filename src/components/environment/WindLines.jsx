@@ -110,7 +110,6 @@ function mulberry32(seed) {
 
 /**
  * Instanced wind-line ribbons drifting above the islands.
- * Port of the an earlier project wind-lines effect.
  */
 const WindLines = () => {
   const controls = useControls(

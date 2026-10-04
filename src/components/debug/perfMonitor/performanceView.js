@@ -84,9 +84,6 @@ function isTimingAvailable(sample, metric) {
  * Host-agnostic widget that renders samples from a PerformanceMonitor. Mount
  * `element` anywhere; the view drives its own throttled repaint loop: line
  * graphs for the timing metrics plus a numeric stat list.
- *
- * Ported from an earlier project's perf-monitor lib, trimmed of its DevTools
- * HUD/compact mode (checkbox selection, localStorage persistence).
  */
 export class PerformanceView {
   constructor(options) {

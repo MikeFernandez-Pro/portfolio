@@ -2,8 +2,6 @@
  * Minimal canvas sparkline. The caller owns the canvas, its size, and any
  * device-pixel-ratio transform; this just paints a filled line series in
  * logical (CSS) pixel coordinates.
- *
- * Ported from an earlier project's perf-monitor lib (TypeScript original).
  */
 export function drawSparkline(ctx, width, height, values, style) {
   ctx.clearRect(0, 0, width, height);

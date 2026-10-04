@@ -9,8 +9,6 @@
  *
  * Only one `TIME_ELAPSED` query can be active at a time, so exactly one wraps the
  * whole frame. WebGL2-only by design; `create()` returns null otherwise.
- *
- * Ported from an earlier project's perf-monitor lib (TypeScript original).
  */
 export class GpuTimer {
   constructor(gl, ext, poolSize) {

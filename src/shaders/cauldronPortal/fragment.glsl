@@ -1,6 +1,6 @@
-// Ported from an earlier project's ending portal shader. Differences: perlin
-// noise comes from the green channel of the repeating packed voronoi/perlin
-// texture, and the depth-intersection layer is dropped (no depth prepass here).
+// Cauldron portal shader. Perlin noise comes from the green channel of the
+// repeating packed voronoi/perlin texture; there is no depth-intersection
+// layer (no depth prepass here).
 // `saturate` and `PI` come from three's <common> chunk — do not redefine.
 
 uniform vec3 uDeepColor;

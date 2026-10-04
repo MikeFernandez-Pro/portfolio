@@ -2,8 +2,6 @@
  * Fixed-capacity numeric ring buffer. Backs the per-frame timing history the
  * view reads to draw sparklines. Push is O(1); `toArray()` returns values in
  * chronological (oldest → newest) order.
- *
- * Ported from an earlier project's perf-monitor lib (TypeScript original).
  */
 export class RingBuffer {
   constructor(capacity) {

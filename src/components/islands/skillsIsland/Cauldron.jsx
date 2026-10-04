@@ -47,7 +47,7 @@ for (let i = 0; i < BUBBLES_COUNT; i++) {
   bubblesSizes[i] = Math.random() * 0.6 + 0.4;
 }
 
-// Ported from an earlier project's ending portal (its portal settings defaults)
+// Portal shader defaults
 const PORTAL_DEFAULTS = {
   deepColor: '#429852', 
   midColor: '#30e011',

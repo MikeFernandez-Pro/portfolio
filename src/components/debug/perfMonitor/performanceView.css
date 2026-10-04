@@ -1,7 +1,6 @@
 /**
  * Performance View styles. Namespaced under `.perf-monitor` so the host can
  * override safely without specificity wars. Dark-devtools defaults.
- * Ported from an earlier project's perf-monitor lib (HUD/compact mode dropped).
  */
 .perf-monitor {
   --perf-bg: #16181d;

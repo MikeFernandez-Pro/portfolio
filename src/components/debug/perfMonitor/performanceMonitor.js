@@ -14,8 +14,6 @@ const FPS_SMOOTHING = 0.1;
  * Depends only on a `THREE.WebGLRenderer` plus optionally-present WebGL
  * extensions — never on the host app. GPU timing degrades to
  * `available: false` when the timer-query extension is absent.
- *
- * Ported from an earlier project's perf-monitor lib (TypeScript original).
  */
 export class PerformanceMonitor {
   constructor(options) {
