@@ -187,7 +187,7 @@ const Grass = () => {
   const impulseRef = useRef({ timer: 0, u: 0, v: 0, radiusScale: 1, peak: 1 });
 
   // Controls. The titles are subfolders of the "Grass" group in the debug
-  // pane (tweakpaneControls.jsx FOLDER_TREE)
+  // panel (inspectorControls.jsx FOLDER_TREE)
 
   // Blades: shape, colors, amount and where the patch sits
   const bladeControls = useControls(
@@ -395,6 +395,7 @@ const Grass = () => {
   );
 
   useEffect(() => () => grassMaterial.dispose(), [grassMaterial]);
+  useEffect(() => () => grassGeometry.dispose(), [grassGeometry]);
 
   // Keep the uniforms in sync with the controls
   useEffect(() => {

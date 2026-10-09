@@ -10,7 +10,6 @@ import { Howler } from 'howler';
 import * as THREE from 'three/webgpu';
 
 import { IS_MOBILE_DEVICE, IS_PHOTO_MODE, MAX_DPR } from '#utils/utils.js';
-import { DEBUG_ENABLED } from '#utils/debug.js';
 import { prefersReducedMotion } from '#utils/reducedMotion.js';
 
 import soundOnIcon from '/icons/sound-on.svg';
@@ -42,6 +41,9 @@ const App = () => {
   const startExperienceRef = useRef();
 
   const [dpr, setDpr] = useState(MAX_DPR);
+
+  // The Enter button waits for the shader precompile (PrecompileScene)
+  const sceneReady = useStore(state => state.sceneReady);
 
   // progress = loaded / total * 100, so new models never desync the loader
   const { progress } = useProgress();
@@ -93,36 +95,45 @@ const App = () => {
     };
   }, []);
 
+  // Shown while the assets load, then while the shaders precompile
+  const loader = (
+    <ui.In>
+      <div className="container">
+        <p className="loader">{Math.ceil(maxProgressRef.current)}</p>
+      </div>
+    </ui.In>
+  );
+
   return (
     <>
       <ui.Out />
       {!IS_PHOTO_MODE && (
-      <>
-      <img
-        ref={soundOnIconRef}
-        src={soundOnIcon}
-        style={{ opacity: 0 }}
-        className="volume-controller"
-        alt="Sound on button"
-        onClick={() => {
-          soundOnIconRef.current.style.display = 'none';
-          soundOffIconRef.current.style.display = 'block';
-          setUserMuted(true);
-        }}
-      />
-      <img
-        ref={soundOffIconRef}
-        src={soundOffIcon}
-        style={{ display: 'none' }}
-        className="volume-controller"
-        alt="Sound down button"
-        onClick={() => {
-          soundOffIconRef.current.style.display = 'none';
-          soundOnIconRef.current.style.display = 'block';
-          setUserMuted(false);
-        }}
-      />
-      </>
+        <>
+          <img
+            ref={soundOnIconRef}
+            src={soundOnIcon}
+            style={{ opacity: 0 }}
+            className="volume-controller"
+            alt="Sound on button"
+            onClick={() => {
+              soundOnIconRef.current.style.display = 'none';
+              soundOffIconRef.current.style.display = 'block';
+              setUserMuted(true);
+            }}
+          />
+          <img
+            ref={soundOffIconRef}
+            src={soundOffIcon}
+            style={{ display: 'none' }}
+            className="volume-controller"
+            alt="Sound down button"
+            onClick={() => {
+              soundOffIconRef.current.style.display = 'none';
+              soundOnIconRef.current.style.display = 'block';
+              setUserMuted(false);
+            }}
+          />
+        </>
       )}
       <Canvas
         dpr={dpr}
@@ -141,8 +152,6 @@ const App = () => {
           antialias: false,
           toneMapping: THREE.NoToneMapping,
           shadows: IS_MOBILE_DEVICE ? false : 'variance',
-          // GPU timing for the debug perf panel (timestamp queries)
-          trackTimestamp: DEBUG_ENABLED && !IS_PHOTO_MODE,
         }}
         // R3F 10 canary leaves state.gl null under WebGPU (its getter is
         // flattened by the first store update), and drei 11 still reads it
@@ -154,43 +163,37 @@ const App = () => {
           onDecline={() => setDpr(1)}
         />
         <AdaptiveDpr />
-        <Suspense
-          fallback={
-            IS_PHOTO_MODE ? null : (
-              <ui.In>
-                <div className="container">
-                  <p className="loader">{Math.ceil(maxProgressRef.current)}</p>
-                </div>
-              </ui.In>
-            )
-          }
-        >
-          {!IS_PHOTO_MODE && (
-          <ui.In>
-            <div
-              ref={startExperienceRef}
-              className="container"
-              style={{ pointerEvents: 'auto' }}
-            >
-              <button
-                className={'start-experience'}
-                onClick={initiateExperience}
-                onMouseEnter={() =>
-                  (hoverAnimation = gsap.to(
-                    sceneRevealerRef.current?.progress,
-                    {
-                      value: 0.45,
-                      duration: 0.5,
-                      ease: 'power2.out',
-                    }
-                  ))
-                }
-                onMouseLeave={() => hoverAnimation?.reverse()}
+        <Suspense fallback={IS_PHOTO_MODE ? null : loader}>
+          {!IS_PHOTO_MODE && !sceneReady && loader}
+          {!IS_PHOTO_MODE && sceneReady && (
+            <ui.In>
+              <div
+                ref={startExperienceRef}
+                className="container"
+                style={{ pointerEvents: 'auto' }}
               >
-                Enter
-              </button>
-            </div>
-          </ui.In>
+                <button
+                  className={'start-experience'}
+                  onClick={initiateExperience}
+                  onMouseEnter={() => {
+                    // One hover tween at a time: a quick leave/enter would
+                    // otherwise stack a new tween on the reversing one
+                    hoverAnimation?.kill();
+                    hoverAnimation = gsap.to(
+                      sceneRevealerRef.current?.progress,
+                      {
+                        value: 0.45,
+                        duration: 0.5,
+                        ease: 'power2.out',
+                      }
+                    );
+                  }}
+                  onMouseLeave={() => hoverAnimation?.reverse()}
+                >
+                  Enter
+                </button>
+              </div>
+            </ui.In>
           )}
           <EffectComposer sceneRevealerRef={sceneRevealerRef} />
 

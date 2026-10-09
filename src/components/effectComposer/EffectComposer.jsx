@@ -36,12 +36,24 @@ import { useStore } from '#store/ZustandStorage.jsx';
 const AO_ENABLED = !IS_MOBILE_DEVICE;
 const DOF_ENABLED = !IS_MOBILE_DEVICE && !IS_PHOTO_MODE;
 
+// Effects the debug "Effects" folder can switch off (a switch rebuilds the
+// pipeline without them, so their cost goes away too). Production keeps them
+// all on: the headless useControls returns these schema values
+const EFFECTS_DEFAULTS = {
+  ambientOcclusion: true,
+  depthOfField: true,
+  bloom: true,
+  vignette: true,
+  smaa: true,
+};
+
 /**
  * Post-processing graph, in order: AO (desktop) → cheap DoF (desktop, not in
  * photo mode) → bloom → vignette → ACES tone mapping + sRGB → scene revealer
- * → SMAA. Each RTT step is one fullscreen pass.
+ * → SMAA. Each RTT step is one fullscreen pass. `effects` switches the
+ * optional ones (EFFECTS_DEFAULTS keys).
  */
-const createPipeline = ({ renderer, scene, camera, samples }) => {
+const createPipeline = ({ renderer, scene, camera, samples, effects }) => {
   const pipeline = new THREE.RenderPipeline(renderer);
   // Tone mapping / color space are applied by hand below: the revealer and
   // SMAA must run after them
@@ -49,7 +61,15 @@ const createPipeline = ({ renderer, scene, camera, samples }) => {
 
   const resolution = uniform(new THREE.Vector2(1, 1));
 
-  const scenePass = pass(scene, camera, { samples });
+  // Every node owning render targets: RenderPipeline.dispose() only frees its
+  // own quad, so a rebuild (MSAA switch, HMR) disposes these explicitly
+  const owned = [];
+  const own = node => {
+    owned.push(node);
+    return node;
+  };
+
+  const scenePass = own(pass(scene, camera, { samples }));
   const sceneColor = scenePass.getTextureNode('output');
   const passDepth = scenePass.getTextureNode('depth');
 
@@ -58,13 +78,15 @@ const createPipeline = ({ renderer, scene, camera, samples }) => {
   // plain float texture for the AO, the denoise and the DoF
   const sceneDepth =
     samples > 1
-      ? rtt(passDepth.load(ivec2(screenCoordinate.xy)), null, null, {
-          type: THREE.FloatType,
-          format: THREE.RedFormat,
-          depthBuffer: false,
-          minFilter: THREE.NearestFilter,
-          magFilter: THREE.NearestFilter,
-        })
+      ? own(
+          rtt(passDepth.load(ivec2(screenCoordinate.xy)), null, null, {
+            type: THREE.FloatType,
+            format: THREE.RedFormat,
+            depthBuffer: false,
+            minFilter: THREE.NearestFilter,
+            magFilter: THREE.NearestFilter,
+          })
+        )
       : passDepth;
 
   let color = sceneColor;
@@ -73,39 +95,41 @@ const createPipeline = ({ renderer, scene, camera, samples }) => {
   // (no MRT normal attachment), then an edge-aware denoise. Applied before
   // the DoF so the blur taps see occluded color
   let aoNodes = null;
-  if (AO_ENABLED) {
-    const aoPass = ao(sceneDepth, null, camera);
+  if (AO_ENABLED && effects.ambientOcclusion) {
+    const aoPass = own(ao(sceneDepth, null, camera));
     aoPass.resolutionScale = 0.5;
-    const denoisePass = denoise(
-      aoPass.getTextureNode(),
-      sceneDepth,
-      null,
-      camera
+    const denoisePass = own(
+      denoise(aoPass.getTextureNode(), sceneDepth, null, camera)
     );
     const intensity = uniform(1.5);
     const tint = uniform(new THREE.Color('#bce3ff'));
     const occlusion = pow(denoisePass.r, intensity);
-    color = convertToTexture(
-      vec4(sceneColor.rgb.mul(mix(tint, vec3(1), occlusion)), sceneColor.a)
+    color = own(
+      convertToTexture(
+        vec4(sceneColor.rgb.mul(mix(tint, vec3(1), occlusion)), sceneColor.a)
+      )
     );
     aoNodes = { aoPass, denoisePass, intensity, tint };
   }
 
   let dof = null;
-  if (DOF_ENABLED) {
+  if (DOF_ENABLED && effects.depthOfField) {
     dof = createCheapDof({
       colorNode: color,
       depthNode: sceneDepth,
       camera,
       resolution,
     });
-    color = convertToTexture(dof.node);
+    color = own(convertToTexture(dof.node));
   }
 
-  const bloomPass = bloom(color, 2, 0.85, 2);
-  bloomPass.smoothWidth.value = 1;
-
-  const hdr = color.add(bloomPass);
+  let bloomPass = null;
+  let hdr = color;
+  if (effects.bloom) {
+    bloomPass = own(bloom(color, 2, 0.85, 2));
+    bloomPass.smoothWidth.value = 1;
+    hdr = color.add(bloomPass);
+  }
 
   // Same falloff as postprocessing's default Vignette (offset 0.5, darkness 0.5)
   // (edges in increasing order: WGSL leaves smoothstep(high, low) undefined)
@@ -114,7 +138,7 @@ const createPipeline = ({ renderer, scene, camera, samples }) => {
     0.8,
     distance(uv(), vec2(0.5))
   ).oneMinus();
-  const vignetted = vec4(hdr.rgb.mul(vignette), hdr.a);
+  const vignetted = effects.vignette ? vec4(hdr.rgb.mul(vignette), hdr.a) : hdr;
 
   const ldr = renderOutput(
     vignetted,
@@ -127,13 +151,31 @@ const createPipeline = ({ renderer, scene, camera, samples }) => {
   // gets AA'd
   const revealer = createSceneRevealer();
 
-  // SMAA after tone mapping (it wants LDR)
-  pipeline.outputNode = smaa(revealer.apply(ldr));
+  // SMAA after tone mapping (it wants LDR). Its input is converted to a
+  // texture here so that render target can be disposed too
+  const revealed = revealer.apply(ldr);
+  pipeline.outputNode = effects.smaa
+    ? own(smaa(own(convertToTexture(revealed))))
+    : revealed;
 
-  return { pipeline, scenePass, resolution, aoNodes, dof, bloomPass, revealer };
+  const dispose = () => {
+    pipeline.dispose();
+    owned.forEach(node => node.dispose());
+  };
+
+  return {
+    pipeline,
+    scenePass,
+    resolution,
+    aoNodes,
+    dof,
+    bloomPass,
+    revealer,
+    dispose,
+  };
 };
 
-// Tweakpane-driven values, by key. Kept outside the pipeline so a rebuild
+// Debug-panel values, by key. Kept outside the pipeline so a rebuild
 // (MSAA switch) starts from the current settings, not the defaults
 const SETTERS = {
   aoRadius: (p, v) => p.aoNodes && (p.aoNodes.aoPass.radius.value = v),
@@ -150,10 +192,10 @@ const SETTERS = {
     p.aoNodes && (p.aoNodes.aoPass.resolutionScale = v ? 0.5 : 1),
   aoDenoiseRadius: (p, v) =>
     p.aoNodes && (p.aoNodes.denoisePass.radius.value = v),
-  bloomIntensity: (p, v) => (p.bloomPass.strength.value = v),
-  bloomRadius: (p, v) => (p.bloomPass.radius.value = v),
-  bloomThreshold: (p, v) => (p.bloomPass.threshold.value = v),
-  bloomSmoothing: (p, v) => (p.bloomPass.smoothWidth.value = v),
+  bloomIntensity: (p, v) => p.bloomPass && (p.bloomPass.strength.value = v),
+  bloomRadius: (p, v) => p.bloomPass && (p.bloomPass.radius.value = v),
+  bloomThreshold: (p, v) => p.bloomPass && (p.bloomPass.threshold.value = v),
+  bloomSmoothing: (p, v) => p.bloomPass && (p.bloomPass.smoothWidth.value = v),
 };
 
 const applySetting = (post, key, value) => {
@@ -177,14 +219,47 @@ const EffectComposer = props => {
   // pipeline: the pass target's sample count is fixed when the graph compiles
   const [msaa, setMsaa] = useState(COMPOSER_MSAA);
 
+  // Per-effect switches (debug); the same rebuild keeps every other setting
+  const effects = useControls('Effects', EFFECTS_DEFAULTS);
+  const {
+    ambientOcclusion,
+    depthOfField,
+    bloom: bloomOn,
+    vignette,
+    smaa: smaaOn,
+  } = effects;
+
   const post = useMemo(
-    () => createPipeline({ renderer, scene, camera, samples: msaa }),
-    [renderer, scene, camera, msaa]
+    () =>
+      createPipeline({
+        renderer,
+        scene,
+        camera,
+        samples: msaa,
+        effects: {
+          ambientOcclusion,
+          depthOfField,
+          bloom: bloomOn,
+          vignette,
+          smaa: smaaOn,
+        },
+      }),
+    [
+      renderer,
+      scene,
+      camera,
+      msaa,
+      ambientOcclusion,
+      depthOfField,
+      bloomOn,
+      vignette,
+      smaaOn,
+    ]
   );
   const postRef = useRef(post);
   postRef.current = post;
 
-  useEffect(() => () => post.pipeline.dispose(), [post]);
+  useEffect(() => () => post.dispose(), [post]);
 
   const settingsRef = useRef({});
   const bind = key => value => {

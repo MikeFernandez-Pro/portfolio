@@ -17,7 +17,7 @@ const CONTACT_COLOR = 0x66aaff;
 const MAX_CONTACT_ARROWS = 32;
 
 /**
- * Physics visualization (Tweakpane "Physics" folder): wireframes of the
+ * Physics visualization (debug "Physics" folder): wireframes of the
  * solid colliders and sensor zones, the character capsule (colored by
  * grounded state), the contact normals of the last simulated frame, and
  * optionally the island BVH boxes. Rendered only with DEBUG_ENABLED, so the

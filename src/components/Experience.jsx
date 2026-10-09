@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
-import { OrbitControls, StatsGl } from '@react-three/drei/webgpu';
+import { OrbitControls } from '@react-three/drei/webgpu';
 import { Howl } from 'howler';
 import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
 
-import { PerfPanel } from './debug/PerfPanel.jsx';
+import { DebugInspector } from './debug/DebugInspector.jsx';
 import { PhysicsDebug } from './debug/PhysicsDebug.jsx';
 import Joystick from '#controller/Joystick.jsx';
 import CharacterController from '#controller/CharacterController.jsx';
@@ -184,8 +184,7 @@ const Experience = () => {
         // In photo mode orbit around the islands instead of the world origin
         <OrbitControls target={IS_PHOTO_MODE ? [-1.35, 5, -15] : undefined} />
       )}
-      {DEBUG_ENABLED && !IS_PHOTO_MODE && <StatsGl />}
-      {DEBUG_ENABLED && !IS_PHOTO_MODE && <PerfPanel />}
+      {DEBUG_ENABLED && !IS_PHOTO_MODE && <DebugInspector />}
       {DEBUG_ENABLED && !IS_PHOTO_MODE && <PhysicsDebug />}
       {/* Stays mounted with debug off: its initial onChange calls set up the
           respawn/spiral shader uniforms the real death animation uses; the

@@ -4,6 +4,9 @@ import { subscribeWithSelector } from 'zustand/middleware';
 export const useStore = create(
   subscribeWithSelector(() => ({
     experienceStarted: false,
+    // Every material pipeline is built (PrecompileScene): the loader gives
+    // way to the Enter button and the intro peek can start
+    sceneReady: false,
     // Movement/jump input ignored during the intro camera pan
     introControlsLocked: false,
 

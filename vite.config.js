@@ -62,16 +62,17 @@ export default defineConfig({
     emptyOutDir: true,
     // Cache-friendly vendor chunk: three is pinned and rarely changes
     // between deploys, so it stays cached while the app chunk churns.
-    // build/three.module.js is left out: past the shared core it is the
-    // classic WebGLRenderer, which R3F only lazy-loads for its WebGL path —
-    // grouping it here would make it part of the startup download
+    // Left out, or grouping them here would make them part of the startup
+    // download: build/three.module.js (past the shared core it is the classic
+    // WebGLRenderer, which R3F only lazy-loads for its WebGL path) and the
+    // Inspector addon (debug only; drei lazy-loads it for its <Inspector>)
     rolldownOptions: {
       output: {
         codeSplitting: {
           groups: [
             {
               name: 'three',
-              test: /node_modules[\\/]three[\\/](?!build[\\/]three\.module\.js)/,
+              test: /node_modules[\\/]three[\\/](?!build[\\/]three\.module\.js|examples[\\/]jsm[\\/]inspector[\\/])/,
               priority: 10,
             },
           ],

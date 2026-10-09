@@ -23,6 +23,7 @@ import { snoise } from '#shaders/includes/simplexNoise3d.js';
 import { rotate2d } from '#shaders/includes/rotate2d.js';
 
 import { IS_PHOTO_MODE } from '#utils/utils.js';
+import { useStore } from '#store/ZustandStorage.jsx';
 import { prefersReducedMotion } from '#utils/reducedMotion.js';
 
 // Closed iris before the loading peek
@@ -84,21 +85,33 @@ const useSceneRevealer = (revealer, aspectRatio) => {
     // A pipeline rebuild (MSAA switch) carries the progress over: no replay
     if (IS_PHOTO_MODE || uniforms.progress.value !== INITIAL_PROGRESS) return;
 
-    // Reduced motion: open the loading peek without the iris animation
-    if (prefersReducedMotion()) {
-      uniforms.progress.value = 0.35;
-      return;
-    }
+    // The peek opens once every pipeline is built (sceneReady): before that
+    // the first frames stall on shader compilation and the animation would
+    // jump instead of play
+    let sceneRevealerAnimation = null;
+    const unsubSceneReady = useStore.subscribe(
+      state => state.sceneReady,
+      sceneReady => {
+        if (!sceneReady || sceneRevealerAnimation) return;
 
-    const sceneRevealerAnimation = gsap.to(uniforms.progress, {
-      value: 0.35,
-      duration: 1,
-      delay: 0.5,
-      ease: 'circ.out',
-    });
+        // Reduced motion: open the loading peek without the iris animation
+        if (prefersReducedMotion()) {
+          uniforms.progress.value = 0.35;
+          return;
+        }
+
+        sceneRevealerAnimation = gsap.to(uniforms.progress, {
+          value: 0.35,
+          duration: 1,
+          ease: 'circ.out',
+        });
+      },
+      { fireImmediately: true }
+    );
 
     return () => {
-      sceneRevealerAnimation.kill();
+      unsubSceneReady();
+      sceneRevealerAnimation?.kill();
     };
   }, [uniforms]);
 

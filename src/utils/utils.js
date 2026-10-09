@@ -47,7 +47,7 @@ export const MAX_DPR = 1.5;
 // mapping. Under WebGL, MSAA was dropped: its persistent-contents semantics
 // kept ANGLE Metal from resolving in tile memory (~120ms/frame spill/reload on
 // an M3 Max). WebGPU resolves in the render pass, so it is cheap again.
-// Mobile stays SMAA-only. The Tweakpane "Antialiasing" msaa control rebuilds
+// Mobile stays SMAA-only. The debug "Antialiasing" msaa control rebuilds
 // the pipeline for A/B. Varyings on thin geometry must be centroid-sampled or
 // MSAA extrapolates them past their vertex range (lantern, grass).
 export const COMPOSER_MSAA = IS_MOBILE_DEVICE ? 0 : 4;

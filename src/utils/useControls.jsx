@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { DEBUG_ENABLED } from '#utils/debug.js';
-import { useTweakpaneControls } from '#utils/tweakpaneControls.jsx';
+import { useInspectorControls } from '#utils/inspectorControls.jsx';
 
 /**
- * useControls facade. With DEBUG_ENABLED the Tweakpane implementation runs
- * (tweakpaneControls.jsx); without it the headless version below takes over —
- * no pane, no DOM, and tweakpane tree-shaken from the bundle. It keeps the
+ * useControls facade. With DEBUG_ENABLED the three.js Inspector
+ * implementation runs (inspectorControls.jsx, Parameters tab); without it the
+ * headless version below takes over — no panel, no DOM, and the Inspector
+ * tree-shaken from the bundle. It keeps the
  * two behaviors call sites functionally rely on:
  * - every `onChange` fires once with its schema value after mount — that's
  *   what initializes shader uniforms, light params and sound volumes
@@ -50,6 +51,6 @@ const useHeadlessControls = (folderName, schema) => {
   return values;
 };
 
-const useControls = DEBUG_ENABLED ? useTweakpaneControls : useHeadlessControls;
+const useControls = DEBUG_ENABLED ? useInspectorControls : useHeadlessControls;
 
 export { useControls };

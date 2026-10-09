@@ -68,6 +68,7 @@ export function useThirdPersonCamera(characterBodyRef) {
 
   useEffect(() => {
     let unlockControlsCall = null;
+    let introPanAnimation = null;
 
     // Animate camera offset at experience start
     const unsubExperienceStarted = useStore.subscribe(
@@ -99,7 +100,7 @@ export function useThirdPersonCamera(characterBodyRef) {
             useStore.setState({ introControlsLocked: false })
           );
 
-          gsap.to(CAMERA_OFFSET, {
+          introPanAnimation = gsap.to(CAMERA_OFFSET, {
             duration: CAMERA_INTRO_DURATION,
             x: 0,
             y: 4,
@@ -118,6 +119,7 @@ export function useThirdPersonCamera(characterBodyRef) {
 
     return () => {
       unsubExperienceStarted();
+      introPanAnimation?.kill();
       if (unlockControlsCall) {
         unlockControlsCall.kill();
         useStore.setState({ introControlsLocked: false });

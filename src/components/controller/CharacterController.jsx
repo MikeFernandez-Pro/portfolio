@@ -85,7 +85,7 @@ const bakeFallingBodyAngle = ({ track, rest, chain }) => {
     .multiply(rest);
   track.values.set([q.x, q.y, q.z, q.w]);
 };
-// Debug preview (Tweakpane): suspends the controller loop so the falling
+// Debug preview (Inspector panel): suspends the controller loop so the falling
 // animation can be watched and tuned in place
 let fallingPreviewActive = false;
 

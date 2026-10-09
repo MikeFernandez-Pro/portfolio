@@ -71,13 +71,14 @@ const Joystick = () => {
 
     // Kept so cleanup removes the listener that was actually registered
     let orientationHandler;
+    let setupTimeout;
 
     const unsubExperienceStarted = useStore.subscribe(
       state => state.experienceStarted,
       experienceStarted => {
         if (!experienceStarted) return;
 
-        setTimeout(() => {
+        setupTimeout = setTimeout(() => {
           // Initialize joystick
           joystick = createJoystick(screen.orientation.type);
           setupJoystickEvents(joystick);
@@ -98,6 +99,7 @@ const Joystick = () => {
     // Cleanup subscriber and event listener
     return () => {
       unsubExperienceStarted();
+      clearTimeout(setupTimeout);
       if (orientationHandler) {
         screen.orientation.removeEventListener('change', orientationHandler);
       }

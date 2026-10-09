@@ -129,7 +129,7 @@ const createCheapDof = ({ colorNode, depthNode, camera, resolution }) => {
 };
 
 /**
- * Tweakpane folder for the DoF. `bind(name)` returns the onChange handler
+ * Debug folder for the DoF. `bind(name)` returns the onChange handler
  * that writes uniform `name` (EffectComposer keeps the values so they survive
  * a pipeline rebuild).
  */

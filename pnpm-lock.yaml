@@ -38,9 +38,6 @@ importers:
       tunnel-rat:
         specifier: ^0.1.2
         version: 0.1.2(@types/react@19.2.18)(react@19.2.8)
-      tweakpane:
-        specifier: ^4.0.5
-        version: 4.0.5
       vercel:
         specifier: ^63.1.0
         version: 63.1.0(@emnapi/core@1.11.3)(@emnapi/runtime@1.11.3)(rollup@4.62.4)
@@ -3442,9 +3439,6 @@ packages:
 
   tunnel-rat@0.1.2:
     resolution: {integrity: sha512-lR5VHmkPhzdhrM092lI2nACsLO4QubF0/yoOhzX7c+wIpbN1GjHNzCc91QlpxBi+cnx8vVJ+Ur6vL5cEoQPFpQ==}
-
-  tweakpane@4.0.5:
-    resolution: {integrity: sha512-rxEXdSI+ArlG1RyO6FghC4ZUX8JkEfz8F3v1JuteXSV0pEtHJzyo07fcDG+NsJfN5L39kSbCYbB9cBGHyuI/tQ==}
 
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
@@ -7151,8 +7145,6 @@ snapshots:
       - '@types/react'
       - immer
       - react
-
-  tweakpane@4.0.5: {}
 
   type-check@0.4.0:
     dependencies:
