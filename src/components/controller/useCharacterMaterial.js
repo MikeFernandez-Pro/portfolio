@@ -1,22 +1,24 @@
 import { useEffect } from 'react';
 import * as THREE from 'three';
-import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
+import { Discard, Fn, If, materialColor, mix, uniform, vec4 } from 'three/tsl';
 
 import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
-import vertexShader from '#shaders/character/vertex.glsl';
-import fragmentShader from '#shaders/character/fragment.glsl';
+import { toNodeMaterial } from '#utils/nodeMaterials.js';
+import {
+  createDissolveUniforms,
+  dissolveLava,
+} from '#shaders/character/dissolve.js';
 import { patchIslandPointLights } from '#islands/common/islandPointLights.js';
 import { patchCloudShadows } from '#environment/CloudShadows.jsx';
 import { useStore } from '#store/ZustandStorage.jsx';
-import { RESPAWN_DEFAULTS } from '#controller/respawnAnimation.js';
 
 const CHARACTER_MATERIAL_NAME = 'knight';
 const BOUNDS_MIN = new THREE.Vector3(-3.34, 0, -2.41);
 const BOUNDS_MAX = new THREE.Vector3(3.34, 5.94, 0.73);
 
 const useCharacterMaterial = characterScene => {
-  // Voronoi (R) and perlin (G) share one packed texture; both sampler
-  // uniforms point at it (the lantern material reuses these uniforms too)
+  // Voronoi (R) and perlin (G) share one packed texture (the lantern
+  // material reuses the knight's dissolve uniforms too)
   const noiseTexture = useVoronoiPerlinTexture();
 
   useEffect(() => {
@@ -32,41 +34,42 @@ const useCharacterMaterial = characterScene => {
       return;
     }
 
-    new CustomShaderMaterial({
-      baseMaterial: characterMesh.material,
-      uniforms: {
-        uVoronoiTexture: { value: noiseTexture },
-        uPerlinTexture: { value: noiseTexture },
-        uBoundsMin: { value: BOUNDS_MIN },
-        uBoundsMax: { value: BOUNDS_MAX },
-        uColor: { value: new THREE.Color(RESPAWN_DEFAULTS.charColor) },
-        uIntensity: { value: RESPAWN_DEFAULTS.charIntensity },
-        uRepeat: { value: RESPAWN_DEFAULTS.charRepeat },
-        uPerlinScale: { value: RESPAWN_DEFAULTS.charPerlinScale },
-        uPerlinStrength: { value: RESPAWN_DEFAULTS.charPerlinStrength },
-        uPerlinSpeed: { value: RESPAWN_DEFAULTS.charPerlinSpeed },
-        uTime: { value: 0 },
-        uThickness: { value: RESPAWN_DEFAULTS.charThickness },
-        uProgress: { value: 0 },
-        uCharFormProgress: { value: 1 },
-        uAlphaClip: { value: RESPAWN_DEFAULTS.alphaClip },
-      },
-      vertexShader,
-      fragmentShader,
-      transparent: true,
-      tonemapped: false,
-      side: THREE.DoubleSide,
-      depthWrite: true,
-    });
+    const uniforms = createDissolveUniforms(noiseTexture);
 
-    patchCloudShadows(characterMesh.material);
-    patchIslandPointLights(characterMesh.material);
+    const material = toNodeMaterial(characterMesh.material);
+    material.transparent = true;
+    material.side = THREE.DoubleSide;
+    material.depthWrite = true;
 
-    useStore.setState({
-      characterRespawnUniforms: characterMesh.material.uniforms,
-    });
+    // Lava dissolve mixed over the knight's own color (map included)
+    const lava = dissolveLava(
+      uniforms,
+      uniform(BOUNDS_MIN),
+      uniform(BOUNDS_MAX)
+    );
+    material.colorNode = Fn(() => {
+      const color = mix(
+        lava,
+        materialColor,
+        uniforms.uCharFormProgress
+      ).toVar();
+      If(color.a.lessThan(uniforms.uAlphaClip), () => {
+        Discard();
+      });
+      return vec4(color);
+    })();
+
+    patchCloudShadows(material);
+    patchIslandPointLights(material);
+
+    const previousMaterial = characterMesh.material;
+    characterMesh.material = material;
+
+    useStore.setState({ characterRespawnUniforms: uniforms });
 
     return () => {
+      characterMesh.material = previousMaterial;
+      material.dispose();
       useStore.setState({ characterRespawnUniforms: null });
     };
   }, [characterScene, noiseTexture]);
