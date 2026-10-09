@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
 import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
 
-import { cloudShadowUniforms } from '#environment/CloudShadows.jsx';
 import { useStore } from '#store/ZustandStorage.jsx';
 import { IS_MOBILE_DEVICE, IS_PHOTO_MODE } from '#utils/utils.js';
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
@@ -12,9 +10,10 @@ import { DEFAULT_CHARACTER_SPEED } from '#controller/constants.js';
 
 import { useGrassPlacement } from './grassPlacement.js';
 
-import grassFragmentShader from '#shaders/grass/fragment.glsl';
-import grassFragmentUnlitShader from '#shaders/grass/fragmentUnlit.glsl';
-import grassVertexShader from '#shaders/grass/vertex.glsl';
+import {
+  createGrassMaterial,
+  createGrassUniforms,
+} from '#shaders/grass/grass.js';
 
 import {
   useSpiralGrassHeightTexture,
@@ -340,6 +339,17 @@ const Grass = () => {
     const grassGeometry = new THREE.InstancedBufferGeometry();
     grassGeometry.instanceCount = placement.length / 2;
     grassGeometry.setIndex(indices);
+    // Placeholders: the blade is built from the vertex id, but the node
+    // material still binds position/normal attributes
+    const vertexCount = (bladeControls.segmentsCount + 1) * 2;
+    grassGeometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(new Float32Array(vertexCount * 3), 3)
+    );
+    grassGeometry.setAttribute(
+      'normal',
+      new THREE.BufferAttribute(new Float32Array(vertexCount * 3), 3)
+    );
     grassGeometry.setAttribute(
       'aBladePosition',
       new THREE.InstancedBufferAttribute(placement, 2)
@@ -359,103 +369,35 @@ const Grass = () => {
 
   const perlinNoiseTexture = useVoronoiPerlinTexture();
 
+  // Uniform nodes, created once; the controls write them below
+  const uniforms = useMemo(
+    () =>
+      createGrassUniforms({
+        heightTexture: grassHeightTexture,
+        perlinTexture: perlinNoiseTexture,
+        trampleTexture,
+      }),
+    []
+  );
+
+  // Unlit MeshBasicNodeMaterial or, with the `lit` control,
+  // MeshStandardNodeMaterial (scene lighting + smooth shading normal). Only
+  // that switch rebuilds the material; every other control is a uniform.
+  // The trample map is left out on mobile: no vertex fetch, no crush
   const grassMaterial = useMemo(
     () =>
-      // Unlit MeshBasicMaterial by default; the `lit` control swaps in
-      // MeshStandardMaterial (scene lighting + smooth shading normal) and the
-      // matching fragment shader - CSM string-searches the csm_* keywords, so
-      // the unlit source must not even mention csm_Emissive/csm_FragNormal.
-      // The class (not an instance) is passed because CSM v6 mutates its
-      // baseMaterial.
-      new CustomShaderMaterial({
-        baseMaterial: renderControls.lit
-          ? THREE.MeshStandardMaterial
-          : THREE.MeshBasicMaterial,
-        ...(renderControls.lit ? { roughness: 1, metalness: 0 } : {}),
-        // The trample map (texture + crush) is compiled out on mobile
-        defines: IS_MOBILE_DEVICE ? {} : { USE_TRAMPLE: '' },
-        uniforms: {
-          uTime: { value: 0 },
-          uGrassParameters: {
-            value: new THREE.Vector4(
-              bladeControls.segmentsCount,
-              bladeControls.patchSize,
-              bladeControls.width,
-              bladeControls.height
-            ),
-          },
-          uColorBottom: { value: new THREE.Color(bladeControls.colorBottom) },
-          uColorTop: { value: new THREE.Color(bladeControls.colorTop) },
-          uLighting1: { value: bladeControls.lighting1 },
-          uLighting2: { value: bladeControls.lighting2 },
-          uColorNoiseScale: { value: bladeControls.colorNoiseScale },
-          uColorSharpness: { value: bladeControls.colorSharpness },
-          uVoronoiMix: { value: bladeControls.voronoiMix },
-          uVoronoiScale: { value: bladeControls.voronoiScale },
-          uVoronoiWarpStrength: { value: bladeControls.voronoiWarpStrength },
-          uVoronoiWarpScale: { value: bladeControls.voronoiWarpScale },
-          uSquareShape: { value: bladeControls.squared },
-          uPositionX: { value: 0 },
-          uPositionZ: { value: 0 },
-
-          uRedTipColor: { value: new THREE.Color(flowerControls.tipColor) },
-          uRedTipLength: { value: flowerControls.tipLength },
-          uFlowerAmount: { value: flowerControls.amount },
-          uFlowerHeight: { value: flowerControls.height },
-          uFlowerWidth: { value: flowerControls.width },
-          uFlowerBaseWidth: { value: flowerControls.baseWidth },
-
-          uHeightDataTexture: { value: grassHeightTexture },
-          uPerlinNoiseTexture: { value: perlinNoiseTexture },
-
-          uWindScale: { value: windControls.scale },
-          uWindStrength: { value: windControls.strength * WIND_REDUCTION },
-          uWindSpeed: { value: windControls.speed },
-
-          // Photo mode orbits a free camera for screenshots: no thinning there
-          uThinDistance: {
-            value: IS_PHOTO_MODE
-              ? new THREE.Vector2(1e6, 1e6)
-              : new THREE.Vector2(
-                  renderControls.thinStart,
-                  renderControls.thinEnd
-                ),
-          },
-          uCullCos: {
-            value: Math.cos(THREE.MathUtils.degToRad(renderControls.cullAngle)),
-          },
-          uNormalRounding: { value: renderControls.normalRounding },
-          uNormalUp: { value: renderControls.normalUp },
-
-          uRepulseStrength: { value: trampleControls.strength },
-          uRepulseSquash: { value: trampleControls.squash },
-          uTrampleTexture: { value: trampleTexture },
-          uTrampleStrength: { value: trampleControls.amount },
-
-          // Shared with the island material so the clouds line up
-          ...cloudShadowUniforms,
-        },
-        vertexShader: grassVertexShader,
-        fragmentShader: renderControls.lit
-          ? grassFragmentShader
-          : grassFragmentUnlitShader,
-        // Single-sided strips seen from both sides; three flips the normal
-        // on back faces
-        side: THREE.DoubleSide,
+      createGrassMaterial({
+        uniforms,
+        lit: renderControls.lit,
+        trample: !IS_MOBILE_DEVICE,
       }),
-    [
-      bladeControls,
-      flowerControls,
-      renderControls,
-      windControls,
-      trampleControls,
-      grassHeightTexture,
-    ]
+    [uniforms, renderControls.lit]
   );
+
+  useEffect(() => () => grassMaterial.dispose(), [grassMaterial]);
 
   // Keep the uniforms in sync with the controls
   useEffect(() => {
-    const { uniforms } = grassMaterial;
     uniforms.uColorBottom.value = new THREE.Color(
       bladeControls.colorBottom
     ).multiplyScalar(bladeControls.brightness);
@@ -474,7 +416,7 @@ const Grass = () => {
     uniforms.uGrassParameters.value.y = bladeControls.patchSize;
     uniforms.uGrassParameters.value.z = bladeControls.width;
     uniforms.uGrassParameters.value.w = bladeControls.height;
-    uniforms.uSquareShape.value = bladeControls.squared;
+    uniforms.uSquareShape.value = bladeControls.squared ? 1 : 0;
     uniforms.uPositionX.value = bladeControls.position[0];
     uniforms.uPositionZ.value = bladeControls.position[2];
 
@@ -486,6 +428,7 @@ const Grass = () => {
     uniforms.uFlowerBaseWidth.value = flowerControls.baseWidth;
 
     uniforms.uHeightDataTexture.value = grassHeightTexture;
+    uniforms.uPerlinNoiseTexture.value = perlinNoiseTexture;
 
     uniforms.uWindScale.value = windControls.scale;
     uniforms.uWindStrength.value = windControls.strength * WIND_REDUCTION;
@@ -513,14 +456,13 @@ const Grass = () => {
     windControls,
     trampleControls,
     grassHeightTexture,
-    grassMaterial,
+    perlinNoiseTexture,
+    uniforms,
   ]);
 
-  useFrame(({ elapsed }, delta) => {
-    grassMaterial.uniforms.uTime.value = elapsed;
-
+  useFrame((state, delta) => {
     // The whole trample pipeline (simulation + texture upload) is off on
-    // mobile, where the shader compiles without USE_TRAMPLE anyway
+    // mobile, where the material is built without the trample fetch
     if (IS_MOBILE_DEVICE) {
       return;
     }
@@ -540,8 +482,10 @@ const Grass = () => {
     if (position && previousPositionRef.current && delta > 0) {
       const previous = previousPositionRef.current;
       const smoothing = 1 - Math.exp(-12 * delta);
-      velocity.x += ((position.x - previous.x) / delta - velocity.x) * smoothing;
-      velocity.y += ((position.z - previous.z) / delta - velocity.y) * smoothing;
+      velocity.x +=
+        ((position.x - previous.x) / delta - velocity.x) * smoothing;
+      velocity.y +=
+        ((position.z - previous.z) / delta - velocity.y) * smoothing;
     }
     previousPositionRef.current = position;
 
