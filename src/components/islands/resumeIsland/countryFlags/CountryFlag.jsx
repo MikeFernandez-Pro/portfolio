@@ -1,16 +1,26 @@
-import { useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
-import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
-import * as THREE from 'three';
+import { useEffect, useMemo } from 'react';
+import * as THREE from 'three/webgpu';
+import {
+  dot,
+  float,
+  materialColor,
+  mix,
+  positionGeometry,
+  positionLocal,
+  sin,
+  time,
+  uniform,
+  vec3,
+  vec4,
+} from 'three/tsl';
 
-import countryFlagVertexShader from '#shaders/countryFlag/vertex.glsl';
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 
 // Grade shared by the three flags, driven by the Flags > Grade debug folder
-// in CountriesFlags
+// in CountriesFlags (TSL uniform nodes: `.value` like the old objects)
 const flagsGradeUniforms = {
-  uFlagLightness: { value: 1 },
-  uFlagSaturation: { value: 1 },
+  uFlagLightness: uniform(1),
+  uFlagSaturation: uniform(1),
 };
 
 // Per-flag grade on top of the shared one (Flags > British/French/Spain):
@@ -18,8 +28,8 @@ const flagsGradeUniforms = {
 // final color. The schema defaults in CountriesFlags are the production
 // source of truth (headless onChange overwrites these on load)
 const createFlagOwnUniforms = () => ({
-  uFlagOwnLightness: { value: 1 },
-  uFlagTint: { value: new THREE.Color('#ffd6d6') },
+  uFlagOwnLightness: uniform(1),
+  uFlagTint: uniform(new THREE.Color('#ffd6d6')),
 });
 const flagsIndividualUniforms = {
   british: createFlagOwnUniforms(),
@@ -27,74 +37,54 @@ const flagsIndividualUniforms = {
   spain: createFlagOwnUniforms(),
 };
 
+// Reduced motion: frozen time = a fixed billow instead of the flutter
+const flagTime = REDUCED_MOTION_AT_LOAD ? float(0) : time;
+
 const CountryFlag = props => {
   const { node, baseMaterial, country } = props;
 
-  const countryFlagShaderMaterial = useMemo(() => {
-    // The GLB flag materials are unlit; rebuild a MeshStandardMaterial from
-    // their map/color so the flags react to the scene lights (this also
-    // keeps the shared GLB material pristine — CSM patches its base in
-    // place, StrictMode/HMR safe)
-    const material = new CustomShaderMaterial({
-      baseMaterial: new THREE.MeshStandardMaterial({
-        map: baseMaterial.map ?? null,
-        color: baseMaterial.color.clone(),
-        roughness: 1,
-        metalness: 0,
-        side: baseMaterial.side,
-      }),
-      vertexShader: countryFlagVertexShader,
-      uniforms: {
-        uTime: { value: 0.0 },
-      },
+  const countryFlagMaterial = useMemo(() => {
+    // The GLB flag materials are unlit; rebuild a lit material from their
+    // map/color so the flags react to the scene lights (this also keeps the
+    // shared GLB material pristine)
+    const material = new THREE.MeshStandardNodeMaterial({
+      map: baseMaterial.map ?? null,
+      color: baseMaterial.color.clone(),
+      roughness: 1,
+      metalness: 0,
+      side: baseMaterial.side,
     });
 
-    // Lightness/saturation grade chained after CSM's own patch and injected
-    // after <map_fragment>, so it affects the flag texture too (CSM's
-    // csm_DiffuseColor hook runs before the map is sampled)
-    const previousOnBeforeCompile = material.onBeforeCompile;
-    material.onBeforeCompile = (shader, renderer) => {
-      previousOnBeforeCompile?.call(material, shader, renderer);
+    // Flutter growing away from the pole (x = -6 in flag space). Added to
+    // positionLocal, which already carries the skinning/morphs: a
+    // positionNode replaces them otherwise. Squared by a multiply: pow() of
+    // a negative base is NaN in WGSL
+    const fromPole = positionGeometry.x.add(6);
+    const flutter = sin(fromPole.mul(5).sub(flagTime.mul(4)))
+      .div(fromPole.mul(fromPole))
+      .mul(0.5);
+    material.positionNode = positionLocal.add(vec3(0, flutter, 0));
 
-      Object.assign(
-        shader.uniforms,
-        flagsGradeUniforms,
-        flagsIndividualUniforms[country]
-      );
-
-      shader.fragmentShader = shader.fragmentShader
-        .replace(
-          '#include <common>',
-          `#include <common>
-uniform float uFlagLightness;
-uniform float uFlagSaturation;
-uniform float uFlagOwnLightness;
-uniform vec3 uFlagTint;`
-        )
-        .replace(
-          '#include <map_fragment>',
-          `#include <map_fragment>
-diffuseColor.rgb *= uFlagLightness * uFlagOwnLightness;
-float flagLuminance = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
-diffuseColor.rgb = mix(vec3(flagLuminance), diffuseColor.rgb, uFlagSaturation);
-diffuseColor.rgb *= uFlagTint;`
-        );
-    };
+    // Lightness / saturation / tint grade, on the flag texture too
+    const { uFlagLightness, uFlagSaturation } = flagsGradeUniforms;
+    const { uFlagOwnLightness, uFlagTint } = flagsIndividualUniforms[country];
+    const lit = materialColor.rgb.mul(uFlagLightness).mul(uFlagOwnLightness);
+    const luminance = dot(lit, vec3(0.299, 0.587, 0.114));
+    material.colorNode = vec4(
+      mix(vec3(luminance), lit, uFlagSaturation).mul(uFlagTint),
+      materialColor.a
+    );
 
     return material;
   }, [baseMaterial, country]);
 
-  useFrame(({ elapsed }) => {
-    // Reduced motion: frozen time = a fixed billow instead of the flutter
-    if (REDUCED_MOTION_AT_LOAD) return;
-    countryFlagShaderMaterial.uniforms.uTime.value = elapsed;
-  });
+  useEffect(() => () => countryFlagMaterial.dispose(), [countryFlagMaterial]);
 
   return (
     <skinnedMesh
       name={node.name}
       geometry={node.geometry}
-      material={countryFlagShaderMaterial}
+      material={countryFlagMaterial}
       skeleton={node.skeleton}
       morphTargetDictionary={node.morphTargetDictionary}
       morphTargetInfluences={node.morphTargetInfluences}
