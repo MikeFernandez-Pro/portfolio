@@ -1,13 +1,20 @@
 import { useMemo, useEffect } from 'react';
-import { useFrame } from '@react-three/fiber';
 import { useControls } from '#utils/useControls.jsx';
 import gsap from 'gsap';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
+import {
+  cameraProjectionMatrix,
+  cameraViewMatrix,
+  modelWorldMatrix,
+  positionGeometry,
+  sin,
+  texture,
+  time,
+  uniform,
+  vec4,
+} from 'three/tsl';
 
 import { useStore } from '#store/ZustandStorage.jsx';
-
-import floatingSkillsVertexShader from '#shaders/floatingSkills/vertex.glsl';
-import floatingSkillsFragmentShader from '#shaders/floatingSkills/fragment.glsl';
 
 const FLOATING_SKILLS_COLOR = '#e1754b';
 const FLOATING_SKILLS_INTENSITY = 9.87;
@@ -15,26 +22,44 @@ const FLOATING_SKILLS_INTENSITY = 9.87;
 const FloatingSkills = props => {
   const { island } = props;
 
-  const floatingSkillsShaderMaterial = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        uniforms: {
-          uTime: { value: 0 },
-          uOpacity: { value: 0 },
-          uTexture: { value: island.materials.magicLetters.map },
-          uColor: { value: new THREE.Color(FLOATING_SKILLS_COLOR) },
-          uIntensity: { value: FLOATING_SKILLS_INTENSITY },
-        },
-        vertexShader: floatingSkillsVertexShader,
-        fragmentShader: floatingSkillsFragmentShader,
-        side: THREE.DoubleSide,
-        transparent: true,
-        toneMapped: false,
-        // Keep the letters out of the depth buffer so N8AO (which samples
-        // depth) doesn't darken around them while they are transparent
-        depthWrite: false,
-      }),
-    [island]
+  const { floatingSkillsMaterial, uniforms } = useMemo(() => {
+    const uniforms = {
+      uOpacity: uniform(0),
+      uColor: uniform(new THREE.Color(FLOATING_SKILLS_COLOR)),
+      uIntensity: uniform(FLOATING_SKILLS_INTENSITY),
+    };
+
+    const material = new THREE.MeshBasicNodeMaterial({
+      side: THREE.DoubleSide,
+      transparent: true,
+      // Keep the letters out of the depth buffer so the AO (which samples
+      // depth) doesn't darken around them while they are transparent
+      depthWrite: false,
+    });
+
+    // Gentle world-space wave, applied after the model matrix (vertexNode
+    // replaces the whole projection). From the raw geometry: the old
+    // ShaderMaterial ignored the skinning and morphs of island_11 too
+    const world = modelWorldMatrix.mul(vec4(positionGeometry, 1));
+    const y1 = world.y.add(sin(world.x.mul(10).add(time)).mul(0.02));
+    const y2 = y1.add(sin(y1.mul(0.5).add(time)).mul(0.01));
+    material.vertexNode = cameraProjectionMatrix.mul(
+      cameraViewMatrix.mul(vec4(world.x, y2, world.z, 1))
+    );
+
+    // Letter shapes from the atlas alpha, flat glowing color
+    const letters = texture(island.materials.magicLetters.map);
+    material.colorNode = vec4(
+      uniforms.uColor.mul(uniforms.uIntensity),
+      letters.a.mul(uniforms.uOpacity)
+    );
+
+    return { floatingSkillsMaterial: material, uniforms };
+  }, [island]);
+
+  useEffect(
+    () => () => floatingSkillsMaterial.dispose(),
+    [floatingSkillsMaterial]
   );
 
   useControls(
@@ -43,7 +68,7 @@ const FloatingSkills = props => {
       color: {
         value: FLOATING_SKILLS_COLOR,
         onChange: value => {
-          floatingSkillsShaderMaterial.uniforms.uColor.value.set(value);
+          uniforms.uColor.value.set(value);
         },
       },
       intensity: {
@@ -52,7 +77,7 @@ const FloatingSkills = props => {
         max: 20,
         step: 0.01,
         onChange: value => {
-          floatingSkillsShaderMaterial.uniforms.uIntensity.value = value;
+          uniforms.uIntensity.value = value;
         },
       },
     },
@@ -60,16 +85,13 @@ const FloatingSkills = props => {
   );
 
   useEffect(() => {
-    let floatingSkillsActivation = gsap.to(
-      floatingSkillsShaderMaterial.uniforms.uOpacity,
-      {
-        duration: 1,
-        delay: 1,
-        value: 1,
-        ease: 'expo.in',
-        paused: true,
-      }
-    );
+    let floatingSkillsActivation = gsap.to(uniforms.uOpacity, {
+      duration: 1,
+      delay: 1,
+      value: 1,
+      ease: 'expo.in',
+      paused: true,
+    });
 
     // Subscribe to the magic glyph zustand store state
     const unsubMagicGlyphActivation = useStore.subscribe(
@@ -87,18 +109,11 @@ const FloatingSkills = props => {
     };
   }, []);
 
-  // Update shader material uTime uniforms value over time
-  useFrame(
-    state =>
-      (floatingSkillsShaderMaterial.uniforms.uTime.value =
-        state.elapsed)
-  );
-
   return (
     <skinnedMesh
       name="island_11"
       geometry={island.nodes.island_11.geometry}
-      material={floatingSkillsShaderMaterial}
+      material={floatingSkillsMaterial}
       skeleton={island.nodes.island_11.skeleton}
       morphTargetDictionary={island.nodes.island_11.morphTargetDictionary}
       morphTargetInfluences={island.nodes.island_11.morphTargetInfluences}

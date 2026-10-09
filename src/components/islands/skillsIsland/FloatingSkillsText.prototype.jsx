@@ -9,8 +9,17 @@
 // The "Skills (prototype)" Tweakpane folder holds the five words and the
 // geometry settings; the overlay bottom-left shows the batch state.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
+import {
+  cameraProjectionMatrix,
+  cameraViewMatrix,
+  modelWorldMatrix,
+  positionLocal,
+  sin,
+  time,
+  uniform,
+  vec4,
+} from 'three/tsl';
 import { Font } from 'three/examples/jsm/loaders/FontLoader.js';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 import gsap from 'gsap';
@@ -29,8 +38,16 @@ const SLOTS = [
   { word: 'WebGL', center: [13.635, 4.383, -45.746], normal: [0.606, 0.795] },
   { word: 'ThreeJs', center: [11.489, 4.383, -43.282], normal: [0.917, 0.399] },
   { word: 'WebGPU', center: [16.865, 4.383, -46.817], normal: [0, 1] },
-  { word: 'R3F / TSL', center: [20.375, 4.383, -45.707], normal: [-0.519, 0.855] },
-  { word: 'React / TS', center: [22.365, 4.383, -43.273], normal: [-0.906, 0.424] },
+  {
+    word: 'R3F / TSL',
+    center: [20.375, 4.383, -45.707],
+    normal: [-0.519, 0.855],
+  },
+  {
+    word: 'React / TS',
+    center: [22.365, 4.383, -43.273],
+    normal: [-0.906, 0.424],
+  },
 ];
 
 const SLOT_MATRICES = SLOTS.map(({ center, normal: [nx, nz] }) =>
@@ -45,41 +62,38 @@ const SLOT_MATRICES = SLOTS.map(({ center, normal: [nx, nz] }) =>
 );
 
 const SAMPLE_WORDS = [
-  'GSAP', 'GLSL', 'WebGL', 'WebGPU', 'TypeScript', 'Node', 'Vite',
-  'R3F', 'Houdini', 'Rapier', 'Shaders', 'Tweakpane', 'Howler', 'CSS',
+  'GSAP',
+  'GLSL',
+  'WebGL',
+  'WebGPU',
+  'TypeScript',
+  'Node',
+  'Vite',
+  'R3F',
+  'Houdini',
+  'Rapier',
+  'Shaders',
+  'Tweakpane',
+  'Howler',
+  'CSS',
 ];
 
 // Minimum per-word vertex reservation. A word that outgrows its reservation
 // forces a full BatchedMesh rebuild (counted in the overlay)
 const MIN_RESERVE = 4096;
 
-const vertexShader = /* glsl */ `
-  #include <batching_pars_vertex>
-  uniform float uTime;
-
-  void main() {
-    mat4 instanceMatrix = mat4(1.0);
-    #include <batching_vertex>
-    #ifdef USE_BATCHING
-      instanceMatrix = batchingMatrix;
-    #endif
-
-    vec4 modelPosition = modelMatrix * instanceMatrix * vec4(position, 1.0);
-    modelPosition.y += sin(modelPosition.x * 10.0 + uTime) * 0.02;
-    modelPosition.y += sin(modelPosition.y * 0.5 + uTime) * 0.01;
-    gl_Position = projectionMatrix * viewMatrix * modelPosition;
-  }
-`;
-
-const fragmentShader = /* glsl */ `
-  uniform float uOpacity;
-  uniform vec3 uColor;
-  uniform float uIntensity;
-
-  void main() {
-    gl_FragColor = vec4(uColor * uIntensity, uOpacity);
-  }
-`;
+// Gentle world-space wave over the letters (same as the baked skills).
+// positionLocal already carries the BatchedMesh per-word transform; the
+// wave is applied after the model matrix, so it replaces the whole
+// projection (vertexNode)
+const wavingVertex = localPosition => {
+  const world = modelWorldMatrix.mul(vec4(localPosition, 1));
+  const y1 = world.y.add(sin(world.x.mul(10).add(time)).mul(0.02));
+  const y2 = y1.add(sin(y1.mul(0.5).add(time)).mul(0.01));
+  return cameraProjectionMatrix.mul(
+    cameraViewMatrix.mul(vec4(world.x, y2, world.z, 1))
+  );
+};
 
 // Cap-height of the font at size 1, to sit every word on the same baseline
 // with its capitals vertically centered on the original plane
@@ -141,38 +155,33 @@ function createBatch(words, settings, material) {
 const FloatingSkillsTextPrototype = props => {
   const { island } = props;
 
-  const material = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        uniforms: {
-          uTime: { value: 0 },
-          uOpacity: { value: 0 },
-          uColor: { value: new THREE.Color('#e1754b') },
-          uIntensity: { value: 9.87 },
-        },
-        vertexShader,
-        fragmentShader,
-        side: THREE.DoubleSide,
-        transparent: true,
-        toneMapped: false,
-        depthWrite: false,
-      }),
-    []
-  );
+  const { material, uniforms } = useMemo(() => {
+    const uniforms = {
+      uOpacity: uniform(0),
+      uColor: uniform(new THREE.Color('#e1754b')),
+      uIntensity: uniform(9.87),
+    };
+    const material = new THREE.MeshBasicNodeMaterial({
+      side: THREE.DoubleSide,
+      transparent: true,
+      depthWrite: false,
+    });
+    material.vertexNode = wavingVertex(positionLocal);
+    material.colorNode = vec4(
+      uniforms.uColor.mul(uniforms.uIntensity),
+      uniforms.uOpacity
+    );
+    return { material, uniforms };
+  }, []);
+
+  useEffect(() => () => material.dispose(), [material]);
 
   const [words, setWords] = useState(() => SLOTS.map(slot => slot.word));
   const wordsRef = useRef(words);
   wordsRef.current = words;
 
-  const {
-    size,
-    depth,
-    curveSegments,
-    showOriginal,
-    forceVisible,
-  } = useControls(
-    'Skills (prototype)',
-    {
+  const { size, depth, curveSegments, showOriginal, forceVisible } =
+    useControls('Skills (prototype)', {
       size: { value: 0.24, min: 0.05, max: 1, step: 0.005 },
       depth: { value: 0.02, min: 0, max: 0.3, step: 0.005 },
       curveSegments: { value: 4, min: 1, max: 12, step: 1 },
@@ -194,14 +203,14 @@ const FloatingSkillsTextPrototype = props => {
       ),
       color: {
         value: '#e1754b',
-        onChange: value => material.uniforms.uColor.value.set(value),
+        onChange: value => uniforms.uColor.value.set(value),
       },
       intensity: {
         value: 9.87,
         min: 0,
         max: 20,
         step: 0.01,
-        onChange: value => (material.uniforms.uIntensity.value = value),
+        onChange: value => (uniforms.uIntensity.value = value),
       },
       'randomize one word': () => {
         const index = Math.floor(Math.random() * SLOTS.length);
@@ -221,8 +230,7 @@ const FloatingSkillsTextPrototype = props => {
           previous[3],
           previous[4],
         ]),
-    }
-  );
+    });
 
   const settings = useMemo(
     () => ({ size, depth, curveSegments }),
@@ -298,11 +306,11 @@ const FloatingSkillsTextPrototype = props => {
   // Opacity: same activation as the baked skills, or forced on
   useEffect(() => {
     if (forceVisible) {
-      material.uniforms.uOpacity.value = 1;
+      uniforms.uOpacity.value = 1;
       return;
     }
-    material.uniforms.uOpacity.value = 0;
-    const activation = gsap.to(material.uniforms.uOpacity, {
+    uniforms.uOpacity.value = 0;
+    const activation = gsap.to(uniforms.uOpacity, {
       duration: 1,
       delay: 1,
       value: 1,
@@ -354,10 +362,6 @@ const FloatingSkillsTextPrototype = props => {
       `last: ${stats.lastAction}  ${stats.lastUpdateMs.toFixed(1)} ms`,
       `full rebuilds: ${stats.rebuilds}   draw calls: 1`,
     ].join('\n');
-  });
-
-  useFrame(state => {
-    material.uniforms.uTime.value = state.elapsed;
   });
 
   return (

@@ -1,13 +1,36 @@
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import CustomShaderMaterial from 'three-custom-shader-material';
 import { useControls } from '#utils/useControls.jsx';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
+import {
+  cos,
+  dot,
+  float,
+  floor,
+  fract,
+  length,
+  mix,
+  pow,
+  sin,
+  smoothstep,
+  sqrt,
+  step,
+  time,
+  uniform,
+  vec2,
+  vec3,
+  vec4,
+} from 'three/tsl';
 
-import portalVertexShader from '#shaders/cauldronPortal/vertex.glsl';
-import portalFragmentShader from '#shaders/cauldronPortal/fragment.glsl';
-import bubblesVertexShader from '#shaders/cauldronBubbles/vertex.glsl';
-import bubblesFragmentShader from '#shaders/cauldronBubbles/fragment.glsl';
+import {
+  createCauldronPortalMaterial,
+  createCauldronPortalUniforms,
+} from '#shaders/cauldronPortal/cauldronPortal.js';
+import {
+  createParticleSprite,
+  particleAttribute,
+  pointCoord,
+} from '#utils/pointSprites.js';
 
 import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
@@ -32,11 +55,10 @@ const BUBBLES_DEFAULTS = {
   spread: 0.75,
 };
 
-// Buffers are allocated at the max once; the count control only moves the
-// geometry draw range. Spawn spots are hashed per cycle in the vertex
-// shader, so only per-bubble timing/size randomness lives here.
+// Buffers are allocated at the max once; the count control only changes
+// how many sprite instances are drawn. Spawn spots are hashed per cycle in
+// the shader, so only per-bubble timing/size randomness lives here.
 const BUBBLES_COUNT = 80;
-const bubblesPositions = new Float32Array(BUBBLES_COUNT * 3);
 const bubblesPhases = new Float32Array(BUBBLES_COUNT);
 const bubblesSpeeds = new Float32Array(BUBBLES_COUNT);
 const bubblesSizes = new Float32Array(BUBBLES_COUNT);
@@ -49,13 +71,13 @@ for (let i = 0; i < BUBBLES_COUNT; i++) {
 
 // Portal shader defaults
 const PORTAL_DEFAULTS = {
-  deepColor: '#429852', 
+  deepColor: '#429852',
   midColor: '#30e011',
   brightColor: '#35d567',
   opacity: 0.82,
   distortionScale: 1.4,
   distortionStrength: 0.2,
-  distortionSpeed: 0.100,
+  distortionSpeed: 0.1,
   rotationSpeed: 0.6,
   backgroundStrength: 2,
   backgroundCenterGlow: 1.67,
@@ -81,10 +103,67 @@ const PORTAL_DEFAULTS = {
   corePulseSpeed: 0.66,
 };
 
+const TWO_PI = 6.28318530718;
+
+const hash = seed =>
+  fract(sin(dot(seed, vec2(12.9898, 78.233))).mul(43758.5453));
+
+// Boiling bubbles: each loops on its own phase and respawns at a new random
+// spot of the surface every cycle, like water at a rolling boil: it stays in
+// place, swells, then bursts
+const createBubblesMaterial = u => {
+  const material = new THREE.PointsNodeMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+
+  const aPhase = particleAttribute(bubblesPhases, 1);
+  const aSpeed = particleAttribute(bubblesSpeeds, 1);
+  const aSize = particleAttribute(bubblesSizes, 1);
+
+  const progress = time.mul(u.uSpeed).mul(aSpeed).add(aPhase);
+  const t = fract(progress);
+  const cycle = floor(progress);
+
+  const seed = vec2(aPhase.mul(137.13), aSpeed.mul(91.7)).add(cycle);
+  const angle = hash(seed).mul(TWO_PI);
+  const radius = sqrt(hash(seed.add(17.31))).mul(u.uSpread);
+  material.positionNode = vec3(
+    cos(angle).mul(radius).mul(u.uHalfSize.x),
+    0,
+    sin(angle).mul(radius).mul(u.uHalfSize.y)
+  );
+
+  // The size swells over the whole life (uGrowPower shapes the curve),
+  // while the alpha pops sharply at the end instead of shrinking
+  const swell = pow(t, u.uGrowPower);
+  const life = smoothstep(0, 0.08, t).mul(
+    smoothstep(u.uPopStart, 1, t).oneMinus()
+  );
+  // gl_PointSize = uSize * uResolution.y * aSize * swell / -viewZ
+  material.sizeNode = u.uSize.mul(aSize).mul(swell).mul(2);
+
+  // Bright rim around a tunable fill (0 = hollow ring, 1 = full disc),
+  // alpha 0 outside the disc
+  const distanceToCenter = length(pointCoord.sub(0.5));
+  const rim = smoothstep(
+    float(0.48).sub(u.uRimThickness),
+    0.48,
+    distanceToCenter
+  );
+  const alpha = mix(u.uCoreOpacity, 1, rim)
+    .mul(life)
+    .mul(u.uOpacity)
+    .mul(step(distanceToCenter, 0.5));
+  material.colorNode = vec4(u.uColor.mul(u.uIntensity), alpha);
+
+  return material;
+};
+
 const Cauldron = props => {
   const { island } = props;
 
-  const portalMaterialRef = useRef(null);
   const potionMeshRef = useRef(null);
   const bubblesPointsRef = useRef(null);
   const planeHeightRef = useRef(POTION_PLANE_HEIGHT);
@@ -122,34 +201,35 @@ const Cauldron = props => {
     applyPlaneHeight(planeHeightRef.current);
   }, [portalBounds]);
 
-  const bubblesMaterial = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        vertexShader: bubblesVertexShader,
-        fragmentShader: bubblesFragmentShader,
-        uniforms: {
-          uTime: { value: 0 },
-          uResolution: { value: new THREE.Vector2(1, 1) },
-          uHalfSize: { value: portalBounds.halfSize },
-          uColor: { value: new THREE.Color(BUBBLES_DEFAULTS.color) },
-          uIntensity: { value: BUBBLES_DEFAULTS.intensity },
-          uOpacity: { value: BUBBLES_DEFAULTS.opacity },
-          uCoreOpacity: { value: BUBBLES_DEFAULTS.coreOpacity },
-          uRimThickness: { value: BUBBLES_DEFAULTS.rimThickness },
-          uSize: { value: BUBBLES_DEFAULTS.size },
-          uSpeed: { value: BUBBLES_DEFAULTS.speed },
-          uGrowPower: { value: BUBBLES_DEFAULTS.growPower },
-          uPopStart: { value: BUBBLES_DEFAULTS.pop },
-          uSpread: { value: BUBBLES_DEFAULTS.spread },
-        },
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-      }),
-    [portalBounds]
-  );
+  const { bubbles, bubblesUniforms } = useMemo(() => {
+    const bubblesUniforms = {
+      uHalfSize: uniform(portalBounds.halfSize),
+      uColor: uniform(new THREE.Color(BUBBLES_DEFAULTS.color)),
+      uIntensity: uniform(BUBBLES_DEFAULTS.intensity),
+      uOpacity: uniform(BUBBLES_DEFAULTS.opacity),
+      uCoreOpacity: uniform(BUBBLES_DEFAULTS.coreOpacity),
+      uRimThickness: uniform(BUBBLES_DEFAULTS.rimThickness),
+      uSize: uniform(BUBBLES_DEFAULTS.size),
+      uSpeed: uniform(BUBBLES_DEFAULTS.speed),
+      uGrowPower: uniform(BUBBLES_DEFAULTS.growPower),
+      uPopStart: uniform(BUBBLES_DEFAULTS.pop),
+      uSpread: uniform(BUBBLES_DEFAULTS.spread),
+    };
+    const bubbles = createParticleSprite(
+      createBubblesMaterial(bubblesUniforms),
+      BUBBLES_DEFAULTS.count
+    );
+    // Above the liquid disc (the height follows the planeHeight control)
+    bubbles.position.set(
+      portalBounds.center.x,
+      portalBounds.surfaceY + BUBBLES_SURFACE_OFFSET + POTION_PLANE_HEIGHT,
+      portalBounds.center.y
+    );
+    return { bubbles, bubblesUniforms };
+  }, [portalBounds]);
 
-  const bubblesGeometryRef = useRef(null);
+  useEffect(() => () => bubbles.material.dispose(), [bubbles]);
+  bubblesPointsRef.current = bubbles;
 
   const bubblesNumberControl = (uniform, value, min, max, step) => ({
     value,
@@ -157,7 +237,7 @@ const Cauldron = props => {
     max,
     step,
     onChange: v => {
-      bubblesMaterial.uniforms[uniform].value = v;
+      bubblesUniforms[uniform].value = v;
     },
   });
 
@@ -170,13 +250,13 @@ const Cauldron = props => {
         max: BUBBLES_COUNT,
         step: 1,
         onChange: v => {
-          bubblesGeometryRef.current?.setDrawRange(0, v);
+          bubbles.count = v;
         },
       },
       color: {
         value: BUBBLES_DEFAULTS.color,
         onChange: v => {
-          bubblesMaterial.uniforms.uColor.value.set(v);
+          bubblesUniforms.uColor.value.set(v);
         },
       },
       intensity: bubblesNumberControl(
@@ -226,7 +306,13 @@ const Cauldron = props => {
         0.01
       ),
       // Life fraction where the burst begins (closer to 1 = more sudden)
-      pop: bubblesNumberControl('uPopStart', BUBBLES_DEFAULTS.pop, 0.5, 0.99, 0.005),
+      pop: bubblesNumberControl(
+        'uPopStart',
+        BUBBLES_DEFAULTS.pop,
+        0.5,
+        0.99,
+        0.005
+      ),
       spread: bubblesNumberControl(
         'uSpread',
         BUBBLES_DEFAULTS.spread,
@@ -238,69 +324,35 @@ const Cauldron = props => {
     { collapsed: true, reset: true }
   );
 
-  // Stable identity: CSM resets every uniform to these values whenever the
-  // uniforms prop changes reference, which would wipe the debug tweaks
-  const portalUniforms = useMemo(
-    () => ({
-      uTime: { value: 0 },
-      uPerlinNoise: { value: perlinNoiseTexture },
-      uPortalCenter: { value: portalBounds.center },
-      uPortalHalfSize: { value: portalBounds.halfSize },
-      uDeepColor: { value: new THREE.Color(PORTAL_DEFAULTS.deepColor) },
-      uMidColor: { value: new THREE.Color(PORTAL_DEFAULTS.midColor) },
-      uBrightColor: { value: new THREE.Color(PORTAL_DEFAULTS.brightColor) },
-      uOpacity: { value: PORTAL_DEFAULTS.opacity },
-      uDistortionScale: { value: PORTAL_DEFAULTS.distortionScale },
-      uDistortionStrength: { value: PORTAL_DEFAULTS.distortionStrength },
-      uDistortionSpeed: { value: PORTAL_DEFAULTS.distortionSpeed },
-      uRotationSpeed: { value: PORTAL_DEFAULTS.rotationSpeed },
-      uBackgroundStrength: { value: PORTAL_DEFAULTS.backgroundStrength },
-      uBackgroundCenterGlow: { value: PORTAL_DEFAULTS.backgroundCenterGlow },
-      uBackgroundFalloff: { value: PORTAL_DEFAULTS.backgroundFalloff },
-      uBackgroundCloudContrast: {
-        value: PORTAL_DEFAULTS.backgroundCloudContrast,
-      },
-      uRibbonStrength: { value: PORTAL_DEFAULTS.ribbonStrength },
-      uRibbonCount: { value: PORTAL_DEFAULTS.ribbonCount },
-      uRibbonWidth: { value: PORTAL_DEFAULTS.ribbonWidth },
-      uRibbonTwist: { value: PORTAL_DEFAULTS.ribbonTwist },
-      uRibbonSpeed: { value: PORTAL_DEFAULTS.ribbonSpeed },
-      uRibbonBreakup: { value: PORTAL_DEFAULTS.ribbonBreakup },
-      uFilamentStrength: { value: PORTAL_DEFAULTS.filamentStrength },
-      uFilamentCount: { value: PORTAL_DEFAULTS.filamentCount },
-      uFilamentWidth: { value: PORTAL_DEFAULTS.filamentWidth },
-      uFilamentTwist: { value: PORTAL_DEFAULTS.filamentTwist },
-      uFilamentSpeed: { value: PORTAL_DEFAULTS.filamentSpeed },
-      uFilamentBreakup: { value: PORTAL_DEFAULTS.filamentBreakup },
-      uCoreStrength: { value: PORTAL_DEFAULTS.coreStrength },
-      uCoreRadius: { value: PORTAL_DEFAULTS.coreRadius },
-      uCoreSoftness: { value: PORTAL_DEFAULTS.coreSoftness },
-      uCoreHalo: { value: PORTAL_DEFAULTS.coreHalo },
-      uCorePulseAmount: { value: PORTAL_DEFAULTS.corePulseAmount },
-      uCorePulseSpeed: { value: PORTAL_DEFAULTS.corePulseSpeed },
-    }),
-    [perlinNoiseTexture, portalBounds]
-  );
+  const { portalMaterial, portalUniforms } = useMemo(() => {
+    const portalUniforms = createCauldronPortalUniforms(
+      PORTAL_DEFAULTS,
+      portalBounds
+    );
+    const portalMaterial = createCauldronPortalMaterial(
+      portalUniforms,
+      perlinNoiseTexture
+    );
+    return { portalMaterial, portalUniforms };
+  }, [perlinNoiseTexture, portalBounds]);
 
-  // Control factories: every control just writes its uniform through the ref
+  useEffect(() => () => portalMaterial.dispose(), [portalMaterial]);
+
+  // Control factories: every control just writes its uniform
   const numberControl = (uniform, value, min, max, step) => ({
     value,
     min,
     max,
     step,
     onChange: v => {
-      if (portalMaterialRef.current?.uniforms) {
-        portalMaterialRef.current.uniforms[uniform].value = v;
-      }
+      portalUniforms[uniform].value = v;
     },
   });
 
   const colorControl = (uniform, value) => ({
     value,
     onChange: v => {
-      if (portalMaterialRef.current?.uniforms) {
-        portalMaterialRef.current.uniforms[uniform].value.set(v);
-      }
+      portalUniforms[uniform].value.set(v);
     },
   });
 
@@ -320,48 +372,152 @@ const Cauldron = props => {
       midColor: colorControl('uMidColor', d.midColor),
       brightColor: colorControl('uBrightColor', d.brightColor),
       opacity: numberControl('uOpacity', d.opacity, 0, 1, 0.01),
-      distortionScale: numberControl('uDistortionScale', d.distortionScale, 0, 3, 0.01),
-      distortionStrength: numberControl('uDistortionStrength', d.distortionStrength, 0, 0.2, 0.001),
-      distortionSpeed: numberControl('uDistortionSpeed', d.distortionSpeed, 0, 0.5, 0.001),
-      rotationSpeed: numberControl('uRotationSpeed', d.rotationSpeed, -3, 3, 0.01),
-      backgroundStrength: numberControl('uBackgroundStrength', d.backgroundStrength, 0, 4, 0.01),
-      backgroundCenterGlow: numberControl('uBackgroundCenterGlow', d.backgroundCenterGlow, 0, 4, 0.01),
-      backgroundFalloff: numberControl('uBackgroundFalloff', d.backgroundFalloff, 0.1, 8, 0.01),
-      backgroundCloudContrast: numberControl('uBackgroundCloudContrast', d.backgroundCloudContrast, 0, 1, 0.01),
-      ribbonStrength: numberControl('uRibbonStrength', d.ribbonStrength, 0, 2, 0.01),
+      distortionScale: numberControl(
+        'uDistortionScale',
+        d.distortionScale,
+        0,
+        3,
+        0.01
+      ),
+      distortionStrength: numberControl(
+        'uDistortionStrength',
+        d.distortionStrength,
+        0,
+        0.2,
+        0.001
+      ),
+      distortionSpeed: numberControl(
+        'uDistortionSpeed',
+        d.distortionSpeed,
+        0,
+        0.5,
+        0.001
+      ),
+      rotationSpeed: numberControl(
+        'uRotationSpeed',
+        d.rotationSpeed,
+        -3,
+        3,
+        0.01
+      ),
+      backgroundStrength: numberControl(
+        'uBackgroundStrength',
+        d.backgroundStrength,
+        0,
+        4,
+        0.01
+      ),
+      backgroundCenterGlow: numberControl(
+        'uBackgroundCenterGlow',
+        d.backgroundCenterGlow,
+        0,
+        4,
+        0.01
+      ),
+      backgroundFalloff: numberControl(
+        'uBackgroundFalloff',
+        d.backgroundFalloff,
+        0.1,
+        8,
+        0.01
+      ),
+      backgroundCloudContrast: numberControl(
+        'uBackgroundCloudContrast',
+        d.backgroundCloudContrast,
+        0,
+        1,
+        0.01
+      ),
+      ribbonStrength: numberControl(
+        'uRibbonStrength',
+        d.ribbonStrength,
+        0,
+        2,
+        0.01
+      ),
       ribbonCount: numberControl('uRibbonCount', d.ribbonCount, 0, 20, 0.5),
       ribbonWidth: numberControl('uRibbonWidth', d.ribbonWidth, 0, 0.5, 0.005),
       ribbonTwist: numberControl('uRibbonTwist', d.ribbonTwist, -10, 10, 0.01),
       ribbonSpeed: numberControl('uRibbonSpeed', d.ribbonSpeed, -3, 3, 0.01),
-      ribbonBreakup: numberControl('uRibbonBreakup', d.ribbonBreakup, 0, 1, 0.01),
-      filamentStrength: numberControl('uFilamentStrength', d.filamentStrength, 0, 2, 0.01),
-      filamentCount: numberControl('uFilamentCount', d.filamentCount, 0, 30, 0.5),
-      filamentWidth: numberControl('uFilamentWidth', d.filamentWidth, 0, 0.3, 0.005),
-      filamentTwist: numberControl('uFilamentTwist', d.filamentTwist, -10, 10, 0.01),
-      filamentSpeed: numberControl('uFilamentSpeed', d.filamentSpeed, -3, 3, 0.01),
-      filamentBreakup: numberControl('uFilamentBreakup', d.filamentBreakup, 0, 1, 0.01),
+      ribbonBreakup: numberControl(
+        'uRibbonBreakup',
+        d.ribbonBreakup,
+        0,
+        1,
+        0.01
+      ),
+      filamentStrength: numberControl(
+        'uFilamentStrength',
+        d.filamentStrength,
+        0,
+        2,
+        0.01
+      ),
+      filamentCount: numberControl(
+        'uFilamentCount',
+        d.filamentCount,
+        0,
+        30,
+        0.5
+      ),
+      filamentWidth: numberControl(
+        'uFilamentWidth',
+        d.filamentWidth,
+        0,
+        0.3,
+        0.005
+      ),
+      filamentTwist: numberControl(
+        'uFilamentTwist',
+        d.filamentTwist,
+        -10,
+        10,
+        0.01
+      ),
+      filamentSpeed: numberControl(
+        'uFilamentSpeed',
+        d.filamentSpeed,
+        -3,
+        3,
+        0.01
+      ),
+      filamentBreakup: numberControl(
+        'uFilamentBreakup',
+        d.filamentBreakup,
+        0,
+        1,
+        0.01
+      ),
       coreStrength: numberControl('uCoreStrength', d.coreStrength, 0, 3, 0.01),
       coreRadius: numberControl('uCoreRadius', d.coreRadius, 0, 0.5, 0.005),
-      coreSoftness: numberControl('uCoreSoftness', d.coreSoftness, 0, 0.5, 0.005),
+      coreSoftness: numberControl(
+        'uCoreSoftness',
+        d.coreSoftness,
+        0,
+        0.5,
+        0.005
+      ),
       coreHalo: numberControl('uCoreHalo', d.coreHalo, 0, 2, 0.01),
-      corePulseAmount: numberControl('uCorePulseAmount', d.corePulseAmount, 0, 0.5, 0.001),
-      corePulseSpeed: numberControl('uCorePulseSpeed', d.corePulseSpeed, 0, 3, 0.01),
+      corePulseAmount: numberControl(
+        'uCorePulseAmount',
+        d.corePulseAmount,
+        0,
+        0.5,
+        0.001
+      ),
+      corePulseSpeed: numberControl(
+        'uCorePulseSpeed',
+        d.corePulseSpeed,
+        0,
+        3,
+        0.01
+      ),
     },
     { collapsed: true }
   );
 
-  useFrame(({ elapsed, size, viewport }, delta) => {
+  useFrame((state, delta) => {
     island.nodes.pot.rotation.y += delta * SPEED;
-
-    if (portalMaterialRef.current?.uniforms) {
-      portalMaterialRef.current.uniforms.uTime.value = elapsed;
-    }
-
-    bubblesMaterial.uniforms.uTime.value = elapsed;
-    bubblesMaterial.uniforms.uResolution.value.set(
-      size.width * viewport.dpr,
-      size.height * viewport.dpr
-    );
   });
 
   return (
@@ -373,58 +529,12 @@ const Cauldron = props => {
         skeleton={island.nodes.island_8.skeleton}
         morphTargetDictionary={island.nodes.island_8.morphTargetDictionary}
         morphTargetInfluences={island.nodes.island_8.morphTargetInfluences}
-      >
-        <CustomShaderMaterial
-          ref={portalMaterialRef}
-          baseMaterial={THREE.MeshStandardMaterial}
-          vertexShader={portalVertexShader}
-          fragmentShader={portalFragmentShader}
-          uniforms={portalUniforms}
-        />
-      </skinnedMesh>
-      {/* Boiling bubbles above the liquid disc; positions live in the vertex
-          shader so the zeroed buffer would make the bounding sphere a point,
-          hence the disabled culling */}
-      <points
-        ref={bubblesPointsRef}
-        position={[
-          portalBounds.center.x,
-          portalBounds.surfaceY + BUBBLES_SURFACE_OFFSET + POTION_PLANE_HEIGHT,
-          portalBounds.center.y,
-        ]}
-        material={bubblesMaterial}
-        frustumCulled={false}
-      >
-        <bufferGeometry ref={bubblesGeometryRef}>
-          <bufferAttribute
-            attach="attributes-position"
-            count={BUBBLES_COUNT}
-            array={bubblesPositions}
-            itemSize={3}
-          />
-          <bufferAttribute
-            attach="attributes-aPhase"
-            count={BUBBLES_COUNT}
-            array={bubblesPhases}
-            itemSize={1}
-          />
-          <bufferAttribute
-            attach="attributes-aSpeed"
-            count={BUBBLES_COUNT}
-            array={bubblesSpeeds}
-            itemSize={1}
-          />
-          <bufferAttribute
-            attach="attributes-aSize"
-            count={BUBBLES_COUNT}
-            array={bubblesSizes}
-            itemSize={1}
-          />
-        </bufferGeometry>
-      </points>
+        material={portalMaterial}
+      />
+      {/* Boiling bubbles above the liquid disc */}
+      <primitive object={bubbles} />
     </>
   );
 };
-
 
 export { Cauldron };
