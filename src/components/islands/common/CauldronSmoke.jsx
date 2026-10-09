@@ -1,10 +1,28 @@
-import { useMemo, useRef } from 'react';
-import { useFrame, useLoader } from '@react-three/fiber';
+import { useEffect, useMemo, useRef } from 'react';
+import { useLoader } from '@react-three/fiber';
 import { useControls } from '#utils/useControls.jsx';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
+import {
+  If,
+  dot,
+  float,
+  fract,
+  max,
+  min,
+  modelWorldMatrix,
+  positionGeometry,
+  pow,
+  sin,
+  smoothstep,
+  texture,
+  time,
+  uniform,
+  uv,
+  vec2,
+  vec3,
+  Fn,
+} from 'three/tsl';
 
-import cauldronSmokeVertexShader from '#shaders/cauldronSmoke/vertex.glsl';
-import cauldronSmokeFragmentShader from '#shaders/cauldronSmoke/fragment.glsl';
 import smokeUrl from '#assets/textures/smoke.webp';
 
 /**
@@ -26,37 +44,98 @@ const CauldronSmoke = props => {
     smokeTexture.needsUpdate = true;
   }, [smokeTexture]);
 
-  const smokeMaterial = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        vertexShader: cauldronSmokeVertexShader,
-        fragmentShader: cauldronSmokeFragmentShader,
-        uniforms: {
-          uTime: { value: 0 },
-          uColor: { value: new THREE.Color(defaultsRef.current.color) },
-          uOpacity: { value: defaultsRef.current.opacity },
-          uDensity: { value: defaultsRef.current.density },
-          uSpeed: { value: defaultsRef.current.speed },
-          uEdgeFade: { value: defaultsRef.current.edgeFade },
-          uTopFadeStart: { value: defaultsRef.current.topFadeStart },
-          uTopFadeEnd: { value: defaultsRef.current.topFadeEnd },
-          uBottomFadeStart: { value: defaultsRef.current.bottomFadeStart },
-          uBottomFadeEnd: { value: defaultsRef.current.bottomFadeEnd },
-          uSwayEnabled: { value: defaultsRef.current.sway ? 1 : 0 },
-          uSwayAmplitude: { value: defaultsRef.current.swayAmplitude },
-          uTimeOffsetStrength: {
-            value: defaultsRef.current.timeOffsetStrength,
-          },
-          uDisplacementUv: { value: defaultsRef.current.swayScale },
-          uDisplacementUvY: { value: defaultsRef.current.swayPower },
-          uSmokeTexture: { value: smokeTexture },
-        },
-        transparent: true,
-        depthWrite: false,
-       
-      }),
-    [smokeTexture]
-  );
+  const { smokeMaterial, uniforms } = useMemo(() => {
+    const d = defaultsRef.current;
+    const uniforms = {
+      uColor: uniform(new THREE.Color(d.color)),
+      uOpacity: uniform(d.opacity),
+      uDensity: uniform(d.density),
+      uSpeed: uniform(d.speed),
+      uEdgeFade: uniform(d.edgeFade),
+      uTopFadeStart: uniform(d.topFadeStart),
+      uTopFadeEnd: uniform(d.topFadeEnd),
+      uBottomFadeStart: uniform(d.bottomFadeStart),
+      uBottomFadeEnd: uniform(d.bottomFadeEnd),
+      uSwayEnabled: uniform(d.sway ? 1 : 0),
+      uSwayAmplitude: uniform(d.swayAmplitude),
+      uTimeOffsetStrength: uniform(d.timeOffsetStrength),
+      uDisplacementUv: uniform(d.swayScale),
+      uDisplacementUvY: uniform(d.swayPower),
+    };
+
+    const smokeMaterial = new THREE.MeshBasicNodeMaterial({
+      transparent: true,
+      depthWrite: false,
+    });
+
+    // Single column drawn as a plain mesh: its world position hashes into a
+    // time offset so it doesn't sway in sync with other smoke
+    const columnXZ = modelWorldMatrix.element(3).xz;
+    const timeOffset = fract(
+      sin(dot(columnXZ, vec2(12.9898, 78.233))).mul(43758.5453)
+    ).mul(100);
+    const columnTime = time.add(timeOffset.mul(uniforms.uTimeOffsetStrength));
+
+    // Sway grows with height (uv.y: 0 at the base, 1 at the top), so the
+    // base stays anchored to the cauldron whatever the amplitude; swayPower
+    // shapes the curve. The epsilon keeps pow(0, 0) out of undefined
+    // territory when swayPower is 0
+    smokeMaterial.positionNode = Fn(() => {
+      const position = vec3(positionGeometry).toVar();
+      If(uniforms.uSwayEnabled.greaterThan(0.5), () => {
+        const heightFactor = pow(
+          uv().y,
+          max(uniforms.uDisplacementUvY, 0.0001)
+        );
+        position.x.addAssign(
+          sin(position.y.mul(uniforms.uDisplacementUv).sub(columnTime))
+            .mul(heightFactor)
+            .mul(uniforms.uSwayAmplitude)
+        );
+      });
+      return position;
+    })();
+
+    // Texture rotated 90 degrees: local x reads the texture's y axis and the
+    // upward scroll runs along the texture's x axis, at uSpeed
+    const smokeUv = vec2(uv().y.sub(columnTime.mul(uniforms.uSpeed)), uv().x);
+    // Gamma curve: density < 1 pushes the mid values toward opaque without
+    // flattening them, > 1 thins the smoke out
+    const smoke = pow(
+      texture(smokeTexture, smokeUv).r,
+      max(uniforms.uDensity, 0.0001)
+    );
+    // Slight fade on the plane's vertical edges (0 = hard edges)
+    const edgeFade = smoothstep(
+      0,
+      max(uniforms.uEdgeFade, 0.0001),
+      min(uv().x, uv().x.oneMinus())
+    );
+    // Fade the column out as it rises, and its base in
+    const topFade = float(1).sub(
+      smoothstep(
+        uniforms.uTopFadeStart,
+        max(uniforms.uTopFadeEnd, uniforms.uTopFadeStart.add(0.0001)),
+        uv().y
+      )
+    );
+    const bottomFade = smoothstep(
+      uniforms.uBottomFadeStart,
+      max(uniforms.uBottomFadeEnd, uniforms.uBottomFadeStart.add(0.0001)),
+      uv().y
+    );
+
+    smokeMaterial.colorNode = uniforms.uColor;
+    smokeMaterial.opacityNode = smoke
+      .mul(edgeFade)
+      .mul(topFade)
+      .mul(bottomFade)
+      .mul(uniforms.uOpacity);
+
+    return { smokeMaterial, uniforms };
+  }, [smokeTexture]);
+
+  useEffect(() => () => smokeMaterial.dispose(), [smokeMaterial]);
 
   const numberUniform = (uniform, value, min, max, step) => ({
     value,
@@ -64,7 +143,7 @@ const CauldronSmoke = props => {
     max,
     step,
     onChange: v => {
-      smokeMaterial.uniforms[uniform].value = v;
+      uniforms[uniform].value = v;
     },
   });
 
@@ -76,7 +155,7 @@ const CauldronSmoke = props => {
       color: {
         value: d.color,
         onChange: v => {
-          smokeMaterial.uniforms.uColor.value.set(v);
+          uniforms.uColor.value.set(v);
         },
       },
       opacity: numberUniform('uOpacity', d.opacity, 0, 1, 0.01),
@@ -100,12 +179,18 @@ const CauldronSmoke = props => {
         1,
         0.01
       ),
-      bottomFadeEnd: numberUniform('uBottomFadeEnd', d.bottomFadeEnd, 0, 1, 0.01),
+      bottomFadeEnd: numberUniform(
+        'uBottomFadeEnd',
+        d.bottomFadeEnd,
+        0,
+        1,
+        0.01
+      ),
       // Fully disables the vertex sway animation
       sway: {
         value: d.sway,
         onChange: v => {
-          smokeMaterial.uniforms.uSwayEnabled.value = v ? 1 : 0;
+          uniforms.uSwayEnabled.value = v ? 1 : 0;
         },
       },
       // Shifts the animation phase (hashed from the column's world position)
@@ -133,10 +218,6 @@ const CauldronSmoke = props => {
     },
     { collapsed: true, reset: true }
   );
-
-  useFrame(({ elapsed }) => {
-    smokeMaterial.uniforms.uTime.value = elapsed;
-  });
 
   return (
     // The plane is 1x10 like the torch/bonfire smoke (the shader profiles

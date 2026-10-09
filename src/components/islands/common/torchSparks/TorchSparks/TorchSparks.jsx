@@ -1,15 +1,25 @@
-import { useMemo, useRef } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
-import * as THREE from 'three';
+import { useEffect, useMemo } from 'react';
 
-import SparksMaterial from '../SparksMaterial/SparksMaterial';
+import {
+  createSparksMaterial,
+  createSparksUniforms,
+} from '../SparksMaterial/SparksMaterial';
+import {
+  createParticleSprite,
+  particleAttribute,
+} from '#utils/pointSprites.js';
 
-const TorchSparks = ({ particlesCount, config, color, intensity, sizeScale = 1 }) => {
-  const sparksRef = useRef();
+const TorchSparks = ({
+  particlesCount,
+  config,
+  color,
+  intensity,
+  sizeScale = 1,
+}) => {
+  const size = config.size * sizeScale;
 
-  const count = useMemo(() => particlesCount * config.offsets.length, []);
-
-  const bufferAttributes = useMemo(() => {
+  const { sparks, uniforms } = useMemo(() => {
+    const count = particlesCount * config.offsets.length;
     const positions = new Float32Array(count * 3);
     const offsets = new Float32Array(count * 3);
     const scales = new Float32Array(count);
@@ -38,62 +48,33 @@ const TorchSparks = ({ particlesCount, config, color, intensity, sizeScale = 1 }
       offsets[i * 3 + 2] = config.offsets[currentSlot - 1][2];
     }
 
-    return { positions, offsets, scales, elevation };
+    const uniforms = createSparksUniforms({ size, color, intensity });
+    const material = createSparksMaterial(uniforms, {
+      position: particleAttribute(positions, 3),
+      aScale: particleAttribute(scales, 1),
+      aElevation: particleAttribute(elevation, 1),
+      aOffset: particleAttribute(offsets, 3),
+    });
+
+    const sparks = createParticleSprite(material, count);
+    sparks.scale.set(...config.scale);
+    // Drawn after the renderOrder-0 transparent smoke, whose normal alpha
+    // blend would otherwise paint over the sparks (they write no depth, so
+    // the draw order is all that layers them)
+    sparks.renderOrder = 1;
+
+    return { sparks, uniforms };
   }, [particlesCount, config.offsets.length]);
 
-  const width = useThree(state => state.size.width);
-  const height = useThree(state => state.size.height);
-  const pixelRatio = useThree(state => state.viewport.dpr);
-  const resolution = new THREE.Vector2(width * pixelRatio, height * pixelRatio);
+  useEffect(() => () => sparks.material.dispose(), [sparks]);
 
-  useFrame(state => {
-    sparksRef.current.material.uniforms.uTime.value = state.elapsed;
-    sparksRef.current.material.uniforms.uResolution.value = resolution;
-  });
+  useEffect(() => {
+    uniforms.uSize.value = size;
+    if (color !== undefined) uniforms.uColor.value.set(color);
+    if (intensity !== undefined) uniforms.uIntensity.value = intensity;
+  }, [uniforms, size, color, intensity]);
 
-  return (
-    // renderOrder 1: drawn after the renderOrder-0 transparent smoke, whose
-    // normal alpha blend would otherwise paint over the sparks (they write no
-    // depth, so the draw order is all that layers them)
-    <points
-      ref={sparksRef}
-      scale={config.scale}
-      frustumCulled={false}
-      renderOrder={1}
-    >
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={count}
-          array={bufferAttributes.positions}
-          itemSize={3}
-        />
-        <bufferAttribute
-          attach="attributes-aScale"
-          count={count}
-          array={bufferAttributes.scales}
-          itemSize={1}
-        />
-        <bufferAttribute
-          attach="attributes-aElevation"
-          count={count}
-          array={bufferAttributes.elevation}
-          itemSize={1}
-        />
-        <bufferAttribute
-          attach="attributes-aOffset"
-          count={count}
-          array={bufferAttributes.offsets}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <SparksMaterial
-        size={config.size * sizeScale}
-        color={color}
-        intensity={intensity}
-      />
-    </points>
-  );
+  return <primitive object={sparks} />;
 };
 
 export default TorchSparks;

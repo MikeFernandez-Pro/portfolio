@@ -1,12 +1,24 @@
-import { useEffect, useRef, useMemo } from 'react';
-import { extend, useFrame, useThree } from '@react-three/fiber';
-import { shaderMaterial } from '@react-three/drei/legacy';
+import { useEffect, useMemo } from 'react';
 import { useControls } from '#utils/useControls.jsx';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
+import {
+  distance,
+  max,
+  select,
+  sin,
+  time,
+  uniform,
+  vec2,
+  vec3,
+  vec4,
+} from 'three/tsl';
 
-import firefliesVertexShader from '#shaders/fireflies/vertex.glsl';
-import firefliesFragmentShader from '#shaders/fireflies/fragment.glsl';
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
+import {
+  createParticleSprite,
+  particleAttribute,
+  pointCoord,
+} from '#utils/pointSprites.js';
 
 // Reduced motion: the fireflies drift at a third of their usual pace
 const FIREFLIES_TIME_SCALE = REDUCED_MOTION_AT_LOAD ? 0.3 : 1;
@@ -32,6 +44,7 @@ const FIREFLIES_PER_LAMP = 20;
 const FIREFLIES_COLOR = '#d58e6b';
 const FIREFLIES_INTENSITY = 8.34;
 const FIREFLIES_SIZE = 0.03;
+const FIREFLIES_VELOCITY = 0.17;
 const TOTAL_FIREFLIES_COUNT = FIREFLIES_POSITIONS.length * FIREFLIES_PER_LAMP;
 
 const POSITIONS_ARRAY = new Float32Array(TOTAL_FIREFLIES_COUNT * 3);
@@ -56,12 +69,6 @@ for (let i = 0; i < TOTAL_FIREFLIES_COUNT; i++) {
 }
 
 const FireFlies = () => {
-  const width = useThree(state => state.size.width);
-  const height = useThree(state => state.size.height);
-  const pixelRatio = useThree(state => state.viewport.dpr);
-
-  const firefliesRef = useRef();
-
   const controls = useControls(
     'FireFlies',
     {
@@ -84,71 +91,65 @@ const FireFlies = () => {
     { collapsed: true }
   );
 
-  // Created once: the resolution effect below keeps uResolution fresh, so
-  // a dpr change (adaptive 1 <-> 2) no longer rebuilds the material class
-  // and recompiles the shader
-  const FirefliesShaderMaterial = useMemo(
-    () =>
-      shaderMaterial(
-        {
-          uResolution: new THREE.Vector2(
-            width * pixelRatio,
-            height * pixelRatio
-          ),
-          uSize: FIREFLIES_SIZE,
-          uTime: 0,
-          uVelocity: 0.17,
-          uColor: new THREE.Color(FIREFLIES_COLOR),
-          uIntensity: FIREFLIES_INTENSITY,
-        },
-        firefliesVertexShader,
-        firefliesFragmentShader
-      ),
-    []
-  );
+  const { fireflies, uniforms } = useMemo(() => {
+    const uniforms = {
+      uSize: uniform(FIREFLIES_SIZE),
+      uColor: uniform(new THREE.Color(FIREFLIES_COLOR)),
+      uIntensity: uniform(FIREFLIES_INTENSITY),
+    };
 
-  extend({ FirefliesShaderMaterial });
+    const material = new THREE.PointsNodeMaterial({
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
 
-  // Resolution only changes on resize / dpr switch, not per frame
-  useEffect(() => {
-    firefliesRef.current?.uniforms.uResolution.value.set(
-      width * pixelRatio,
-      height * pixelRatio
+    const position = particleAttribute(POSITIONS_ARRAY, 3);
+    const aScale = particleAttribute(SCALES_ARRAY, 1);
+
+    // Drift: x then y wobble (y reads the already moved x, as before). The
+    // sprite has no transform, so local space is world space
+    const t = time.mul(FIREFLIES_TIME_SCALE).add(aScale.mul(15));
+    const x = position.x.add(sin(position.y.add(t)).mul(FIREFLIES_VELOCITY));
+    const y = position.y.add(sin(x.add(t)).mul(FIREFLIES_VELOCITY)).add(0.1);
+    material.positionNode = vec3(x, y, position.z);
+
+    // gl_PointSize = uSize * aScale * uResolution.y / -viewZ
+    material.sizeNode = uniforms.uSize.mul(aScale).mul(2);
+
+    // Glowing disc, alpha 0 outside the circle. max() guards the center
+    // (1/0); the clamp already saturates below 0.05. Color and alpha are both
+    // scaled, as gl_FragColor was
+    const distanceToCenter = distance(pointCoord, vec2(0.5));
+    const strength = max(distanceToCenter, 0.001)
+      .reciprocal()
+      .mul(0.05)
+      .sub(0.1)
+      .clamp(0, 1);
+    const glow = vec4(uniforms.uColor, strength)
+      .mul(uniforms.uIntensity)
+      .mul(max(aScale, 0));
+    material.colorNode = select(
+      distanceToCenter.greaterThan(0.475),
+      vec4(1, 1, 1, 0),
+      glow
     );
-  }, [width, height, pixelRatio]);
 
-  useFrame(({ elapsed }) => {
-    firefliesRef.current.uniforms.uTime.value =
-      elapsed * FIREFLIES_TIME_SCALE;
-  });
+    return {
+      fireflies: createParticleSprite(material, TOTAL_FIREFLIES_COUNT),
+      uniforms,
+    };
+  }, []);
 
-  return (
-    <points>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={TOTAL_FIREFLIES_COUNT}
-          array={POSITIONS_ARRAY}
-          itemSize={3}
-        />
-        <bufferAttribute
-          attach="attributes-aScale"
-          count={TOTAL_FIREFLIES_COUNT}
-          array={SCALES_ARRAY}
-          itemSize={1}
-        />
-      </bufferGeometry>
-      <firefliesShaderMaterial
-        ref={firefliesRef}
-        uColor={controls.color}
-        uIntensity={controls.intensity}
-        uSize={controls.size}
-        transparent
-        blending={THREE.AdditiveBlending}
-        depthWrite={false}
-      />
-    </points>
-  );
+  useEffect(() => () => fireflies.material.dispose(), [fireflies]);
+
+  useEffect(() => {
+    uniforms.uColor.value.set(controls.color);
+    uniforms.uIntensity.value = controls.intensity;
+    uniforms.uSize.value = controls.size;
+  }, [uniforms, controls.color, controls.intensity, controls.size]);
+
+  return <primitive object={fireflies} />;
 };
 
 export default FireFlies;

@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
 import { useControls } from '#utils/useControls.jsx';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
+import { instancedBufferAttribute } from 'three/tsl';
+
+import {
+  createSmokeMaterial,
+  createSmokeUniforms,
+  smokeColumnTimeOffset,
+} from '#shaders/smoke/smoke.js';
 
 // Stable fallback so the matrices effect doesn't re-run on every render
 // for groups without an offset control
@@ -11,9 +17,6 @@ const INSTANCE_MATRIX = new THREE.Matrix4();
 const INSTANCE_POSITION = new THREE.Vector3();
 const INSTANCE_QUATERNION = new THREE.Quaternion();
 const INSTANCE_SCALE = new THREE.Vector3();
-
-import smokeVertexShader from '#shaders/smoke/vertex.glsl';
-import smokeFragmentShader from '#shaders/smoke/fragment.glsl';
 
 /**
  * Group of smoke columns reusing the bonfire smoke shader: one shared
@@ -27,29 +30,22 @@ const SmokeColumns = props => {
 
   const defaultsRef = useRef(defaults);
 
-  const smokeMaterial = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        vertexShader: smokeVertexShader,
-        fragmentShader: smokeFragmentShader,
-        uniforms: {
-          uTime: { value: 0 },
-          uColor: { value: new THREE.Color(defaultsRef.current.color) },
-          uOpacity: { value: defaultsRef.current.opacity },
-          uFadeHeight: { value: defaultsRef.current.fadeHeight },
-          uBaseFade: { value: defaultsRef.current.baseFade },
-          uTimeOffsetStrength: {
-            value: defaultsRef.current.timeOffsetStrength,
-          },
-          uDisplacementUv: { value: defaultsRef.current.swayScale },
-          uDisplacementUvY: { value: defaultsRef.current.swayPower },
-          newPositionY: { value: 1.69 },
-        },
-        transparent: true,
-        depthWrite: false,
-      }),
-    []
-  );
+  // Per-column time offsets (hashed from each column's world position in
+  // the matrices effect below), read by the shader as an instance attribute
+  const { smokeMaterial, uniforms, timeOffsets } = useMemo(() => {
+    const uniforms = createSmokeUniforms(defaultsRef.current);
+    const timeOffsets = new THREE.InstancedBufferAttribute(
+      new Float32Array(positions.length),
+      1
+    );
+    const smokeMaterial = createSmokeMaterial(
+      uniforms,
+      instancedBufferAttribute(timeOffsets)
+    );
+    return { smokeMaterial, uniforms, timeOffsets };
+  }, []);
+
+  useEffect(() => () => smokeMaterial.dispose(), [smokeMaterial]);
 
   const numberUniform = (uniform, value, min, max, step) => ({
     value,
@@ -57,7 +53,7 @@ const SmokeColumns = props => {
     max,
     step,
     onChange: v => {
-      smokeMaterial.uniforms[uniform].value = v;
+      uniforms[uniform].value = v;
     },
   });
 
@@ -67,7 +63,7 @@ const SmokeColumns = props => {
     color: {
       value: d.color,
       onChange: v => {
-        smokeMaterial.uniforms.uColor.value.set(v);
+        uniforms.uColor.value.set(v);
       },
     },
     opacity: numberUniform('uOpacity', d.opacity, 0, 1, 0.01),
@@ -102,10 +98,6 @@ const SmokeColumns = props => {
   const { width, height } = controls;
   const offset = controls.offset ?? NO_OFFSET;
 
-  useFrame(({ elapsed }) => {
-    smokeMaterial.uniforms.uTime.value = elapsed;
-  });
-
   const instancedMeshRef = useRef(null);
 
   useEffect(() => {
@@ -116,6 +108,10 @@ const SmokeColumns = props => {
 
     positions.forEach(([x, y, z], index) => {
       INSTANCE_POSITION.set(x + offset[0], y + offset[1], z + offset[2]);
+      timeOffsets.array[index] = smokeColumnTimeOffset(
+        INSTANCE_POSITION.x,
+        INSTANCE_POSITION.z
+      );
       INSTANCE_MATRIX.compose(
         INSTANCE_POSITION,
         INSTANCE_QUATERNION,
@@ -124,7 +120,8 @@ const SmokeColumns = props => {
       instancedMesh.setMatrixAt(index, INSTANCE_MATRIX);
     });
     instancedMesh.instanceMatrix.needsUpdate = true;
-  }, [positions, width, height, offset]);
+    timeOffsets.needsUpdate = true;
+  }, [positions, width, height, offset, timeOffsets]);
 
   return (
     // Instances are spread across the map while the mesh sits at the

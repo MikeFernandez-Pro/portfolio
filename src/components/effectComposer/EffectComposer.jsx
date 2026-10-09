@@ -23,7 +23,11 @@ import { useControls } from '#utils/useControls.jsx';
 
 import { createCheapDof, useCheapDofControls } from './CheapDofPass.jsx';
 import { createSceneRevealer, useSceneRevealer } from './SceneRevealer.jsx';
-import { IS_MOBILE_DEVICE, IS_PHOTO_MODE, COMPOSER_MSAA } from '#utils/utils.js';
+import {
+  IS_MOBILE_DEVICE,
+  IS_PHOTO_MODE,
+  COMPOSER_MSAA,
+} from '#utils/utils.js';
 import { useStore } from '#store/ZustandStorage.jsx';
 
 const AO_ENABLED = !IS_MOBILE_DEVICE;
@@ -55,7 +59,12 @@ const createPipeline = ({ renderer, scene, camera, samples }) => {
   if (AO_ENABLED) {
     const aoPass = ao(sceneDepth, null, camera);
     aoPass.resolutionScale = 0.5;
-    const denoisePass = denoise(aoPass.getTextureNode(), sceneDepth, null, camera);
+    const denoisePass = denoise(
+      aoPass.getTextureNode(),
+      sceneDepth,
+      null,
+      camera
+    );
     const intensity = uniform(1.5);
     const tint = uniform(new THREE.Color('#bce3ff'));
     const occlusion = pow(denoisePass.r, intensity);
@@ -67,7 +76,12 @@ const createPipeline = ({ renderer, scene, camera, samples }) => {
 
   let dof = null;
   if (DOF_ENABLED) {
-    dof = createCheapDof({ colorNode: color, depthNode: sceneDepth, camera, resolution });
+    dof = createCheapDof({
+      colorNode: color,
+      depthNode: sceneDepth,
+      camera,
+      resolution,
+    });
     color = convertToTexture(dof.node);
   }
 
@@ -77,7 +91,12 @@ const createPipeline = ({ renderer, scene, camera, samples }) => {
   const hdr = color.add(bloomPass);
 
   // Same falloff as postprocessing's default Vignette (offset 0.5, darkness 0.5)
-  const vignette = smoothstep(0.8, 0.3995, distance(uv(), vec2(0.5)));
+  // (edges in increasing order: WGSL leaves smoothstep(high, low) undefined)
+  const vignette = smoothstep(
+    0.3995,
+    0.8,
+    distance(uv(), vec2(0.5))
+  ).oneMinus();
   const vignetted = vec4(hdr.rgb.mul(vignette), hdr.a);
 
   const ldr = renderOutput(

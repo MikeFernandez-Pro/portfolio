@@ -1,6 +1,17 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { useThree } from '@react-three/fiber';
-import * as THREE from 'three';
+import { useEffect, useMemo } from 'react';
+import * as THREE from 'three/webgpu';
+import {
+  clamp,
+  cos,
+  distance,
+  float,
+  sin,
+  smoothstep,
+  uniform,
+  vec2,
+  vec3,
+  vec4,
+} from 'three/tsl';
 import gsap from 'gsap';
 
 import { useStore } from '#store/ZustandStorage.jsx';
@@ -13,9 +24,11 @@ import {
   refreshDespawnAnimation,
   resetDespawnAnimation,
 } from '#controller/despawnAnimation.js';
-
-import vertexShader from '#shaders/deathParticles/vertex.glsl';
-import fragmentShader from '#shaders/deathParticles/fragment.glsl';
+import {
+  createParticleSprite,
+  particleAttribute,
+  pointCoord,
+} from '#utils/pointSprites.js';
 
 // One-shot disintegration burst: when the character dies, it vanishes and
 // this cloud of glowing dust rises and fades from where it stood. Hidden at
@@ -112,53 +125,19 @@ const playPlayerDeathPreview = () => {
 };
 
 const DeathParticles = () => {
-  const meshRef = useRef();
-  const materialRef = useRef();
-
-  // All runtime mutations go through the MATERIAL's uniforms: R3F diffs the
-  // `uniforms` prop per entry, so the memo passed as prop is not guaranteed
-  // to share references with material.uniforms
+  // TSL uniform nodes, shared by every rebuild of the sprite (count control)
   const uniforms = useMemo(
     () => ({
-      uProgress: { value: 0 },
-      uSize: { value: DEATH_PARTICLES_DEFAULTS.size },
-      uRiseHeight: { value: DEATH_PARTICLES_DEFAULTS.riseHeight },
-      uColor: { value: new THREE.Color(DEATH_PARTICLES_DEFAULTS.color) },
-      uIntensity: { value: DEATH_PARTICLES_DEFAULTS.intensity },
-      uResolution: { value: new THREE.Vector2(1, 1) },
+      uProgress: uniform(0),
+      uSize: uniform(DEATH_PARTICLES_DEFAULTS.size),
+      uRiseHeight: uniform(DEATH_PARTICLES_DEFAULTS.riseHeight),
+      uColor: uniform(new THREE.Color(DEATH_PARTICLES_DEFAULTS.color)),
+      uIntensity: uniform(DEATH_PARTICLES_DEFAULTS.intensity),
     }),
     []
   );
 
-  const withUniforms = updater => {
-    if (materialRef.current) updater(materialRef.current.uniforms);
-  };
-
-  // Keep the point sizes correct across resizes and dpr changes
-  const size = useThree(state => state.size);
-  const dpr = useThree(state => state.viewport.dpr);
-  useEffect(() => {
-    withUniforms(u => u.uResolution.value.set(size.width * dpr, size.height * dpr));
-  }, [size, dpr]);
-
-  // Registered in the store so the death sequence (CharacterController) and
-  // the debug helpers can position and play the burst. The material instance
-  // holds the live uniforms (see above)
-  useEffect(() => {
-    const materialUniforms = materialRef.current.uniforms;
-    useStore.setState({
-      deathParticlesMesh: meshRef.current,
-      deathParticlesUniforms: materialUniforms,
-    });
-
-    return () => {
-      gsap.killTweensOf(materialUniforms.uProgress);
-      useStore.setState({
-        deathParticlesMesh: null,
-        deathParticlesUniforms: null,
-      });
-    };
-  }, []);
+  const withUniforms = updater => updater(uniforms);
 
   const d = DEATH_PARTICLES_DEFAULTS;
 
@@ -254,7 +233,7 @@ const DeathParticles = () => {
     { collapsed: true }
   );
 
-  const bufferAttributes = useMemo(() => {
+  const particles = useMemo(() => {
     const count = controls.count;
     const positions = new Float32Array(count * 3);
     const scales = new Float32Array(count);
@@ -276,37 +255,83 @@ const DeathParticles = () => {
       randoms[i * 3 + 2] = Math.random(); // sway phase
     }
 
-    return { positions, scales, randoms };
-  }, [controls.count]);
+    const position = particleAttribute(positions, 3);
+    const aScale = particleAttribute(scales, 1);
+    // x: rise speed multiplier, y: start delay, z: sway phase
+    const aRandom = particleAttribute(randoms, 3);
 
-  return (
-    <points ref={meshRef} visible={false} frustumCulled={false}>
-      {/* Keyed on count so a count change rebuilds the buffers cleanly */}
-      <bufferGeometry key={controls.count}>
-        <bufferAttribute
-          attach="attributes-position"
-          args={[bufferAttributes.positions, 3]}
-        />
-        <bufferAttribute
-          attach="attributes-aScale"
-          args={[bufferAttributes.scales, 1]}
-        />
-        <bufferAttribute
-          attach="attributes-aRandom"
-          args={[bufferAttributes.randoms, 3]}
-        />
-      </bufferGeometry>
-      <shaderMaterial
-        ref={materialRef}
-        vertexShader={vertexShader}
-        fragmentShader={fragmentShader}
-        uniforms={uniforms}
-        transparent={true}
-        depthWrite={false}
-        blending={THREE.AdditiveBlending}
-      />
-    </points>
-  );
+    const material = new THREE.PointsNodeMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+
+    // Per-particle life: delayed start (staggers the burst), normalized so
+    // every particle still ends its life exactly when uProgress reaches 1
+    const life = clamp(
+      uniforms.uProgress.sub(aRandom.y).div(float(1).sub(aRandom.y)),
+      0,
+      1
+    );
+
+    // Rise, with a gentle sway scaled by life so the burst starts tight on
+    // the character silhouette and loosens as the dust climbs
+    const phase = aRandom.z.mul(6.2831853);
+    material.positionNode = position.add(
+      vec3(
+        sin(life.mul(9).add(phase)).mul(0.05).mul(life),
+        life.mul(uniforms.uRiseHeight).mul(aRandom.x),
+        cos(life.mul(7).add(phase)).mul(0.05).mul(life)
+      )
+    );
+
+    // Dust motes shrink as they rise (gl_PointSize * uResolution.y / -viewZ)
+    material.sizeNode = uniforms.uSize
+      .mul(aScale)
+      .mul(float(1).sub(life.mul(0.6)))
+      .mul(2);
+
+    // Soft round mote; quick pop in, long fade out over the rise. Intensity
+    // pushes the color beyond 1 so the bloom pass makes it glow
+    const strength = smoothstep(
+      0.15,
+      0.5,
+      distance(pointCoord, vec2(0.5))
+    ).oneMinus();
+    const alpha = smoothstep(0, 0.08, life).mul(
+      smoothstep(0.45, 1, life).oneMinus()
+    );
+    material.colorNode = vec4(
+      uniforms.uColor.mul(uniforms.uIntensity),
+      alpha.mul(strength)
+    );
+
+    const sprite = createParticleSprite(material, count);
+    // Hidden at rest; playDeathParticles positions and shows it
+    sprite.visible = false;
+    return sprite;
+  }, [controls.count, uniforms]);
+
+  useEffect(() => () => particles.material.dispose(), [particles]);
+
+  // Registered in the store so the death sequence (CharacterController) and
+  // the debug helpers can position and play the burst
+  useEffect(() => {
+    useStore.setState({
+      deathParticlesMesh: particles,
+      deathParticlesUniforms: uniforms,
+    });
+
+    return () => {
+      gsap.killTweensOf(uniforms.uProgress);
+      useStore.setState({
+        deathParticlesMesh: null,
+        deathParticlesUniforms: null,
+      });
+    };
+  }, [particles, uniforms]);
+
+  return <primitive object={particles} />;
 };
 
 export { DeathParticles };

@@ -1,40 +1,39 @@
-import { useRef } from 'react';
-import { extend, useFrame } from '@react-three/fiber';
-import { shaderMaterial } from '@react-three/drei/legacy';
-import * as THREE from 'three';
+import { useEffect, useMemo } from 'react';
+import { float } from 'three/tsl';
 
-import smokeVertexShader from '#shaders/smoke/vertex.glsl';
-import smokeFragmentShader from '#shaders/smoke/fragment.glsl';
+import {
+  createSmokeMaterial,
+  createSmokeUniforms,
+  smokeColumnTimeOffset,
+} from '#shaders/smoke/smoke.js';
+
+const POSITION = [-1.55, 6.8, -55.89];
+
+const BONFIRE_SMOKE = {
+  color: '#313131',
+  opacity: 0.5,
+  fadeHeight: 1,
+  baseFade: 0,
+  timeOffsetStrength: 1,
+  swayScale: 2.8,
+  swayPower: 1.6,
+};
 
 const Smoke = () => {
-  const smokeRef = useRef();
-
-  const SmokeShaderMaterial = shaderMaterial(
-    {
-      uTime: 0,
-      uColor: new THREE.Color('#313131'),
-      uOpacity: 0.5,
-      uFadeHeight: 1,
-      uBaseFade: 0,
-      uTimeOffsetStrength: 1,
-      uDisplacementUv: 2.8,
-      uDisplacementUvY: 1.6,
-      newPositionY: 1.69,
-    },
-    smokeVertexShader,
-    smokeFragmentShader
+  const material = useMemo(
+    () =>
+      createSmokeMaterial(
+        createSmokeUniforms(BONFIRE_SMOKE),
+        float(smokeColumnTimeOffset(POSITION[0], POSITION[2]))
+      ),
+    []
   );
 
-  extend({ SmokeShaderMaterial });
-
-  useFrame(({ elapsed }) => {
-    smokeRef.current.uniforms.uTime.value = elapsed;
-  });
+  useEffect(() => () => material.dispose(), [material]);
 
   return (
-    <mesh position={[-1.55, 6.8, -55.89]} rotation={[0, 0, -0.3]}>
-      <planeGeometry attach="geometry" args={[0.3, 10, 16, 128]} />
-      <smokeShaderMaterial ref={smokeRef} transparent depthWrite={false} />
+    <mesh position={POSITION} rotation={[0, 0, -0.3]} material={material}>
+      <planeGeometry args={[0.3, 10, 16, 128]} />
     </mesh>
   );
 };
