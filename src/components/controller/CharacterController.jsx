@@ -308,6 +308,7 @@ const CharacterController = () => {
   const characterJumpEvent = () => {
     if (!canJump || characterFalling || characterRespawning) return;
     if (fallingPreviewActive) return;
+    if (useStore.getState().introControlsLocked) return;
     characterJumping = true;
     canJump = false;
     // The body idles FIXED until the first movement (and after a window
@@ -386,7 +387,11 @@ const CharacterController = () => {
     // Debug falling preview: whole controller suspended while tweaking
     if (fallingPreviewActive) return;
 
-    direction = directionOffset(eventKeys, characterBody);
+    // Intro camera pan: input ignored, the character idles
+    const controlsLocked = useStore.getState().introControlsLocked;
+    direction = controlsLocked
+      ? undefined
+      : directionOffset(eventKeys, characterBody);
     characterIsMoving = direction !== undefined ? true : false;
 
     if (
@@ -447,6 +452,7 @@ const CharacterController = () => {
 
     // Update character velocity and orientation
     if (
+      controlsLocked ||
       (direction === undefined && !IS_MOBILE_DEVICE) ||
       (IS_MOBILE_DEVICE && joystickAngleRef.current === undefined)
     ) {

@@ -4,6 +4,8 @@ import { subscribeWithSelector } from 'zustand/middleware';
 export const useStore = create(
   subscribeWithSelector(() => ({
     experienceStarted: false,
+    // Movement/jump input ignored during the intro camera pan
+    introControlsLocked: false,
 
     joystickAngle: undefined,
 

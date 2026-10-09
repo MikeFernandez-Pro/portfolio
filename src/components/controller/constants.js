@@ -26,3 +26,8 @@ export const CAMERA_FOLLOW_DISTANCE_DESKTOP = 5.5;
 
 // Initial camera offset (before intro animation)
 export const CAMERA_INITIAL_OFFSET = { x: -3.5, y: 17.4, z: 29.6 };
+
+// Intro camera pan length, and when the character controls unlock during it
+// (2s before the end; power3.out: the pan is ~94% done by then)
+export const CAMERA_INTRO_DURATION = 5;
+export const INTRO_CONTROLS_UNLOCK_AT = CAMERA_INTRO_DURATION - 2;

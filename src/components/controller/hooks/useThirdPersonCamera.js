@@ -14,6 +14,8 @@ import {
   CAMERA_FOLLOW_DISTANCE_MOBILE,
   CAMERA_FOLLOW_DISTANCE_DESKTOP,
   CAMERA_INITIAL_OFFSET,
+  CAMERA_INTRO_DURATION,
+  INTRO_CONTROLS_UNLOCK_AT,
 } from '#controller/constants.js';
 
 const CAMERA_POSITION = new THREE.Vector3(0, 0, 0);
@@ -65,6 +67,8 @@ export function useThirdPersonCamera(characterBodyRef) {
   });
 
   useEffect(() => {
+    let unlockControlsCall = null;
+
     // Animate camera offset at experience start
     const unsubExperienceStarted = useStore.subscribe(
       state => state.experienceStarted,
@@ -89,8 +93,14 @@ export function useThirdPersonCamera(characterBodyRef) {
             return;
           }
 
+          // Character can't move until the pan is almost over
+          useStore.setState({ introControlsLocked: true });
+          unlockControlsCall = gsap.delayedCall(INTRO_CONTROLS_UNLOCK_AT, () =>
+            useStore.setState({ introControlsLocked: false })
+          );
+
           gsap.to(CAMERA_OFFSET, {
-            duration: 5,
+            duration: CAMERA_INTRO_DURATION,
             x: 0,
             y: 4,
             z: followDistance,
@@ -108,6 +118,10 @@ export function useThirdPersonCamera(characterBodyRef) {
 
     return () => {
       unsubExperienceStarted();
+      if (unlockControlsCall) {
+        unlockControlsCall.kill();
+        useStore.setState({ introControlsLocked: false });
+      }
       if (parallaxEnabled) {
         window.removeEventListener('mousemove', cameraOffsetOnMouseMove);
       }
