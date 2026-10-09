@@ -3,9 +3,6 @@ import { useControls } from '#debug/useControls.jsx';
 import TorchSparks from './TorchSparks';
 import { SPARKS_COLOR, SPARKS_INTENSITY } from './sparksMaterial';
 
-/*
- *   Config
- */
 const PARTICLES_COUNT = 40; // Number of particles per torch
 
 const SMALL_TORCHES_SPARKS = {
@@ -39,6 +36,13 @@ const LARGE_TORCHES_SPARKS = {
   ],
 };
 
+// One sprite per torch size class
+const TORCH_SIZE_CLASSES = [
+  SMALL_TORCHES_SPARKS,
+  MEDIUM_TORCHES_SPARKS,
+  LARGE_TORCHES_SPARKS,
+];
+
 const TorchesSparks = () => {
   const controls = useControls('TorchesSparks', {
     color: {
@@ -60,27 +64,16 @@ const TorchesSparks = () => {
 
   return (
     <>
-      <TorchSparks
-        particlesCount={PARTICLES_COUNT}
-        config={SMALL_TORCHES_SPARKS}
-        color={controls.color}
-        intensity={controls.intensity}
-        sizeScale={controls.sizeScale}
-      />
-      <TorchSparks
-        particlesCount={PARTICLES_COUNT}
-        config={MEDIUM_TORCHES_SPARKS}
-        color={controls.color}
-        intensity={controls.intensity}
-        sizeScale={controls.sizeScale}
-      />
-      <TorchSparks
-        particlesCount={PARTICLES_COUNT}
-        config={LARGE_TORCHES_SPARKS}
-        color={controls.color}
-        intensity={controls.intensity}
-        sizeScale={controls.sizeScale}
-      />
+      {TORCH_SIZE_CLASSES.map((config, index) => (
+        <TorchSparks
+          key={index}
+          particlesCount={PARTICLES_COUNT}
+          config={config}
+          color={controls.color}
+          intensity={controls.intensity}
+          sizeScale={controls.sizeScale}
+        />
+      ))}
     </>
   );
 };

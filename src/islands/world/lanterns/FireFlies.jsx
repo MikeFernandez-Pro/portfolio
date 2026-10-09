@@ -16,6 +16,7 @@ import {
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 import { LANTERN_POSITIONS } from './lanternPositions.js';
 import {
+  anchorSpread,
   createParticleSprite,
   particleAttribute,
   pointCoord,
@@ -34,21 +35,12 @@ const TOTAL_FIREFLIES_COUNT = LANTERN_POSITIONS.length * FIREFLIES_PER_LANTERN;
 const POSITIONS_ARRAY = new Float32Array(TOTAL_FIREFLIES_COUNT * 3);
 const SCALES_ARRAY = new Float32Array(TOTAL_FIREFLIES_COUNT);
 
-let currentLanternCount = 1;
+const lanternOf = anchorSpread(TOTAL_FIREFLIES_COUNT, LANTERN_POSITIONS.length);
 for (let i = 0; i < TOTAL_FIREFLIES_COUNT; i++) {
-  if (
-    i >
-    (TOTAL_FIREFLIES_COUNT / LANTERN_POSITIONS.length) * currentLanternCount
-  ) {
-    currentLanternCount++;
-  }
-
-  POSITIONS_ARRAY[i * 3 + 0] =
-    (Math.random() - 0.5) * 0.6 + LANTERN_POSITIONS[currentLanternCount - 1][0];
-  POSITIONS_ARRAY[i * 3 + 1] =
-    (Math.random() - 0.5) * 0.3 + LANTERN_POSITIONS[currentLanternCount - 1][1];
-  POSITIONS_ARRAY[i * 3 + 2] =
-    (Math.random() - 0.5) * 0.6 + LANTERN_POSITIONS[currentLanternCount - 1][2];
+  const lantern = LANTERN_POSITIONS[lanternOf(i)];
+  POSITIONS_ARRAY[i * 3 + 0] = (Math.random() - 0.5) * 0.6 + lantern[0];
+  POSITIONS_ARRAY[i * 3 + 1] = (Math.random() - 0.5) * 0.3 + lantern[1];
+  POSITIONS_ARRAY[i * 3 + 2] = (Math.random() - 0.5) * 0.6 + lantern[2];
   SCALES_ARRAY[i] = Math.random() * 0.5 + 0.5;
 }
 

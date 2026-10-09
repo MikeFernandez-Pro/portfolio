@@ -30,4 +30,18 @@ const createParticleSprite = (material, count) => {
   return sprite;
 };
 
-export { pointCoord, particleAttribute, createParticleSprite };
+/**
+ * Spreads `count` particles over `anchorCount` anchors (torches, lanterns)
+ * in contiguous runs: returns `i => anchor index`, to call with increasing
+ * i. The boundary test is `>`, so the first anchor gets one particle more
+ * and the last one fewer than an even split — kept as tuned.
+ */
+const anchorSpread = (count, anchorCount) => {
+  let slot = 1;
+  return i => {
+    if (i > (count / anchorCount) * slot) slot++;
+    return slot - 1;
+  };
+};
+
+export { pointCoord, particleAttribute, createParticleSprite, anchorSpread };

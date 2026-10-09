@@ -16,6 +16,7 @@ import {
   cauldronBubblesControls,
   createCauldronBubbles,
 } from './cauldronBubbles.js';
+import { GlbSkinnedMesh } from '#islands/GlbSkinnedMesh.jsx';
 
 // Pot self-rotation is idle motion; the liquid/bubbles stay animated
 const SPEED = REDUCED_MOTION_AT_LOAD ? 0 : 0.5;
@@ -112,13 +113,9 @@ const Cauldron = props => {
 
   return (
     <>
-      <skinnedMesh
+      <GlbSkinnedMesh
         ref={potionMeshRef}
-        name="island_8"
-        geometry={island.nodes.island_8.geometry}
-        skeleton={island.nodes.island_8.skeleton}
-        morphTargetDictionary={island.nodes.island_8.morphTargetDictionary}
-        morphTargetInfluences={island.nodes.island_8.morphTargetInfluences}
+        node={island.nodes.island_8}
         material={potionMaterial}
       />
       {/* Boiling bubbles above the liquid disc */}

@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 
 import { createSparksMaterial, createSparksUniforms } from './sparksMaterial';
 import {
+  anchorSpread,
   createParticleSprite,
   particleAttribute,
 } from '#utils/pointSprites.js';
@@ -22,10 +23,10 @@ const TorchSparks = ({
     const scales = new Float32Array(count);
     const elevation = new Float32Array(count);
 
-    let currentSlot = 1;
+    const torchOf = anchorSpread(count, config.offsets.length);
 
     for (let i = 0; i < count; i++) {
-      // Default sparks positons
+      // Default sparks positions
       positions[i * 3 + 0] = (Math.random() - 0.5) * 0.2;
       positions[i * 3 + 1] = (Math.random() - 0.5) * 0.5;
       positions[i * 3 + 2] = 0;
@@ -36,13 +37,11 @@ const TorchSparks = ({
       // Randomized sparks Y axe elevation
       elevation[i] = 5 + Math.random() * 25.0;
 
-      // Place sparks to their correct position depending on each offset
-      if (i > (count / config.offsets.length) * currentSlot) {
-        currentSlot++;
-      }
-      offsets[i * 3 + 0] = config.offsets[currentSlot - 1][0];
-      offsets[i * 3 + 1] = config.offsets[currentSlot - 1][1];
-      offsets[i * 3 + 2] = config.offsets[currentSlot - 1][2];
+      // Each spark rises from its torch
+      const offset = config.offsets[torchOf(i)];
+      offsets[i * 3 + 0] = offset[0];
+      offsets[i * 3 + 1] = offset[1];
+      offsets[i * 3 + 2] = offset[2];
     }
 
     const uniforms = createSparksUniforms({ size, color, intensity });

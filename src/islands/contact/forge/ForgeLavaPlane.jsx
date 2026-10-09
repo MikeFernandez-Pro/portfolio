@@ -40,17 +40,18 @@ const LAVA_DEFAULTS = {
  * Standalone lava plane replacing the GLB lava mesh (island_6, hidden).
  * Flat by default (rotated -90° on X), spun around Y via its debug control.
  */
-const ForgeLavaPlane = ({ blowerMesh }) => {
+const ForgeLavaPlane = ({ bellowsMesh }) => {
   const uniformsRef = useRef(null);
   const gaspParamsRef = useRef({
     base: LAVA_DEFAULTS.minIntensity,
     peak: LAVA_DEFAULTS.maxIntensity,
   });
 
-  // Gasp: uIntensity is driven each frame by the blowerClosed morph weight
+  // Gasp: uIntensity is driven each frame by the bellows morph weight
+  // (`blowerClosed`, as named in Blender)
   // (animated by the 'details' clip on the island mixer), so the glow can
   // never drift out of sync with the bellows
-  const blowerIndex = blowerMesh?.morphTargetDictionary?.blowerClosed;
+  const bellowsIndex = bellowsMesh?.morphTargetDictionary?.blowerClosed;
 
   // Voronoi (R) and perlin (G) share one packed texture; both sampler
   // uniforms point at it
@@ -231,9 +232,9 @@ const ForgeLavaPlane = ({ blowerMesh }) => {
   useFrame(() => {
     if (!uniformsRef.current) return;
 
-    const influences = blowerMesh?.morphTargetInfluences;
+    const influences = bellowsMesh?.morphTargetInfluences;
     const gasp =
-      influences && blowerIndex !== undefined ? influences[blowerIndex] : 0;
+      influences && bellowsIndex !== undefined ? influences[bellowsIndex] : 0;
 
     const { base, peak } = gaspParamsRef.current;
     uniformsRef.current.uIntensity.value = base + (peak - base) * gasp;

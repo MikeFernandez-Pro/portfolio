@@ -4,15 +4,12 @@ import { useGLTF } from '@react-three/drei/webgpu';
 import { buildWorldSpaceBvh } from '#physics/buildBvh.js';
 import { physicsWorld } from '#physics/world.js';
 import { useControls } from '#debug/useControls.jsx';
+import { ISLAND_POSITION, ISLAND_SCALE } from '#islands/islandSpace.js';
 
 import FallingZoneModel from '#assets/models/islandSensors/fallingZone.glb';
 
-// Both zones are authored in island space, so they carry the same transform
-// as the Islands group
-const ISLAND_SCALE = 0.45;
-const ISLAND_POSITION = [-1.35, 2.25, -15];
-
-// Two trimesh sensor zones stretched under the island edges (same GLB):
+// Two trimesh sensor zones stretched under the island edges (same GLB,
+// authored in island space):
 // - falling zone (just below the walkable surface, ~y 0.38): crossing it
 //   means the character fell off an island, which starts the fall
 // - death zone (same plane, deathZoneHeight lower): crossing it causes

@@ -8,6 +8,7 @@ import { uniformControls } from '#debug/uniformControls.js';
 import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
 import { toNodeMaterial } from '#utils/nodeMaterials.js';
 import { createDissolveUniforms, dissolveLava } from '#shaders/dissolve.js';
+import { GlbSkinnedMesh } from '#islands/GlbSkinnedMesh.jsx';
 
 // Same voronoi lava dissolve as the character respawn (respawnAnimation.js),
 // scoped to the books: hidden at rest, the awakening grows the lava in
@@ -219,13 +220,9 @@ const MagicBooks = props => {
   }, []);
 
   return (
-    <skinnedMesh
-      name="island_10"
-      geometry={island.nodes.island_10.geometry}
+    <GlbSkinnedMesh
+      node={island.nodes.island_10}
       material={magicBooksMaterial}
-      skeleton={island.nodes.island_10.skeleton}
-      morphTargetDictionary={island.nodes.island_10.morphTargetDictionary}
-      morphTargetInfluences={island.nodes.island_10.morphTargetInfluences}
     />
   );
 };

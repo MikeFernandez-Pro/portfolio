@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useControls } from '#debug/useControls.jsx';
 import { uniformControls } from '#debug/uniformControls.js';
 import * as THREE from 'three/webgpu';
@@ -10,39 +10,62 @@ import {
   smokeColumnTimeOffset,
 } from '#shaders/smoke.js';
 
+// World-space torch smoke positions: the torch flames (the coordinates noted
+// next to each sparks offset in TorchesSparks.jsx) minus the bonfire, which
+// has its own BonfireSmoke, with the hand-tuned per-torch offsets baked in
+const POSITIONS = [
+  [-5.78, 1.7, -16.55],
+  [-18.51, 5.8, -30.99],
+  [-18.31, 5.8, -35.71],
+  [-13.83, 5.8, -35.57],
+  [-10.87, 7.88, -46.85],
+  [-15.29, 7.69, -52.85],
+  [-4.68, 7.8, -52.99],
+  [-6.28, 8.37, -57.97],
+  [-13.13, 8.4, -57.97],
+];
+
+const DEFAULTS = {
+  color: '#313131',
+  opacity: 0.32,
+  fadeHeight: 0.67,
+  baseFade: 0.32,
+  timeOffsetStrength: 1,
+  swayScale: 2.8,
+  swayPower: 0.83,
+  width: 0.14,
+  height: 2.9,
+};
+
 /**
- * Group of smoke columns reusing the bonfire smoke shader: one shared
- * material and a single instanced mesh (one draw call per group), tuned
- * from its own debug folder. The plane is 1x10 like the bonfire's (the
- * shader profiles work in local space), so `width`/`height` scale the
- * columns instead of the geometry. Instanced by hand: the plane is an
- * InstancedBufferGeometry with a per-column offset and time offset.
+ * The torch smoke columns, reusing the bonfire smoke shader: one shared
+ * material and a single instanced mesh (one draw call). The plane is 1x10
+ * like the bonfire's (the shader profiles work in local space), so
+ * `width`/`height` scale the columns instead of the geometry. Instanced by
+ * hand: the plane is an InstancedBufferGeometry with a per-column offset and
+ * time offset.
  */
-const TorchSmoke = props => {
-  const { folderName, positions, defaults } = props;
-
-  const defaultsRef = useRef(defaults);
-
+const TorchSmoke = () => {
   // One instance per column: world offset + time offset (hashed from the
   // column's world position), filled by the effect below
   const { geometry, smokeMaterial, uniforms, columnScale } = useMemo(() => {
     const geometry = new THREE.InstancedBufferGeometry().copy(
       new THREE.PlaneGeometry(1, 10, 4, 16)
     );
-    geometry.instanceCount = positions.length;
+    geometry.instanceCount = POSITIONS.length;
     geometry.setAttribute(
       'aColumnOffset',
       new THREE.InstancedBufferAttribute(
-        new Float32Array(positions.length * 3),
+        new Float32Array(POSITIONS.length * 3),
         3
       )
     );
     geometry.setAttribute(
       'aTimeOffset',
-      new THREE.InstancedBufferAttribute(new Float32Array(positions.length), 1)
+      new THREE.InstancedBufferAttribute(new Float32Array(POSITIONS.length), 1)
     );
 
-    const uniforms = createSmokeUniforms(defaultsRef.current);
+    const uniforms = createSmokeUniforms(DEFAULTS);
     // (width, height / 10): the plane is 10 tall
     const columnScale = uniform(new THREE.Vector2(1, 1));
     const smokeMaterial = createSmokeMaterial(
@@ -61,7 +84,7 @@ const TorchSmoke = props => {
 
   const smokeControl = uniformControls(uniforms);
 
-  const d = defaultsRef.current;
+  const d = DEFAULTS;
 
   const schema = {
     color: {
@@ -89,14 +112,14 @@ const TorchSmoke = props => {
     height: { value: d.height, min: 0.5, max: 20, step: 0.1 },
   };
 
-  const controls = useControls(folderName, schema);
+  const controls = useControls('TorchesSmoke', schema);
   const { width, height } = controls;
 
   useEffect(() => {
     const columnOffsets = geometry.attributes.aColumnOffset;
     const timeOffsets = geometry.attributes.aTimeOffset;
 
-    positions.forEach(([x, y, z], index) => {
+    POSITIONS.forEach(([x, y, z], index) => {
       columnOffsets.setXYZ(index, x, y, z);
       timeOffsets.setX(index, smokeColumnTimeOffset(x, z));
     });
@@ -104,7 +127,7 @@ const TorchSmoke = props => {
     timeOffsets.needsUpdate = true;
 
     columnScale.value.set(width, height / 10);
-  }, [positions, width, height, geometry, columnScale]);
+  }, [width, height, geometry, columnScale]);
 
   return (
     // Columns are spread across the map while the mesh sits at the origin,

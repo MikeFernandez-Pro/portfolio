@@ -15,6 +15,7 @@ import {
 } from 'three/tsl';
 
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
+import { GlbSkinnedMesh } from '#islands/GlbSkinnedMesh.jsx';
 
 // Grade shared by the three flags, driven by the Flags > Grade debug folder
 // in CountriesFlags (TSL uniform nodes: `.value` like the old objects)
@@ -80,16 +81,7 @@ const CountryFlag = props => {
 
   useEffect(() => () => countryFlagMaterial.dispose(), [countryFlagMaterial]);
 
-  return (
-    <skinnedMesh
-      name={node.name}
-      geometry={node.geometry}
-      material={countryFlagMaterial}
-      skeleton={node.skeleton}
-      morphTargetDictionary={node.morphTargetDictionary}
-      morphTargetInfluences={node.morphTargetInfluences}
-    />
-  );
+  return <GlbSkinnedMesh node={node} material={countryFlagMaterial} />;
 };
 
 export { CountryFlag, flagsGradeUniforms, flagsIndividualUniforms };
