@@ -53,16 +53,19 @@ import { cloudShadowFactor } from '#shaders/cloudShadows.js';
 // normals are renormalized with a floor.
 
 /**
- * Uniform nodes driven by the Grass.jsx controls. `.value` works like the
- * old `{ value }` objects.
+ * Uniform nodes driven by the Grass.jsx controls.
  */
 const createGrassUniforms = ({
   heightTexture,
   perlinTexture,
   trampleTexture,
 }) => ({
-  // x: segments, y: patch size, z: blade width, w: blade height
-  uGrassParameters: uniform(new THREE.Vector4(1, 11.7, 0.129, 0.491)),
+  // Strip segments per blade (loop cuts + 1)
+  uSegments: uniform(1),
+  // Half extent of the square patch, world units
+  uPatchSize: uniform(11.7),
+  uBladeWidth: uniform(0.129),
+  uBladeHeight: uniform(0.491),
   uColorBottom: uniform(new THREE.Color()),
   uColorTop: uniform(new THREE.Color()),
   // Gradient lighting of each patch variant (1 = base colors)
@@ -221,6 +224,68 @@ const rotateAxis = (axis, angle) => {
 // World direction -> view space (the mesh has no rotation or scale)
 const toView = n => cameraViewMatrix.mul(vec4(n, 0)).xyz;
 
+// Early culls, before any texture fetch or hashing. With the instances
+// sorted spatially, whole warps take the same branch. Returns the distance
+// thinning scale (0 = gone) and whether the blade survives the view cone
+const cullBlade = (u, bladeWorldPos, instance) => {
+  const toBlade = bladeWorldPos.sub(cameraPosition).toVar();
+  const bladeDistance = length(toBlade).toVar();
+  // Third row of the view matrix is the camera's +z (backwards) in world
+  const cameraForward = vec3(
+    cameraViewMatrix.element(0).z,
+    cameraViewMatrix.element(1).z,
+    cameraViewMatrix.element(2).z
+  ).negate();
+  // Distance thinning: density falls from 1 at uThinDistance.x to 0 at .y;
+  // each blade compares it against its own threshold and shrinks over a
+  // 0.1-wide band so the transition never pops
+  const keep = float(1).sub(
+    smoothstep(u.uThinDistance.x, u.uThinDistance.y, bladeDistance)
+  );
+  const thinScale = saturate(
+    keep.sub(rand(instance.add(2000))).div(0.1)
+  ).toVar();
+  // View cone: the root is what's tested, the angle margin covers the blade
+  const inView = dot(toBlade, cameraForward)
+    .greaterThanEqual(u.uCullCos.mul(bladeDistance))
+    .and(thinScale.greaterThan(0));
+  return { thinScale, inView };
+};
+
+// Patch variant selector at the blade root, 0 = variant 1, 1 = variant 2:
+// perlin blobs blended with perlin-warped voronoi cells. The uniform branch
+// skips the warp fetches and the cell search while the mix is off
+const patchVariant = (u, bladeWorldPos) => {
+  const colorUv = vec2(bladeWorldPos.x.negate(), bladeWorldPos.z);
+  const colorNoise = u.uPerlinNoiseTexture.sample(
+    colorUv.mul(u.uColorNoiseScale)
+  ).g;
+  const colorBlendBand = mix(0.35, 0.02, u.uColorSharpness);
+  const variant = smoothstep(
+    float(0.5).sub(colorBlendBand),
+    float(0.5).add(colorBlendBand),
+    colorNoise
+  ).toVar();
+  If(u.uVoronoiMix.greaterThan(0), () => {
+    const warpUv = colorUv.mul(u.uVoronoiWarpScale).toVar();
+    const warp = vec2(
+      u.uPerlinNoiseTexture.sample(warpUv).g,
+      u.uPerlinNoiseTexture.sample(warpUv.add(vec2(0.37, 0.71))).g
+    ).sub(0.5);
+    const cells = voronoiCells(
+      colorUv.mul(u.uVoronoiScale).add(warp.mul(u.uVoronoiWarpStrength))
+    ).toVar();
+    const band = mix(0.5, 0.03, u.uColorSharpness);
+    const cellVariant = mix(
+      step(0.5, cells.y),
+      step(0.5, cells.x),
+      smoothstep(0, band, cells.z).mul(0.5).add(0.5)
+    );
+    variant.assign(mix(variant, cellVariant, u.uVoronoiMix));
+  });
+  return variant;
+};
+
 /**
  * Builds the grass node material. `lit`: MeshStandardNodeMaterial with the
  * smooth bend normal and the red tip through the emissive slot; otherwise an
@@ -247,11 +312,11 @@ const createGrassMaterial = ({ uniforms: u, lit, trample }) => {
   const bladePosition = attribute('aBladePosition', 'vec2');
 
   material.positionNode = Fn(() => {
-    const segments = u.uGrassParameters.x;
+    const segments = u.uSegments;
     const vertices = segments.add(1).mul(2);
-    const patchSize = u.uGrassParameters.y;
-    const bladeWidth = u.uGrassParameters.z;
-    const bladeHeight = u.uGrassParameters.w;
+    const patchSize = u.uPatchSize;
+    const bladeWidth = u.uBladeWidth;
+    const bladeHeight = u.uBladeHeight;
     const instance = float(instanceIndex);
 
     // Blade root: CPU placement in patch space scaled to the patch
@@ -270,29 +335,7 @@ const createGrassMaterial = ({ uniforms: u, lit, trample }) => {
     vBendNormal.assign(vec3(0, 0, 1));
     vSideTilt.assign(vec3(0));
 
-    // --- Early culls, before any texture fetch or hashing. With the
-    // instances sorted spatially, whole warps take the same branch.
-    const toBlade = bladeWorldPos.sub(cameraPosition).toVar();
-    const bladeDistance = length(toBlade).toVar();
-    // Third row of the view matrix is the camera's +z (backwards) in world
-    const cameraForward = vec3(
-      cameraViewMatrix.element(0).z,
-      cameraViewMatrix.element(1).z,
-      cameraViewMatrix.element(2).z
-    ).negate();
-    // Distance thinning: density falls from 1 at uThinDistance.x to 0 at .y;
-    // each blade compares it against its own threshold and shrinks over a
-    // 0.1-wide band so the transition never pops
-    const keep = float(1).sub(
-      smoothstep(u.uThinDistance.x, u.uThinDistance.y, bladeDistance)
-    );
-    const thinScale = saturate(
-      keep.sub(rand(instance.add(2000))).div(0.1)
-    ).toVar();
-    // View cone: the root is what's tested, the angle margin covers the blade
-    const inView = dot(toBlade, cameraForward)
-      .greaterThanEqual(u.uCullCos.mul(bladeDistance))
-      .and(thinScale.greaterThan(0));
+    const { thinScale, inView } = cullBlade(u, bladeWorldPos, instance);
 
     If(inView, () => {
       // Height data (patchUv also samples the trample map). Green channel
@@ -487,37 +530,7 @@ const createGrassMaterial = ({ uniforms: u, lit, trample }) => {
           );
         }
 
-        // Patch variant selector at the root, 0 = variant 1, 1 = variant 2:
-        // perlin blobs blended with perlin-warped voronoi cells. The uniform
-        // branch skips the warp fetches and the cell search while the mix
-        // is off
-        const colorUv = vec2(bladeWorldPos.x.negate(), bladeWorldPos.z);
-        const colorNoise = u.uPerlinNoiseTexture.sample(
-          colorUv.mul(u.uColorNoiseScale)
-        ).g;
-        const colorBlendBand = mix(0.35, 0.02, u.uColorSharpness);
-        const variant = smoothstep(
-          float(0.5).sub(colorBlendBand),
-          float(0.5).add(colorBlendBand),
-          colorNoise
-        ).toVar();
-        If(u.uVoronoiMix.greaterThan(0), () => {
-          const warpUv = colorUv.mul(u.uVoronoiWarpScale).toVar();
-          const warp = vec2(
-            u.uPerlinNoiseTexture.sample(warpUv).g,
-            u.uPerlinNoiseTexture.sample(warpUv.add(vec2(0.37, 0.71))).g
-          ).sub(0.5);
-          const cells = voronoiCells(
-            colorUv.mul(u.uVoronoiScale).add(warp.mul(u.uVoronoiWarpStrength))
-          ).toVar();
-          const band = mix(0.5, 0.03, u.uColorSharpness);
-          const cellVariant = mix(
-            step(0.5, cells.y),
-            step(0.5, cells.x),
-            smoothstep(0, band, cells.z).mul(0.5).add(0.5)
-          );
-          variant.assign(mix(variant, cellVariant, u.uVoronoiMix));
-        });
+        const variant = patchVariant(u, bladeWorldPos);
 
         // One lighting factor per variant, darkening or lightening the root
         // and tip colors together
