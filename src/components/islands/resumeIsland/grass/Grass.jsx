@@ -206,7 +206,7 @@ const Grass = () => {
       colorNoiseScale: { value: 0.028, min: 0, max: 0.5, step: 0.001 },
       // 0 = wide soft blends between patches, 1 = hard edges
       colorSharpness: { value: 0.45, min: 0, max: 1, step: 0.01 },
-      // Voronoi patches: procedural cells (vertex.glsl) where each cell
+      // Voronoi patches: procedural cells (shaders/grass/grass.js) where each cell
       // takes one flat variant, ~half the cells each, with perlin-warped
       // borders. Blends with the perlin patch selector:
       // 0 = pure perlin blobs, 1 = pure voronoi cells

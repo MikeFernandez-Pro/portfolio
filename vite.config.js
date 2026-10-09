@@ -1,10 +1,55 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import glsl from 'vite-plugin-glsl';
+
+// Bare `three` imports resolve to `three/webgpu`: the same shared core plus
+// the WebGPU renderer, without the classic WebGLRenderer and its GLSL
+// chunks. Everything — our code, drei, three-mesh-bvh, the addons — would
+// otherwise drag that renderer into the startup download through the shared
+// three.module.js (R3F's lazy WebGL chunk imports its namespace whole, so
+// none of it tree-shakes).
+// - R3F's lazy WebGL support chunk keeps the real `three`: it is only
+//   fetched if R3F ever builds a WebGLRenderer, which this app never does
+// - gainmap-js and the Sky addon, pulled in by drei's barrel but unused
+//   here, need two classic-only exports: they get a shim that throws if
+//   those are ever actually used
+const R3F_WEBGL_CHUNK = /@react-three[\\/]fiber[\\/]dist[\\/]chunks[\\/]webgl/;
+const CLASSIC_EXPORT_USERS =
+  /@monogrid[\\/]gainmap-js|three[\\/]examples[\\/]jsm[\\/]objects[\\/]Sky\.js/;
+const CLASSIC_SHIM_ID = '\0three-classic-shim';
+const CLASSIC_SHIM = `
+export * from 'three/webgpu';
+const unavailable = name => {
+  throw new Error(name + ' is not bundled: WebGPU-only build (vite.config.js)');
+};
+export class WebGLRenderer {
+  constructor() { unavailable('WebGLRenderer'); }
+}
+export const UniformsUtils = {
+  clone() { unavailable('UniformsUtils'); },
+  merge() { unavailable('UniformsUtils'); },
+};
+`;
+
+const threeWebGPUOnly = () => ({
+  name: 'three-webgpu-only',
+  enforce: 'pre',
+  async resolveId(source, importer, options) {
+    if (source !== 'three' || !importer) return null;
+    if (R3F_WEBGL_CHUNK.test(importer)) return null;
+    if (CLASSIC_EXPORT_USERS.test(importer)) return CLASSIC_SHIM_ID;
+    return this.resolve('three/webgpu', importer, {
+      ...options,
+      skipSelf: true,
+    });
+  },
+  load(id) {
+    return id === CLASSIC_SHIM_ID ? CLASSIC_SHIM : null;
+  },
+});
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), glsl()],
+  plugins: [threeWebGPUOnly(), react()],
   assetsInclude: ['**/*.glb', '**/*.gltf', '**/*.ktx2'],
   root: 'src/',
   publicDir: '../public/',
@@ -16,14 +61,17 @@ export default defineConfig({
     outDir: '../dist',
     emptyOutDir: true,
     // Cache-friendly vendor chunk: three is pinned and rarely changes
-    // between deploys, so it stays cached while the app chunk churns
+    // between deploys, so it stays cached while the app chunk churns.
+    // build/three.module.js is left out: past the shared core it is the
+    // classic WebGLRenderer, which R3F only lazy-loads for its WebGL path —
+    // grouping it here would make it part of the startup download
     rolldownOptions: {
       output: {
         codeSplitting: {
           groups: [
             {
               name: 'three',
-              test: /node_modules[\\/]three[\\/]/,
+              test: /node_modules[\\/]three[\\/](?!build[\\/]three\.module\.js)/,
               priority: 10,
             },
           ],

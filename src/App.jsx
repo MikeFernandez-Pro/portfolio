@@ -2,7 +2,7 @@ import { useState, Suspense, useRef, useEffect, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber/webgpu';
 import Experience from './components/Experience.jsx';
 import { PerformanceMonitor, useProgress } from '@react-three/drei/webgpu';
-import { Bvh } from '@react-three/drei/external';
+import { Bvh } from './components/Bvh.jsx';
 import gsap from 'gsap';
 import { useStore } from './store/ZustandStorage.jsx';
 import tunnel from 'tunnel-rat';

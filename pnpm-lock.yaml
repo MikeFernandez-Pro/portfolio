@@ -32,9 +32,6 @@ importers:
       three:
         specifier: 0.186.1
         version: 0.186.1
-      three-custom-shader-material:
-        specifier: 6.4.0
-        version: 6.4.0(@react-three/fiber@10.0.0-canary.a056612(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(three@0.186.1))(react@19.2.8)(three@0.186.1)
       three-mesh-bvh:
         specifier: ^0.9.16
         version: 0.9.16(three@0.186.1)
@@ -47,9 +44,6 @@ importers:
       vercel:
         specifier: ^63.1.0
         version: 63.1.0(@emnapi/core@1.11.3)(@emnapi/runtime@1.11.3)(rollup@4.62.4)
-      vite-plugin-glsl:
-        specifier: ^1.6.2
-        version: 1.6.2(@rollup/pluginutils@5.4.0(rollup@4.62.4))(esbuild@0.28.1)(vite@8.3.4(esbuild@0.28.1)(tsx@4.23.5))
       zustand:
         specifier: 5.0.15
         version: 5.0.15(@types/react@19.2.18)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))
@@ -3373,18 +3367,6 @@ packages:
   text-decoder@1.2.7:
     resolution: {integrity: sha512-vlLytXkeP4xvEq2otHeJfSQIRyWxo/oZGEbXrtEEF9Hnmrdly59sUbzZ/QgyWuLYHctCHxFF4tRQZNQ9k60ExQ==}
 
-  three-custom-shader-material@6.4.0:
-    resolution: {integrity: sha512-dIbkwX1P4DcHMOZrywW+/TDp5qJhlyU6NP/2kmHw91UqC+TrK4JSBtAV3qGc6UnkqSOmR1i0O+Yz5EnTp2aQ1g==}
-    peerDependencies:
-      '@react-three/fiber': '>=8.0'
-      react: '>=18.0'
-      three: '>=0.159'
-    peerDependenciesMeta:
-      '@react-three/fiber':
-        optional: true
-      react:
-        optional: true
-
   three-mesh-bvh@0.9.16:
     resolution: {integrity: sha512-2RK+5MJOaiHJhopURn2CUkOHiF3tFloD0uZBfhebV0CKB7mgVLpWUWaDpOyhNJRDkKKe7x4rRfTHZ32GwpXdkw==}
     peerDependencies:
@@ -3549,19 +3531,6 @@ packages:
     resolution: {integrity: sha512-JQvJODfMeBGejhW1nfu0zfczU8I0NiARD3FilxuBjFeMtEzgK2LeBD6RC1yyhwR8mVQzod/p/SbjyDNFx11njQ==}
     engines: {node: '>= 20'}
     hasBin: true
-
-  vite-plugin-glsl@1.6.2:
-    resolution: {integrity: sha512-/WSsBiKg6HcBXutxtynJ9CBJImv4m6Fa3bAGLCQXeSgboiH1VVjL3ok42MeGIpc4NzOKFa1F0s+09J03M+jepw==}
-    engines: {node: '>= 20.17.0', npm: '>= 10.8.3'}
-    peerDependencies:
-      '@rollup/pluginutils': ^5.x
-      esbuild: '>= 0.25'
-      vite: '>= 3.x'
-    peerDependenciesMeta:
-      '@rollup/pluginutils':
-        optional: true
-      esbuild:
-        optional: true
 
   vite@8.3.4:
     resolution: {integrity: sha512-IftLE8phJhdNRIGNEV4JCCvfNScoZQVfcXaN8TQropWGJtOHcu+iAB9pHcuGvmEb/kddw0LBe/jS8ztdC6xdiQ==}
@@ -7101,13 +7070,6 @@ snapshots:
     transitivePeerDependencies:
       - react-native-b4a
 
-  three-custom-shader-material@6.4.0(@react-three/fiber@10.0.0-canary.a056612(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(three@0.186.1))(react@19.2.8)(three@0.186.1):
-    dependencies:
-      three: 0.186.1
-    optionalDependencies:
-      '@react-three/fiber': 10.0.0-canary.a056612(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(three@0.186.1)
-      react: 19.2.8
-
   three-mesh-bvh@0.9.16(three@0.186.1):
     dependencies:
       three: 0.186.1
@@ -7332,13 +7294,6 @@ snapshots:
       - rollup
       - supports-color
       - utf-8-validate
-
-  vite-plugin-glsl@1.6.2(@rollup/pluginutils@5.4.0(rollup@4.62.4))(esbuild@0.28.1)(vite@8.3.4(esbuild@0.28.1)(tsx@4.23.5)):
-    dependencies:
-      vite: 8.3.4(esbuild@0.28.1)(tsx@4.23.5)
-    optionalDependencies:
-      '@rollup/pluginutils': 5.4.0(rollup@4.62.4)
-      esbuild: 0.28.1
 
   vite@8.3.4(esbuild@0.28.1)(tsx@4.23.5):
     dependencies:
