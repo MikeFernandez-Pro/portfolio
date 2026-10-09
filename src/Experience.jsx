@@ -26,7 +26,6 @@ import { Grass } from '#islands/resume/grass/Grass.jsx';
 import BonfireSmoke from '#islands/resume/BonfireSmoke.jsx';
 import { useStore } from '#store';
 import { DEBUG_ENABLED } from '#utils/debug.js';
-import { IS_PHOTO_MODE } from '#utils/utils.js';
 import { SOUND_VOLUMES } from '#utils/soundVolumes.js';
 import runningSoundEffect from '#character/runningSound.js';
 
@@ -72,7 +71,7 @@ const Experience = () => {
 
   const { freeCamera } = useControls('Camera', {
     // Full free-fly OrbitControls; the third-person follow pauses while on
-    freeCamera: IS_PHOTO_MODE,
+    freeCamera: false,
   });
 
   useControls('Sounds', {
@@ -168,18 +167,15 @@ const Experience = () => {
 
   return (
     <>
-      {freeCamera && (
-        // In photo mode orbit around the islands instead of the world origin
-        <OrbitControls target={IS_PHOTO_MODE ? [-1.35, 5, -15] : undefined} />
-      )}
+      {freeCamera && <OrbitControls />}
       {DEBUG_ENABLED && <DebugInspector />}
       {DEBUG_ENABLED && <PhysicsDebug />}
       {/* Stays mounted with debug off: its initial onChange calls set up the
           respawn/spiral shader uniforms the real death animation uses; the
           headless useControls renders no UI for it */}
-      {!IS_PHOTO_MODE && <RespawnControls />}
-      {!IS_PHOTO_MODE && <Joystick />}
-      {!IS_PHOTO_MODE && <Clouds />}
+      <RespawnControls />
+      <Joystick />
+      <Clouds />
       <Stars />
       <Lights />
       <CloudShadows />

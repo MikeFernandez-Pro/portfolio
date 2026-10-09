@@ -22,7 +22,6 @@ import gsap from 'gsap';
 import { snoise } from '#shaders/includes/simplexNoise3d.js';
 import { rotate2d } from '#shaders/includes/rotate2d.js';
 
-import { IS_PHOTO_MODE } from '#utils/utils.js';
 import { useStore } from '#store';
 import { prefersReducedMotion } from '#utils/reducedMotion.js';
 
@@ -37,7 +36,7 @@ const REVEALED_PROGRESS = 1.5;
  */
 const createIris = () => {
   const uniforms = {
-    progress: uniform(IS_PHOTO_MODE ? REVEALED_PROGRESS : INITIAL_PROGRESS),
+    progress: uniform(INITIAL_PROGRESS),
     size: uniform(15),
     aspectRatio: uniform(1),
     time: uniform(0),
@@ -83,9 +82,8 @@ const useIris = (revealer, aspectRatio) => {
   const { uniforms } = revealer;
 
   useEffect(() => {
-    // Photo mode: no intro sequence — the scene starts fully revealed.
     // A pipeline rebuild (MSAA switch) carries the progress over: no replay
-    if (IS_PHOTO_MODE || uniforms.progress.value !== INITIAL_PROGRESS) return;
+    if (uniforms.progress.value !== INITIAL_PROGRESS) return;
 
     // The peek opens once every pipeline is built (sceneReady): before that
     // the first frames stall on shader compilation and the animation would

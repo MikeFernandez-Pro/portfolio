@@ -6,7 +6,7 @@ import { useControls } from '#debug/useControls.jsx';
 import * as THREE from 'three';
 
 import { useStore } from '#store';
-import { IS_MOBILE_DEVICE, IS_PHOTO_MODE } from '#utils/utils.js';
+import { IS_MOBILE_DEVICE } from '#utils/utils.js';
 
 // The directional light sits at this offset from the character it follows
 const LIGHT_OFFSET = new THREE.Vector3(-3, 4, 3);
@@ -295,7 +295,7 @@ const Lights = () => {
         position={LIGHT_OFFSET.toArray()}
         intensity={directionalLightControls.intensity}
         color={directionalLightControls.color}
-        castShadow={!IS_MOBILE_DEVICE && !IS_PHOTO_MODE}
+        castShadow={!IS_MOBILE_DEVICE}
         target={targetObject}
         // The mapSize control's onChange only runs after mount: the
         // precompile frame already needs the full-size map

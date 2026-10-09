@@ -2,11 +2,10 @@
 // memory, render target viewer, console) with every useControls folder in its
 // Parameters tab, and the physics debug view.
 //
-// Dev only AND opt-in via the URL hash (localhost:5173/#debug), same
-// convention as #photo (one hash, so the two modes never run together).
-// `import.meta.env.DEV` is replaced with a literal at
-// build time, so production builds still tree-shake the Inspector and
-// inspectorControls.jsx out of the bundle.
+// Dev only AND opt-in via the URL hash (localhost:5173/#debug).
+// `import.meta.env.DEV` is replaced with a literal at build time, so
+// production builds still tree-shake the Inspector and inspectorControls.jsx
+// out of the bundle.
 // Without the hash, useControls falls back to the headless version that still
 // fires every control's initial onChange — that's what initializes shader
 // uniforms, light params and sound volumes — so the scene renders exactly as

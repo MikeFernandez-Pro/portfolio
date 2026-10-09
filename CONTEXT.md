@@ -192,10 +192,6 @@ _Avoid_: smoke (alone)
 
 ### Modes
 
-**Photo mode**:
-A bare scene with a free camera, no UI, no sound and no intro, opened with
-`#photo` for screenshots.
-
 **Debug mode**:
 The development panel and physics visualisation, opened with `#debug`; never
 shipped in production builds.

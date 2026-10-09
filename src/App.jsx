@@ -9,7 +9,7 @@ import tunnel from 'tunnel-rat';
 import { Howler } from 'howler';
 import * as THREE from 'three/webgpu';
 
-import { IS_MOBILE_DEVICE, IS_PHOTO_MODE, MAX_DPR } from '#utils/utils.js';
+import { IS_MOBILE_DEVICE, MAX_DPR } from '#utils/utils.js';
 import { prefersReducedMotion } from '#utils/reducedMotion.js';
 
 import soundOnIcon from '/icons/sound-on.svg';
@@ -84,12 +84,6 @@ const App = () => {
   useEffect(() => {
     document.addEventListener('visibilitychange', applyMute);
 
-    // Photo mode: no intro/sound UI is rendered, so start silently right away
-    if (IS_PHOTO_MODE) {
-      setUserMuted(true);
-      useStore.setState({ experienceStarted: true });
-    }
-
     return () => {
       document.removeEventListener('visibilitychange', applyMute);
     };
@@ -107,34 +101,30 @@ const App = () => {
   return (
     <>
       <ui.Out />
-      {!IS_PHOTO_MODE && (
-        <>
-          <img
-            ref={soundOnIconRef}
-            src={soundOnIcon}
-            style={{ opacity: 0 }}
-            className="volume-controller"
-            alt="Sound on button"
-            onClick={() => {
-              soundOnIconRef.current.style.display = 'none';
-              soundOffIconRef.current.style.display = 'block';
-              setUserMuted(true);
-            }}
-          />
-          <img
-            ref={soundOffIconRef}
-            src={soundOffIcon}
-            style={{ display: 'none' }}
-            className="volume-controller"
-            alt="Sound down button"
-            onClick={() => {
-              soundOffIconRef.current.style.display = 'none';
-              soundOnIconRef.current.style.display = 'block';
-              setUserMuted(false);
-            }}
-          />
-        </>
-      )}
+      <img
+        ref={soundOnIconRef}
+        src={soundOnIcon}
+        style={{ opacity: 0 }}
+        className="volume-controller"
+        alt="Sound on button"
+        onClick={() => {
+          soundOnIconRef.current.style.display = 'none';
+          soundOffIconRef.current.style.display = 'block';
+          setUserMuted(true);
+        }}
+      />
+      <img
+        ref={soundOffIconRef}
+        src={soundOffIcon}
+        style={{ display: 'none' }}
+        className="volume-controller"
+        alt="Sound down button"
+        onClick={() => {
+          soundOffIconRef.current.style.display = 'none';
+          soundOnIconRef.current.style.display = 'block';
+          setUserMuted(false);
+        }}
+      />
       <Canvas
         dpr={dpr}
         performance={{ min: 0.5 }}
@@ -163,9 +153,9 @@ const App = () => {
           onDecline={() => setDpr(1)}
         />
         <AdaptiveDpr />
-        <Suspense fallback={IS_PHOTO_MODE ? null : loader}>
-          {!IS_PHOTO_MODE && !sceneReady && loader}
-          {!IS_PHOTO_MODE && sceneReady && (
+        <Suspense fallback={loader}>
+          {!sceneReady && loader}
+          {sceneReady && (
             <ui.In>
               <div
                 ref={startExperienceRef}

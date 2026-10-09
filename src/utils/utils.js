@@ -35,10 +35,6 @@ export const getDeviceType = () => {
 
 export const IS_MOBILE_DEVICE = getDeviceType() === 'mobile';
 
-// Photo mode (localhost/...#photo): bare three.js scene with a free camera —
-// no debug pane, no stats, no sound/intro UI, audio muted
-export const IS_PHOTO_MODE = window.location.hash === '#photo';
-
 // Pixel ratio ceiling. dpr 2 is 4x the fill of dpr 1; 1.5 is the visual
 // sweet spot. Slow machines drop to 1 through <PerformanceMonitor> (App.jsx)
 export const MAX_DPR = 1.5;

@@ -4,7 +4,7 @@ import { useControls } from '#debug/useControls.jsx';
 import * as THREE from 'three';
 
 import { useStore } from '#store';
-import { IS_MOBILE_DEVICE, IS_PHOTO_MODE } from '#utils/utils.js';
+import { IS_MOBILE_DEVICE } from '#utils/utils.js';
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 import { DEFAULT_CHARACTER_SPEED } from '#character/constants.js';
 
@@ -413,12 +413,10 @@ const Grass = () => {
     uniforms.uWindStrength.value = windControls.strength * WIND_REDUCTION;
     uniforms.uWindSpeed.value = windControls.speed;
 
-    if (!IS_PHOTO_MODE) {
-      uniforms.uThinDistance.value.set(
-        renderControls.thinStart,
-        renderControls.thinEnd
-      );
-    }
+    uniforms.uThinDistance.value.set(
+      renderControls.thinStart,
+      renderControls.thinEnd
+    );
     uniforms.uCullCos.value = Math.cos(
       THREE.MathUtils.degToRad(renderControls.cullAngle)
     );

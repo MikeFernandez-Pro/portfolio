@@ -26,15 +26,11 @@ import { useControls } from '#debug/useControls.jsx';
 
 import { createCheapDof, useCheapDofControls } from './CheapDofPass.jsx';
 import { createIris, useIris } from './Iris.jsx';
-import {
-  IS_MOBILE_DEVICE,
-  IS_PHOTO_MODE,
-  COMPOSER_MSAA,
-} from '#utils/utils.js';
+import { IS_MOBILE_DEVICE, COMPOSER_MSAA } from '#utils/utils.js';
 import { useStore } from '#store';
 
 const AO_ENABLED = !IS_MOBILE_DEVICE;
-const DOF_ENABLED = !IS_MOBILE_DEVICE && !IS_PHOTO_MODE;
+const DOF_ENABLED = !IS_MOBILE_DEVICE;
 
 // Effects the debug "Effects" folder can switch off (a switch rebuilds the
 // pipeline without them, so their cost goes away too). Production keeps them
@@ -48,8 +44,8 @@ const EFFECTS_DEFAULTS = {
 };
 
 /**
- * Post-processing graph, in order: AO (desktop) → cheap DoF (desktop, not in
- * photo mode) → bloom → vignette → ACES tone mapping + sRGB → scene revealer
+ * Post-processing graph, in order: AO (desktop) → cheap DoF (desktop) →
+ * bloom → vignette → ACES tone mapping + sRGB → scene revealer
  * → SMAA. Each RTT step is one fullscreen pass. `effects` switches the
  * optional ones (EFFECTS_DEFAULTS keys).
  */
