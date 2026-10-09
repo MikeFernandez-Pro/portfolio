@@ -1,6 +1,21 @@
 import { useEffect, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
+import {
+  abs,
+  attribute,
+  cos,
+  float,
+  fract,
+  min,
+  mix,
+  positionGeometry,
+  sin,
+  smoothstep,
+  time,
+  uniform,
+  uv,
+  vec3,
+} from 'three/tsl';
 
 import { useControls } from '#utils/useControls.jsx';
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
@@ -28,71 +43,6 @@ const WIND_LINES_DEFAULTS = {
   sizeX: 44,
   sizeZ: 72,
 };
-
-const vertexShader = /* glsl */ `
-uniform float uTime;
-uniform float uTimeMultiplier;
-uniform float uSpeed;
-
-attribute vec3 aInstanceOffset;
-attribute float aInstanceTimeOffset;
-attribute float aInstanceRotation;
-
-varying vec2 vUv;
-varying float vTimeOffset;
-
-void main() {
-  vUv = uv;
-  vTimeOffset = aInstanceTimeOffset;
-
-  // Rotate the ribbon around Y by the instance angle
-  float c = cos(aInstanceRotation);
-  float s = sin(aInstanceRotation);
-  vec3 rotated = vec3(
-    position.x * c - position.z * s,
-    position.y,
-    position.x * s + position.z * c
-  );
-
-  vec3 p = rotated + aInstanceOffset;
-  float localTime = (uTime + aInstanceTimeOffset) * uTimeMultiplier * uSpeed;
-  p.y += sin(vUv.x * 10.0 + localTime) * 0.1;
-
-  vec4 worldPosition = modelMatrix * vec4(p, 1.0);
-  worldPosition.z += sin(worldPosition.x + localTime * 2.0) * 0.2;
-
-  gl_Position = projectionMatrix * viewMatrix * worldPosition;
-}
-`;
-
-const fragmentShader = /* glsl */ `
-uniform float uTime;
-uniform float uTimeMultiplier;
-uniform float uAlphaMultiplier;
-uniform float uStrength;
-uniform float uSpeed;
-uniform float uLengthMultiplier;
-uniform float uRange;
-uniform vec3 uColor;
-
-varying vec2 vUv;
-varying float vTimeOffset;
-
-void main() {
-  float timeMultiplier = uTimeMultiplier * uSpeed;
-  float t = fract((uTime + vTimeOffset) * timeMultiplier);
-  float range = uRange * uLengthMultiplier;
-  float center = mix(0.5 - range, 0.5 + range, t);
-  float d = abs(vUv.x - center) * uLengthMultiplier;
-  float alpha = 1.0 - smoothstep(0.1, 0.4, d);
-  float edge = min(vUv.x, 1.0 - vUv.x);
-  float edgeFade = smoothstep(0.0, 0.1, edge);
-
-  alpha *= edgeFade * uAlphaMultiplier * uStrength;
-
-  gl_FragColor = vec4(uColor, alpha);
-}
-`;
 
 // Deterministic rng so the wind field layout is stable across rebuilds
 function mulberry32(seed) {
@@ -186,14 +136,13 @@ const WindLines = () => {
 
   const uniforms = useMemo(
     () => ({
-      uTime: { value: 0 },
-      uTimeMultiplier: { value: 0.04 },
-      uAlphaMultiplier: { value: WIND_LINES_DEFAULTS.alphaMultiplier },
-      uStrength: { value: 1 },
-      uSpeed: { value: WIND_LINES_DEFAULTS.speed },
-      uLengthMultiplier: { value: WIND_LINES_DEFAULTS.lengthMultiplier },
-      uRange: { value: 4 },
-      uColor: { value: new THREE.Color(WIND_LINES_DEFAULTS.color) },
+      uTimeMultiplier: uniform(0.04),
+      uAlphaMultiplier: uniform(WIND_LINES_DEFAULTS.alphaMultiplier),
+      uStrength: uniform(1),
+      uSpeed: uniform(WIND_LINES_DEFAULTS.speed),
+      uLengthMultiplier: uniform(WIND_LINES_DEFAULTS.lengthMultiplier),
+      uRange: uniform(4),
+      uColor: uniform(new THREE.Color(WIND_LINES_DEFAULTS.color)),
     }),
     []
   );
@@ -307,21 +256,55 @@ const WindLines = () => {
 
   useEffect(() => () => geometry.dispose(), [geometry]);
 
-  const material = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        uniforms,
-        vertexShader,
-        fragmentShader,
-        transparent: true,
-        blending: THREE.NormalBlending,
-        depthWrite: false,
-        depthTest: true,
-        side: THREE.DoubleSide,
-        toneMapped: false,
-      }),
-    [uniforms]
-  );
+  const material = useMemo(() => {
+    const windMaterial = new THREE.MeshBasicNodeMaterial({
+      transparent: true,
+      blending: THREE.NormalBlending,
+      depthWrite: false,
+      depthTest: true,
+      side: THREE.DoubleSide,
+    });
+
+    const instanceOffset = attribute('aInstanceOffset', 'vec3');
+    const instanceTimeOffset = attribute('aInstanceTimeOffset', 'float');
+    const instanceRotation = attribute('aInstanceRotation', 'float');
+    const timeMultiplier = uniforms.uTimeMultiplier.mul(uniforms.uSpeed);
+
+    // Rotate the ribbon around Y by the instance angle, offset it, then two
+    // sine wobbles (the mesh has no transform: local space is world space)
+    const c = cos(instanceRotation);
+    const s = sin(instanceRotation);
+    const p = positionGeometry;
+    const rotated = vec3(
+      p.x.mul(c).sub(p.z.mul(s)),
+      p.y,
+      p.x.mul(s).add(p.z.mul(c))
+    );
+    const placed = rotated.add(instanceOffset);
+    const localTime = time.add(instanceTimeOffset).mul(timeMultiplier);
+    const y = placed.y.add(sin(uv().x.mul(10).add(localTime)).mul(0.1));
+    const z = placed.z.add(sin(placed.x.add(localTime.mul(2))).mul(0.2));
+    windMaterial.positionNode = vec3(placed.x, y, z);
+
+    // A soft streak sliding along the ribbon, faded at both ends
+    const t = fract(time.add(instanceTimeOffset).mul(timeMultiplier));
+    const range = uniforms.uRange.mul(uniforms.uLengthMultiplier);
+    const center = mix(float(0.5).sub(range), float(0.5).add(range), t);
+    const d = abs(uv().x.sub(center)).mul(uniforms.uLengthMultiplier);
+    const streak = float(1).sub(smoothstep(0.1, 0.4, d));
+    const edge = min(uv().x, uv().x.oneMinus());
+    const edgeFade = smoothstep(0, 0.1, edge);
+
+    windMaterial.colorNode = uniforms.uColor;
+    windMaterial.opacityNode = streak
+      .mul(edgeFade)
+      .mul(uniforms.uAlphaMultiplier)
+      .mul(uniforms.uStrength);
+
+    return windMaterial;
+  }, [uniforms]);
+
+  useEffect(() => () => material.dispose(), [material]);
 
   useEffect(() => {
     uniforms.uAlphaMultiplier.value = controls.alphaMultiplier;
@@ -332,12 +315,6 @@ const WindLines = () => {
 
   // The streaks are pure drifting motion - off entirely under reduced motion
   const enabled = controls.enabled && !REDUCED_MOTION_AT_LOAD;
-
-  useFrame(({ elapsed }) => {
-    // The mesh is hidden when disabled; no point animating it
-    if (!enabled) return;
-    uniforms.uTime.value = elapsed;
-  });
 
   return (
     <mesh

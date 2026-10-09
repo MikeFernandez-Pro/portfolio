@@ -1,80 +1,99 @@
-import { useMemo } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useEffect, useMemo } from 'react';
 import { useControls } from '#utils/useControls.jsx';
-import * as THREE from 'three';
-
-import starsVertexShader from '#shaders/stars/vertex.glsl';
-import starsFragmentShader from '#shaders/stars/fragment.glsl';
+import * as THREE from 'three/webgpu';
+import {
+  float,
+  select,
+  sin,
+  texture,
+  time,
+  uniform,
+  vec3,
+  vec4,
+} from 'three/tsl';
 
 import { useSpiralGrassHeightTexture } from '#utils/packedTextures.js';
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
+import {
+  createParticleSprite,
+  particleAttribute,
+  pointCoord,
+} from '#utils/pointSprites.js';
 
 const SKY_RADIUS = 120;
 
-const Experience = () => {
-  const { size, aspect } = useThree(state => ({
-    size: state.size,
-    aspect: state.viewport.dpr,
-  }));
+const STARS_DEFAULTS = {
+  count: 6000,
+  pointSize: 0.8,
+  color1: '#ffd700',
+  color2: '#3b5ba5',
+  color3: '#a3c1da',
+  brightness: 10,
+};
+
+const Sky = () => {
+  // Star sprite packed in the blue channel of the spiral/grass/star texture,
+  // sitting at UV origin (sampled at pointCoord * 0.125)
+  const starTexture = useSpiralGrassHeightTexture();
+
+  const uniforms = useMemo(
+    () => ({
+      uSize: uniform(STARS_DEFAULTS.pointSize),
+      uColor1: uniform(new THREE.Color(STARS_DEFAULTS.color1)),
+      uColor2: uniform(new THREE.Color(STARS_DEFAULTS.color2)),
+      uColor3: uniform(new THREE.Color(STARS_DEFAULTS.color3)),
+      uBrightness: uniform(STARS_DEFAULTS.brightness),
+    }),
+    []
+  );
 
   // Controls
-  const particlesControls = useControls(
+  const { count } = useControls(
     'Stars',
     {
       count: {
-        value: 6000,
+        value: STARS_DEFAULTS.count,
         min: 0,
         max: 10000,
       },
       pointSize: {
-        value: 0.8,
+        value: STARS_DEFAULTS.pointSize,
         min: 0,
         max: 10,
         onChange: value => {
-          fireworksMaterial.uniforms.uSize.value = value;
+          uniforms.uSize.value = value;
         },
       },
       color1: {
-        value: '#ffd700',
-        onChange: value => {
-          fireworksMaterial.uniforms.uColor1.value = new THREE.Color(value);
-        },
+        value: STARS_DEFAULTS.color1,
+        onChange: value => uniforms.uColor1.value.set(value),
       },
       color2: {
-        value: '#3b5ba5',
-        onChange: value => {
-          fireworksMaterial.uniforms.uColor2.value = new THREE.Color(value);
-        },
+        value: STARS_DEFAULTS.color2,
+        onChange: value => uniforms.uColor2.value.set(value),
       },
       color3: {
-        value: '#a3c1da',
-        onChange: value => {
-          fireworksMaterial.uniforms.uColor3.value = new THREE.Color(value);
-        },
+        value: STARS_DEFAULTS.color3,
+        onChange: value => uniforms.uColor3.value.set(value),
       },
       brightness: {
-        value: 10,
+        value: STARS_DEFAULTS.brightness,
         min: 0,
         max: 10,
         onChange: value => {
-          fireworksMaterial.uniforms.uBrightness.value = value;
+          uniforms.uBrightness.value = value;
         },
       },
     },
     { collapsed: true }
   );
 
-  // Star sprite packed in the blue channel of the spiral/grass/star texture,
-  // sitting at UV origin (the fragment shader samples gl_PointCoord * 0.125)
-  const fireWorkTexture = useSpiralGrassHeightTexture();
+  const stars = useMemo(() => {
+    const positionsArray = new Float32Array(count * 3);
+    const sizesArray = new Float32Array(count);
+    const colorsArray = new Float32Array(count);
 
-  // Geometry
-  const fireworksGeometry = useMemo(() => {
-    const positionsArray = new Float32Array(particlesControls.count * 3);
-    const sizesArray = new Float32Array(particlesControls.count);
-    const colorsArray = new Float32Array(particlesControls.count);
-
-    for (let i = 0; i < particlesControls.count; i++) {
+    for (let i = 0; i < count; i++) {
       const i3 = i * 3;
 
       const spherical = new THREE.Spherical(
@@ -94,61 +113,42 @@ const Experience = () => {
       colorsArray[i] = Math.random();
     }
 
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute(
-      'position',
-      new THREE.Float32BufferAttribute(positionsArray, 3)
+    const aSize = particleAttribute(sizesArray, 1);
+    const aColor = particleAttribute(colorsArray, 1);
+
+    const material = new THREE.PointsNodeMaterial({
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    material.positionNode = particleAttribute(positionsArray, 3);
+
+    // Twinkle; reduced motion: frozen time = static star sizes
+    const starTime = REDUCED_MOTION_AT_LOAD ? float(0) : time;
+    material.sizeNode = aSize
+      .mul(uniforms.uSize)
+      .mul(sin(starTime.mul(5).add(aSize.mul(10))).mul(0.1).add(0.9))
+      .mul(2);
+
+    // 64px star tile at the UV origin of the 512px packed texture (blue)
+    const alpha = texture(starTexture, pointCoord.mul(0.125)).b;
+    const color = select(
+      aColor.lessThan(0.33),
+      vec3(uniforms.uColor1),
+      select(
+        aColor.lessThan(0.66),
+        uniforms.uColor2.mul(1.5),
+        uniforms.uColor3.mul(2)
+      )
     );
-    geometry.setAttribute(
-      'aSize',
-      new THREE.Float32BufferAttribute(sizesArray, 1)
-    );
-    geometry.setAttribute(
-      'aColor',
-      new THREE.Float32BufferAttribute(colorsArray, 1)
-    );
+    material.colorNode = vec4(color.mul(uniforms.uBrightness), alpha);
 
-    return geometry;
-  }, [particlesControls.count]);
+    return createParticleSprite(material, count);
+  }, [count, starTexture, uniforms]);
 
-  // Material
-  const fireworksMaterial = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        uniforms: {
-          uTime: new THREE.Uniform(0),
-          uSize: new THREE.Uniform(particlesControls.pointSize),
-          uTexture: new THREE.Uniform(fireWorkTexture),
-          uColor1: new THREE.Uniform(new THREE.Color(particlesControls.color1)),
-          uColor2: new THREE.Uniform(new THREE.Color(particlesControls.color2)),
-          uColor3: new THREE.Uniform(new THREE.Color(particlesControls.color3)),
-          uBrightness: new THREE.Uniform(particlesControls.brightness),
-          uResolution: new THREE.Uniform(
-            new THREE.Vector2(size.width * aspect, size.height * aspect)
-          ),
-        },
-        vertexShader: starsVertexShader,
-        fragmentShader: starsFragmentShader,
-        transparent: true,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-      }),
-    []
-  );
+  useEffect(() => () => stars.material.dispose(), [stars]);
 
-  useFrame(({ elapsed }) => {
-    // Reduced motion: frozen time = static star sizes, no twinkle
-    if (REDUCED_MOTION_AT_LOAD) return;
-    fireworksMaterial.uniforms.uTime.value = elapsed;
-  });
-
-  return (
-    <points
-      geometry={fireworksGeometry}
-      material={fireworksMaterial}
-      rotation-y={Math.PI / 2}
-    />
-  );
+  return <primitive object={stars} rotation-y={Math.PI / 2} />;
 };
 
-export default Experience;
+export default Sky;
