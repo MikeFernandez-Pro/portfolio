@@ -1,10 +1,10 @@
 import { useState, Suspense, useRef, useEffect, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber/webgpu';
-import Experience from './components/Experience.jsx';
+import Experience from './Experience.jsx';
 import { PerformanceMonitor, useProgress } from '@react-three/drei/webgpu';
-import { Bvh } from './components/Bvh.jsx';
+import { Bvh } from './workarounds/Bvh.jsx';
 import gsap from 'gsap';
-import { useStore } from './store/ZustandStorage.jsx';
+import { useStore } from '#store';
 import tunnel from 'tunnel-rat';
 import { Howler } from 'howler';
 import * as THREE from 'three/webgpu';
@@ -14,9 +14,9 @@ import { prefersReducedMotion } from '#utils/reducedMotion.js';
 
 import soundOnIcon from '/icons/sound-on.svg';
 import soundOffIcon from '/icons/sound-off.svg';
-import { EffectComposer } from './components/effectComposer/EffectComposer.jsx';
-import { PrecompileScene } from './components/PrecompileScene.jsx';
-import { AdaptiveDpr } from './components/AdaptiveDpr.jsx';
+import { EffectComposer } from './postprocessing/EffectComposer.jsx';
+import { PrecompileScene } from './PrecompileScene.jsx';
+import { AdaptiveDpr } from './workarounds/AdaptiveDpr.jsx';
 
 /* Tunnel */
 const ui = tunnel();

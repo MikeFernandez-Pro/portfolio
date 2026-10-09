@@ -38,7 +38,7 @@ const createSmokeUniforms = defaults => ({
  * Bonfire / torch smoke column on a 1x10 plane (the profiles work in local
  * space). `timeOffset`: float node, the column's unscaled time offset.
  * `place`: maps the swayed plane-local position to the mesh's local space
- * (SmokeColumns scales and offsets each column there: a positionNode
+ * (TorchSmoke scales and offsets each column there: a positionNode
  * replaces the InstancedMesh transform, so the columns do their own
  * instancing).
  */

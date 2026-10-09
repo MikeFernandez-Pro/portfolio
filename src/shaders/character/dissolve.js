@@ -19,7 +19,7 @@ import {
   vec4,
 } from 'three/tsl';
 
-import { RESPAWN_DEFAULTS } from '#controller/respawnAnimation.js';
+import { RESPAWN_DEFAULTS } from '#character/deathCycle/respawnAnimation.js';
 
 /**
  * Respawn dissolve uniforms, shared by the knight and its lantern (the

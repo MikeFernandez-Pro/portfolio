@@ -4,16 +4,17 @@
   "version": "0.0.0",
   "type": "module",
   "imports": {
-    "#*": "./src/*",
     "#assets/*": "./src/assets/*",
-    "#components/*": "./src/components/*",
-    "#controller/*": "./src/components/controller/*",
-    "#effectComposer/*": "./src/components/effectComposer/*",
-    "#environment/*": "./src/components/environment/*",
-    "#islands/*": "./src/components/islands/*",
+    "#character/*": "./src/character/*",
+    "#debug/*": "./src/debug/*",
+    "#environment/*": "./src/environment/*",
+    "#islands/*": "./src/islands/*",
+    "#physics/*": "./src/physics/*",
+    "#postprocessing/*": "./src/postprocessing/*",
     "#shaders/*": "./src/shaders/*",
-    "#store/*": "./src/store/*",
-    "#utils/*": "./src/utils/*"
+    "#store": "./src/store.js",
+    "#utils/*": "./src/utils/*",
+    "#workarounds/*": "./src/workarounds/*"
   },
   "scripts": {
     "dev": "vite",
