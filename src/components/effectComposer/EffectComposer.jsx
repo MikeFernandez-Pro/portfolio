@@ -4,10 +4,13 @@ import * as THREE from 'three/webgpu';
 import {
   convertToTexture,
   distance,
+  ivec2,
   mix,
   pass,
   pow,
   renderOutput,
+  rtt,
+  screenCoordinate,
   smoothstep,
   uniform,
   uv,
@@ -48,7 +51,21 @@ const createPipeline = ({ renderer, scene, camera, samples }) => {
 
   const scenePass = pass(scene, camera, { samples });
   const sceneColor = scenePass.getTextureNode('output');
-  const sceneDepth = scenePass.getTextureNode('depth');
+  const passDepth = scenePass.getTextureNode('depth');
+
+  // With MSAA the pass depth is a multisampled texture, which only
+  // textureLoad can read (three doesn't resolve depth): copy sample 0 into a
+  // plain float texture for the AO, the denoise and the DoF
+  const sceneDepth =
+    samples > 1
+      ? rtt(passDepth.load(ivec2(screenCoordinate.xy)), null, null, {
+          type: THREE.FloatType,
+          format: THREE.RedFormat,
+          depthBuffer: false,
+          minFilter: THREE.NearestFilter,
+          magFilter: THREE.NearestFilter,
+        })
+      : passDepth;
 
   let color = sceneColor;
 

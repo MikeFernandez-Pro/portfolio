@@ -57,7 +57,11 @@ const createCheapDof = ({ colorNode, depthNode, camera, resolution }) => {
   const cameraFar = uniform(camera.far).onRenderUpdate(() => camera.far);
 
   const sceneDistance = tapUv =>
-    perspectiveDepthToViewZ(depthNode.sample(tapUv), cameraNear, cameraFar).negate();
+    perspectiveDepthToViewZ(
+      depthNode.sample(tapUv).r,
+      cameraNear,
+      cameraFar
+    ).negate();
 
   // Circle of confusion: 0 at the focal plane, 1 once focusRange world units
   // away from it
@@ -92,7 +96,10 @@ const createCheapDof = ({ colorNode, depthNode, camera, resolution }) => {
           const r = sqrt(fi.add(0.5).div(uniforms.samples));
           const theta = fi.mul(GOLDEN_ANGLE).add(phi);
           const tapUv = uvNode.add(
-            vec2(cos(theta), sin(theta)).mul(r).mul(radius).mul(aspectCorrection)
+            vec2(cos(theta), sin(theta))
+              .mul(r)
+              .mul(radius)
+              .mul(aspectCorrection)
           );
 
           // Scatter-as-gather: taps behind the center pixel inherit its CoC,
@@ -144,7 +151,13 @@ const useCheapDofControls = bind => {
     {
       // World units from the camera to the focal plane, and how far from it
       // the blur reaches full strength
-      focusDistance: numberControl('focusDistance', d.focusDistance, 0, 100, 0.1),
+      focusDistance: numberControl(
+        'focusDistance',
+        d.focusDistance,
+        0,
+        100,
+        0.1
+      ),
       focusRange: numberControl('focusRange', d.focusRange, 1, 60, 0.5),
       // Max blur radius as a fraction of screen height
       bokehRadius: numberControl('bokehRadius', d.bokehRadius, 0, 0.03, 0.0005),
