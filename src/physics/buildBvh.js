@@ -18,7 +18,8 @@ export function buildWorldSpaceBvh(
   geometry,
   { position = [0, 0, 0], rotation = [0, 0, 0], scale = 1 } = {}
 ) {
-  const [sx, sy, sz] = typeof scale === 'number' ? [scale, scale, scale] : scale;
+  const [sx, sy, sz] =
+    typeof scale === 'number' ? [scale, scale, scale] : scale;
   matrix.compose(
     translation.set(...position),
     quaternion.setFromEuler(euler.set(...rotation)),

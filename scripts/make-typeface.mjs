@@ -22,7 +22,7 @@ const font = opentype.parse(
 );
 
 const round = Math.round;
-const scale = (100000 / ((font.unitsPerEm || 2048) * 72));
+const scale = 100000 / ((font.unitsPerEm || 2048) * 72);
 const glyphs = {};
 const glyphIndexMap = font.encoding.cmap.glyphIndexMap;
 
@@ -37,11 +37,18 @@ for (const unicode of Object.keys(glyphIndexMap)) {
     o: '',
   };
   for (const command of glyph.path.commands) {
-    const type = command.type.toLowerCase() === 'c' ? 'b' : command.type.toLowerCase();
+    const type =
+      command.type.toLowerCase() === 'c' ? 'b' : command.type.toLowerCase();
     token.o += type + ' ';
-    if (command.x !== undefined) token.o += round(command.x * scale) + ' ' + round(command.y * scale) + ' ';
-    if (command.x1 !== undefined) token.o += round(command.x1 * scale) + ' ' + round(command.y1 * scale) + ' ';
-    if (command.x2 !== undefined) token.o += round(command.x2 * scale) + ' ' + round(command.y2 * scale) + ' ';
+    if (command.x !== undefined)
+      token.o +=
+        round(command.x * scale) + ' ' + round(command.y * scale) + ' ';
+    if (command.x1 !== undefined)
+      token.o +=
+        round(command.x1 * scale) + ' ' + round(command.y1 * scale) + ' ';
+    if (command.x2 !== undefined)
+      token.o +=
+        round(command.x2 * scale) + ' ' + round(command.y2 * scale) + ' ';
   }
   glyphs[String.fromCodePoint(code)] = token;
 }
@@ -63,4 +70,6 @@ const json = {
 };
 
 writeFileSync(OUT, JSON.stringify(json));
-console.log(`${OUT}: ${Object.keys(glyphs).length} glyphs, ${(JSON.stringify(json).length / 1024).toFixed(1)} KB`);
+console.log(
+  `${OUT}: ${Object.keys(glyphs).length} glyphs, ${(JSON.stringify(json).length / 1024).toFixed(1)} KB`
+);

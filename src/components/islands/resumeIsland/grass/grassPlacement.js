@@ -83,7 +83,10 @@ const useGrassPlacement = count => {
   // Goes through the default loading manager like every other asset, so the
   // intro loader counts it
   const image = useLoader(THREE.ImageLoader, grassPlacementUrl);
-  return useMemo(() => generatePlacement(readMask(image), count), [image, count]);
+  return useMemo(
+    () => generatePlacement(readMask(image), count),
+    [image, count]
+  );
 };
 
 export { useGrassPlacement };

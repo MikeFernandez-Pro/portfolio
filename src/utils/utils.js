@@ -5,7 +5,7 @@ const hasMobileSignals = () => {
   // Chromium exposes an authoritative flag for phones
   if (navigator.userAgentData?.mobile) return true;
 
-  const ua = navigator.userAgent || "";
+  const ua = navigator.userAgent || '';
   if (
     /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i.test(
       ua
@@ -23,21 +23,21 @@ const hasMobileSignals = () => {
 };
 
 export const getDeviceType = () => {
-  if (hasMobileSignals()) return "mobile";
+  if (hasMobileSignals()) return 'mobile';
 
-  const hasCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
-  const hasHover = window.matchMedia("(hover: hover)").matches;
+  const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
+  const hasHover = window.matchMedia('(hover: hover)').matches;
 
-  if (hasCoarsePointer && !hasHover) return "mobile";
-  if (!hasCoarsePointer && hasHover) return "desktop";
-  return "hybrid";
+  if (hasCoarsePointer && !hasHover) return 'mobile';
+  if (!hasCoarsePointer && hasHover) return 'desktop';
+  return 'hybrid';
 };
 
-export const IS_MOBILE_DEVICE = getDeviceType() === "mobile";
+export const IS_MOBILE_DEVICE = getDeviceType() === 'mobile';
 
 // Photo mode (localhost/...#photo): bare three.js scene with a free camera —
 // no debug pane, no stats, no sound/intro UI, audio muted
-export const IS_PHOTO_MODE = window.location.hash === "#photo";
+export const IS_PHOTO_MODE = window.location.hash === '#photo';
 
 // Pixel ratio ceiling. dpr 2 is 4x the fill of dpr 1; 1.5 is the visual
 // sweet spot. Slow machines drop to 1 through <PerformanceMonitor> (App.jsx)

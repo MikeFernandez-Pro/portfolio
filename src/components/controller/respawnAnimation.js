@@ -111,7 +111,11 @@ export const buildRespawnTimeline = ({
   tl.set(spawnLightUniforms.uSpawnLightIntensity, { value: 0 }, charStart);
   tl.to(
     spawnLightUniforms.uSpawnLightIntensity,
-    { value: spawnLightSettings.intensity, duration: spawnHalf, ease: 'sine.in' },
+    {
+      value: spawnLightSettings.intensity,
+      duration: spawnHalf,
+      ease: 'sine.in',
+    },
     charStart
   );
   tl.to(

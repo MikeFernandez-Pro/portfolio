@@ -1,6 +1,14 @@
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three/webgpu';
-import { clamp, float, max, mix, sRGBTransferEOTF, uniform, uv } from 'three/tsl';
+import {
+  clamp,
+  float,
+  max,
+  mix,
+  sRGBTransferEOTF,
+  uniform,
+  uv,
+} from 'three/tsl';
 
 /**
  * Background sphere with a vertical two-color gradient. Same result as the

@@ -20,10 +20,11 @@
     "dev:https": "vite --mode https",
     "build": "vite build",
     "deploy": "vercel --prod",
-    "lint": "eslint . --fix",
-    "lint:fix": "eslint . --ext js,jsx --fix",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
     "format": "prettier --write .",
-    "sort-imports": "eslint --fix src/**/*.{js,jsx,ts,tsx}"
+    "pack-textures": "node scripts/pack-textures.mjs",
+    "physics-parity": "node scripts/physics-parity.mjs"
   },
   "devDependencies": {
     "@dimforge/rapier3d-compat": "0.19.2",
@@ -34,14 +35,12 @@
     "@vitejs/plugin-react": "6.1.2",
     "draco3dgltf": "^1.5.7",
     "eslint": "^9.39.5",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.7",
     "globals": "^17.13.0",
     "prettier": "^3.9.9",
     "sharp": "^0.35.5",
+    "vercel": "^63.1.0",
     "vite": "^8.3.4"
   },
   "dependencies": {
@@ -55,7 +54,6 @@
     "three": "0.186.1",
     "three-mesh-bvh": "^0.9.16",
     "tunnel-rat": "^0.1.2",
-    "vercel": "^63.1.0",
     "zustand": "5.0.15"
   }
 }

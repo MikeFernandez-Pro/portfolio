@@ -13,16 +13,17 @@ import { KHRONOS_EXTENSIONS } from '@gltf-transform/extensions';
 import draco3d from 'draco3dgltf';
 import * as THREE from 'three';
 
-import { PhysicsWorld, BODY_TYPE_DYNAMIC } from '../src/physics/PhysicsWorld.js';
+import {
+  PhysicsWorld,
+  BODY_TYPE_DYNAMIC,
+} from '../src/physics/PhysicsWorld.js';
 import { CharacterBody } from '../src/physics/CharacterBody.js';
 import { buildWorldSpaceBvh } from '../src/physics/buildBvh.js';
 
 let RAPIER;
 try {
   RAPIER = (
-    await import(
-      '../node_modules/.pnpm/@dimforge+rapier3d-compat@0.19.2/node_modules/@dimforge/rapier3d-compat/rapier.mjs'
-    )
+    await import('../node_modules/.pnpm/@dimforge+rapier3d-compat@0.19.2/node_modules/@dimforge/rapier3d-compat/rapier.mjs')
   ).default;
 } catch {
   RAPIER = (await import('@dimforge/rapier3d-compat')).default;
@@ -50,13 +51,19 @@ function findGeometry(document, name) {
   for (const mesh of document.getRoot().listMeshes()) {
     const nodeName =
       mesh.getName() ||
-      mesh.listParents().find(p => p.propertyType === 'Node')?.getName();
+      mesh
+        .listParents()
+        .find(p => p.propertyType === 'Node')
+        ?.getName();
     if (nodeName !== name) continue;
     const primitive = mesh.listPrimitives()[0];
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute(
       'position',
-      new THREE.BufferAttribute(primitive.getAttribute('POSITION').getArray(), 3)
+      new THREE.BufferAttribute(
+        primitive.getAttribute('POSITION').getArray(),
+        3
+      )
     );
     const indices = primitive.getIndices();
     if (indices) {
@@ -71,7 +78,10 @@ function findGeometry(document, name) {
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute(
         'position',
-        new THREE.BufferAttribute(primitive.getAttribute('POSITION').getArray(), 3)
+        new THREE.BufferAttribute(
+          primitive.getAttribute('POSITION').getArray(),
+          3
+        )
       );
       const indices = primitive.getIndices();
       if (indices) {
@@ -83,9 +93,15 @@ function findGeometry(document, name) {
   throw new Error(`mesh/node ${name} not found`);
 }
 
-const colliders = await loadGlb('../src/assets/models/islandColliders/island-colliders.glb');
-const sensors = await loadGlb('../src/assets/models/islandSensors/islandSensors.glb');
-const zones = await loadGlb('../src/assets/models/islandSensors/fallingZone.glb');
+const colliders = await loadGlb(
+  '../src/assets/models/islandColliders/island-colliders.glb'
+);
+const sensors = await loadGlb(
+  '../src/assets/models/islandSensors/islandSensors.glb'
+);
+const zones = await loadGlb(
+  '../src/assets/models/islandSensors/fallingZone.glb'
+);
 
 const islandGeometry = findGeometry(colliders, 'Collider');
 const groundSensorGeometry = findGeometry(sensors, 'Sensor');
@@ -280,10 +296,7 @@ const scenarios = {
     { frames: 60, run: [0, -4], jump: true },
     { frames: 60, run: [0, -4] },
   ],
-  'jump in place': [
-    SETTLE,
-    { frames: 90, idle: true, jump: true },
-  ],
+  'jump in place': [SETTLE, { frames: 90, idle: true, jump: true }],
   // run down the path then veer off sideways until falling off the world:
   // checks the fallingZone/deathZone enter frames (falling animation + death
   // timing) match
@@ -307,11 +320,7 @@ const scenarios = {
   const positions = zoneGeometry.getAttribute('position');
   for (const fraction of [0.1, 0.5, 0.9]) {
     const i = Math.floor(positions.count * fraction);
-    const start = [
-      positions.getX(i),
-      positions.getY(i) + 2,
-      positions.getZ(i),
-    ];
+    const start = [positions.getX(i), positions.getY(i) + 2, positions.getZ(i)];
     scenarios[`drop through zones @${fraction}`] = [
       { frames: 150, idle: true, start },
     ];
@@ -326,7 +335,9 @@ const CHAOS_CONTROL = process.argv.includes('--chaos');
 for (const [name, actions] of Object.entries(scenarios)) {
   const start = actions[0].start ?? [0, 0.7, 0];
   const rapierSim = makeRapierSim(0, start);
-  const bvhSim = CHAOS_CONTROL ? makeRapierSim(0.001, start) : makeBvhSim(start);
+  const bvhSim = CHAOS_CONTROL
+    ? makeRapierSim(0.001, start)
+    : makeBvhSim(start);
   const a = runScenario(rapierSim, actions);
   const b = runScenario(bvhSim, actions);
 
@@ -334,7 +345,11 @@ for (const [name, actions] of Object.entries(scenarios)) {
   let maxFrame = 0;
   let sumDev = 0;
   for (let i = 0; i < a.length; i++) {
-    const d = Math.hypot(a[i][0] - b[i][0], a[i][1] - b[i][1], a[i][2] - b[i][2]);
+    const d = Math.hypot(
+      a[i][0] - b[i][0],
+      a[i][1] - b[i][1],
+      a[i][2] - b[i][2]
+    );
     sumDev += d;
     if (d > maxDev) {
       maxDev = d;
@@ -356,7 +371,8 @@ for (const [name, actions] of Object.entries(scenarios)) {
   console.log(`apex y rapier ${apexA.toFixed(4)}  bvh ${apexB.toFixed(4)}`);
   if (TRACE && name === 'run+jump -z') printWindow(name, a, b, 124, 160);
   if (TRACE && name === 'settle') printWindow(name, a, b, 0, 10);
-  if (TRACE && name === 'drop through zones @0.1') printWindow(name, a, b, 18, 60);
+  if (TRACE && name === 'drop through zones @0.1')
+    printWindow(name, a, b, 18, 60);
   // locate where a large divergence begins
   if (TRACE && maxDev > 0.5) {
     let start = 0;
@@ -371,15 +387,24 @@ for (const [name, actions] of Object.entries(scenarios)) {
         break;
       }
     }
-    printWindow(name, a, b, Math.max(0, start - 20), Math.min(a.length - 1, start + 15));
+    printWindow(
+      name,
+      a,
+      b,
+      Math.max(0, start - 20),
+      Math.min(a.length - 1, start + 15)
+    );
   }
   const minA = Math.min(...a.map(p => p[1]));
   const minB = Math.min(...b.map(p => p[1]));
   console.log(`min y rapier ${minA.toFixed(3)}  bvh ${minB.toFixed(3)}`);
   console.log(
     'sensor enters rapier:',
-    [...rapierSim.sensorEnters.entries()].map(([n, f]) => `${n}@${f}`).join(' ') || '(none)',
+    [...rapierSim.sensorEnters.entries()]
+      .map(([n, f]) => `${n}@${f}`)
+      .join(' ') || '(none)',
     '| bvh:',
-    [...bvhSim.sensorEnters.entries()].map(([n, f]) => `${n}@${f}`).join(' ') || '(none)'
+    [...bvhSim.sensorEnters.entries()].map(([n, f]) => `${n}@${f}`).join(' ') ||
+      '(none)'
   );
 }

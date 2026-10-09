@@ -54,7 +54,9 @@ const createSceneRevealer = () => {
       const safeProgress = max(abs(uniforms.progress), 1e-5);
       const distanceToCenter = length(centeredUv.div(safeProgress));
 
-      const rotatedUv = rotate2d(sin(uniforms.progress).mul(PI)).mul(centeredUv);
+      const rotatedUv = rotate2d(sin(uniforms.progress).mul(PI)).mul(
+        centeredUv
+      );
 
       const perlinNoise = snoise(
         vec3(rotatedUv.mul(uniforms.size), uniforms.time.mul(0.15))
