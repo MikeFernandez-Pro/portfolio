@@ -23,6 +23,7 @@ import { ResumeIsland } from '#islands/resumeIsland/ResumeIsland';
 import { CountriesFlags } from '#islands/resumeIsland/countryFlags/CountriesFlags';
 
 import { useIslandTexture } from '#utils/packedTextures.js';
+import { toNodeMaterial } from '#utils/nodeMaterials.js';
 
 import islandModel from '#assets/models/island/island.glb?url';
 
@@ -80,6 +81,15 @@ const Islands = () => {
       materials[name].map = islandTexture;
       materials[name].needsUpdate = true;
     }
+
+    // The terrain gets the TSL cloud shadows and island point lights, which
+    // need a node material: swap it in the GLTF materials map (the JSX below
+    // and IslandMaterialsControls read it from there)
+    const terrain = toNodeMaterial(materials.islandTexture);
+    terrain.roughness = 1;
+    patchCloudShadows(terrain);
+    patchIslandPointLights(terrain);
+    materials.islandTexture = terrain;
   }, [materials, islandTexture]);
 
   // The GLB clips animate island_7, which is intentionally not mounted —
@@ -192,9 +202,6 @@ const Islands = () => {
     if (islandMesh) {
       islandMesh.castShadow = !IS_MOBILE_DEVICE;
       islandMesh.receiveShadow = !IS_MOBILE_DEVICE;
-      islandMesh.material.roughness = 1;
-      patchCloudShadows(islandMesh.material);
-      patchIslandPointLights(islandMesh.material);
     }
 
     // Hide keyboard controls on mobile

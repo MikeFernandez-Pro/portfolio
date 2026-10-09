@@ -1,6 +1,25 @@
 import * as THREE from 'three';
-
-import pointLightChunk from '#shaders/includes/pointLight.glsl';
+import {
+  Break,
+  Fn,
+  If,
+  Loop,
+  cameraPosition,
+  diffuseColor,
+  dot,
+  float,
+  length,
+  materialEmissive,
+  max,
+  normalWorld,
+  normalize,
+  positionWorld,
+  pow,
+  reflect,
+  uniform,
+  uniformArray,
+  vec3,
+} from 'three/tsl';
 
 // Old-school point lights (Three.js Journey shading lesson) injected into
 // lit three.js materials (island terrain, character): one for the projects
@@ -249,17 +268,19 @@ const spawnLightSettings = {
   intensity: SPAWN_LIGHT_DEFAULTS.intensity,
 };
 
+// TSL uniform nodes: `.value` reads/writes like the old `{ value }` objects,
+// so the debug controls, gsap tweens and per-frame writers are unchanged
 const createLightUniforms = (prefix, defaults) => ({
-  [`u${prefix}LightColor`]: { value: new THREE.Color(defaults.color) },
-  [`u${prefix}LightIntensity`]: { value: defaults.intensity },
-  [`u${prefix}LightDecay`]: { value: defaults.decay },
-  [`u${prefix}LightDecayPower`]: { value: defaults.decayPower },
-  [`u${prefix}LightSpecularPower`]: { value: defaults.specularPower },
+  [`u${prefix}LightColor`]: uniform(new THREE.Color(defaults.color)),
+  [`u${prefix}LightIntensity`]: uniform(defaults.intensity),
+  [`u${prefix}LightDecay`]: uniform(defaults.decay),
+  [`u${prefix}LightDecayPower`]: uniform(defaults.decayPower),
+  [`u${prefix}LightSpecularPower`]: uniform(defaults.specularPower),
 });
 
 const portalLightUniforms = {
   ...createLightUniforms('Portal', PORTAL_LIGHT_DEFAULTS),
-  uPortalLightPosition: { value: new THREE.Vector3(-16.12, 6.95, -37.7) },
+  uPortalLightPosition: uniform(new THREE.Vector3(-16.12, 6.95, -37.7)),
 };
 // Off until the first portal opening
 portalLightUniforms.uPortalLightIntensity.value = 0;
@@ -275,7 +296,7 @@ const lanternLightsUniforms = createLightUniforms(
 // every frame by useLanternAttachment from the lantern mesh world position
 const beltLanternLightUniforms = {
   ...createLightUniforms('BeltLantern', BELT_LANTERN_LIGHT_DEFAULTS),
-  uBeltLanternLightPosition: { value: new THREE.Vector3() },
+  uBeltLanternLightPosition: uniform(new THREE.Vector3()),
 };
 
 // Mutated by the debug control, applied by the per-frame position update
@@ -285,9 +306,9 @@ const beltLanternLightSettings = {
 
 const houseLanternLightUniforms = {
   ...createLightUniforms('HouseLantern', HOUSE_LANTERN_LIGHT_DEFAULTS),
-  uHouseLanternLightPosition: {
-    value: new THREE.Vector3(...HOUSE_LANTERN_LIGHT_DEFAULTS.position),
-  },
+  uHouseLanternLightPosition: uniform(
+    new THREE.Vector3(...HOUSE_LANTERN_LIGHT_DEFAULTS.position)
+  ),
 };
 
 const indicatorLightsUniforms = createLightUniforms(
@@ -297,81 +318,83 @@ const indicatorLightsUniforms = createLightUniforms(
 
 const forgeLavaLightUniforms = {
   ...createLightUniforms('ForgeLava', FORGE_LAVA_LIGHT_DEFAULTS),
-  uForgeLavaLightPosition: {
-    value: new THREE.Vector3(...FORGE_LAVA_LIGHT_DEFAULTS.position),
-  },
+  uForgeLavaLightPosition: uniform(
+    new THREE.Vector3(...FORGE_LAVA_LIGHT_DEFAULTS.position)
+  ),
 };
 
 const swordLightUniforms = {
   ...createLightUniforms('Sword', SWORD_LIGHT_DEFAULTS),
-  uSwordLightPosition: {
-    value: new THREE.Vector3(...SWORD_LIGHT_DEFAULTS.position),
-  },
+  uSwordLightPosition: uniform(
+    new THREE.Vector3(...SWORD_LIGHT_DEFAULTS.position)
+  ),
 };
 
 const magicPortalLightUniforms = {
   ...createLightUniforms('MagicPortal', MAGIC_PORTAL_LIGHT_DEFAULTS),
   // Set from the glyph GLB node at runtime (see MagicGlyphs)
-  uMagicPortalLightPosition: { value: new THREE.Vector3() },
+  uMagicPortalLightPosition: uniform(new THREE.Vector3()),
 };
 // Off until the glyphs are activated
 magicPortalLightUniforms.uMagicPortalLightIntensity.value = 0;
 
 const windowLightUniforms = {
   ...createLightUniforms('Window', WINDOW_LIGHT_DEFAULTS),
-  uWindowLightPosition: {
-    value: new THREE.Vector3(...WINDOW_LIGHT_DEFAULTS.position),
-  },
+  uWindowLightPosition: uniform(
+    new THREE.Vector3(...WINDOW_LIGHT_DEFAULTS.position)
+  ),
 };
 
 const wellLightUniforms = {
   ...createLightUniforms('Well', WELL_LIGHT_DEFAULTS),
-  uWellLightPosition: {
-    value: new THREE.Vector3(...WELL_LIGHT_DEFAULTS.position),
-  },
+  uWellLightPosition: uniform(
+    new THREE.Vector3(...WELL_LIGHT_DEFAULTS.position)
+  ),
 };
 
 const cauldronLightUniforms = {
   ...createLightUniforms('Cauldron', CAULDRON_LIGHT_DEFAULTS),
-  uCauldronLightPosition: {
-    value: new THREE.Vector3(
+  uCauldronLightPosition: uniform(
+    new THREE.Vector3(
       CAULDRON_LIGHT_DEFAULTS.position[0],
       CAULDRON_LIGHT_DEFAULTS.position[1] + CAULDRON_LIGHT_DEFAULTS.height,
       CAULDRON_LIGHT_DEFAULTS.position[2]
-    ),
-  },
+    )
+  ),
 };
 
 const spawnLightUniforms = {
   ...createLightUniforms('Spawn', SPAWN_LIGHT_DEFAULTS),
-  uSpawnLightPosition: {
-    value: new THREE.Vector3(
+  uSpawnLightPosition: uniform(
+    new THREE.Vector3(
       SPAWN_LIGHT_DEFAULTS.position[0],
       SPAWN_LIGHT_DEFAULTS.position[1] + SPAWN_LIGHT_DEFAULTS.height,
       SPAWN_LIGHT_DEFAULTS.position[2]
-    ),
-  },
+    )
+  ),
 };
 // Off until a respawn plays
 spawnLightUniforms.uSpawnLightIntensity.value = 0;
 
 // The candle flames live in the GLB, so unlike the other grouped lights the
-// positions can't be baked as GLSL constants: Islands.jsx clusters the
-// candles primitive at load and fills this fixed-size uniform array
+// positions can't be baked as constants: Islands.jsx clusters the candles
+// primitive at load and fills this fixed-size uniform array
 const MAX_CANDLE_LIGHTS = 16;
 
 const candleLightsUniforms = {
   ...createLightUniforms('Candle', CANDLE_LIGHTS_DEFAULTS),
-  uCandleLightPositions: {
-    value: Array.from({ length: MAX_CANDLE_LIGHTS }, () => new THREE.Vector3()),
-  },
-  uCandleLightCount: { value: 0 },
+  // uniformArray re-uploads its .array every render
+  uCandleLightPositions: uniformArray(
+    Array.from({ length: MAX_CANDLE_LIGHTS }, () => new THREE.Vector3()),
+    'vec3'
+  ),
+  uCandleLightCount: uniform(0, 'int'),
 };
 
 const setCandleLightPositions = positions => {
   const count = Math.min(positions.length, MAX_CANDLE_LIGHTS);
   for (let i = 0; i < count; i++) {
-    candleLightsUniforms.uCandleLightPositions.value[i].set(
+    candleLightsUniforms.uCandleLightPositions.array[i].set(
       positions[i][0],
       positions[i][1] + CANDLE_LIGHTS_DEFAULTS.height,
       positions[i][2]
@@ -384,186 +407,188 @@ const plateLightsUniforms = {
   ...createLightUniforms('Plate', PLATE_LIGHTS_DEFAULTS),
   // Per-plate activation factor (0 = off, 1 = active), animated by the
   // plate press/release ramps in PressurePlates
-  uPlateLightFactors: { value: new THREE.Vector3(0, 0, 0) },
-  uPlateLightHeight: { value: PLATE_LIGHTS_DEFAULTS.height },
+  uPlateLightFactors: uniform(new THREE.Vector3(0, 0, 0)),
+  uPlateLightHeight: uniform(PLATE_LIGHTS_DEFAULTS.height),
 };
 
-// The grouped positions never move: bake them as GLSL constants instead of
-// uniforms
-const toGlslVec3Array = positions =>
-  positions
-    .map(
-      ([x, y, z]) => `vec3(${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)})`
-    )
-    .join(',\n    ');
+// Old-school point light (Three.js Journey shading lesson): lambert shading
+// + phong specular + shaped decay. Not physically based, but cheap.
+// decayPower shapes the falloff inside the radius set by lightDecay:
+// 1.0 = linear, > 1.0 = sharp hot core, < 1.0 = smooth spread-out pool.
+// World space throughout.
+const pointLight = /*@__PURE__*/ Fn(
+  ([
+    lightColor,
+    lightIntensity,
+    normal,
+    lightPosition,
+    viewDirection,
+    specularPower,
+    position,
+    lightDecay,
+    decayPower,
+  ]) => {
+    const result = vec3(0).toVar();
 
-const lightUniformsGlsl = prefix => `uniform vec3 u${prefix}LightColor;
-uniform float u${prefix}LightIntensity;
-uniform float u${prefix}LightDecay;
-uniform float u${prefix}LightDecayPower;
-uniform float u${prefix}LightSpecularPower;`;
+    const lightDelta = lightPosition.sub(position).toVar();
+    const decay = float(1).sub(length(lightDelta).mul(lightDecay)).toVar();
 
-const lightCallGlsl = (prefix, positionExpression) =>
-  `islandLightAccum += islandPointLight(
-    u${prefix}LightColor,
-    u${prefix}LightIntensity,
-    islandLightNormal,
-    ${positionExpression},
-    islandLightViewDirection,
-    u${prefix}LightSpecularPower,
-    vIslandLightsWorldPos,
-    u${prefix}LightDecay,
-    u${prefix}LightDecayPower
-  );`;
+    // Fragments outside the light radius skip the shading and specular work.
+    // The branch is spatially coherent (neighboring fragments are in/out of
+    // the same lights together), so it's cheap
+    If(decay.greaterThan(0), () => {
+      const lightDirection = normalize(lightDelta);
+      const lightReflection = reflect(lightDirection.negate(), normal);
+
+      const shading = max(0, dot(normal, lightDirection));
+      const specular = pow(
+        max(0, dot(lightReflection, viewDirection).negate()),
+        specularPower
+      );
+
+      result.assign(
+        lightColor
+          .mul(lightIntensity)
+          .mul(pow(decay, decayPower))
+          .mul(shading.add(specular))
+      );
+    });
+
+    return result;
+  }
+).setLayout({
+  name: 'islandPointLight',
+  type: 'vec3',
+  inputs: [
+    { name: 'lightColor', type: 'vec3' },
+    { name: 'lightIntensity', type: 'float' },
+    { name: 'normal', type: 'vec3' },
+    { name: 'lightPosition', type: 'vec3' },
+    { name: 'viewDirection', type: 'vec3' },
+    { name: 'specularPower', type: 'float' },
+    { name: 'position', type: 'vec3' },
+    { name: 'lightDecay', type: 'float' },
+    { name: 'decayPower', type: 'float' },
+  ],
+});
 
 /**
- * Injects the fake point lights into a lit three.js material (built-in or
- * CSM-wrapped, e.g. the island terrain and the character). Self-contained:
- * declares its own world position varying.
+ * Sum of every island point light at the fragment (world space, before the
+ * albedo multiply). The grouped positions never move: they are unrolled as
+ * constants.
+ */
+const islandPointLights = /*@__PURE__*/ Fn(() => {
+  const normal = normalWorld;
+  const position = positionWorld;
+  const viewDirection = positionWorld.sub(cameraPosition).normalize();
+
+  const accum = vec3(0).toVar();
+
+  const addLight = (uniforms, prefix, lightPosition, intensity) => {
+    accum.addAssign(
+      pointLight(
+        uniforms[`u${prefix}LightColor`],
+        intensity ?? uniforms[`u${prefix}LightIntensity`],
+        normal,
+        lightPosition,
+        viewDirection,
+        uniforms[`u${prefix}LightSpecularPower`],
+        position,
+        uniforms[`u${prefix}LightDecay`],
+        uniforms[`u${prefix}LightDecayPower`]
+      )
+    );
+  };
+  const constant = ([x, y, z]) => vec3(x, y, z);
+
+  addLight(
+    portalLightUniforms,
+    'Portal',
+    portalLightUniforms.uPortalLightPosition
+  );
+  TORCH_LIGHT_POSITIONS.forEach(p =>
+    addLight(torchLightsUniforms, 'Torch', constant(p))
+  );
+  LANTERN_LIGHT_POSITIONS.forEach(p =>
+    addLight(lanternLightsUniforms, 'Lantern', constant(p))
+  );
+  addLight(
+    beltLanternLightUniforms,
+    'BeltLantern',
+    beltLanternLightUniforms.uBeltLanternLightPosition
+  );
+  addLight(
+    houseLanternLightUniforms,
+    'HouseLantern',
+    houseLanternLightUniforms.uHouseLanternLightPosition
+  );
+  INDICATOR_LIGHT_POSITIONS.forEach(p =>
+    addLight(indicatorLightsUniforms, 'Indicator', constant(p))
+  );
+  addLight(
+    forgeLavaLightUniforms,
+    'ForgeLava',
+    forgeLavaLightUniforms.uForgeLavaLightPosition
+  );
+  addLight(swordLightUniforms, 'Sword', swordLightUniforms.uSwordLightPosition);
+  addLight(
+    magicPortalLightUniforms,
+    'MagicPortal',
+    magicPortalLightUniforms.uMagicPortalLightPosition
+  );
+  addLight(wellLightUniforms, 'Well', wellLightUniforms.uWellLightPosition);
+  addLight(
+    windowLightUniforms,
+    'Window',
+    windowLightUniforms.uWindowLightPosition
+  );
+  addLight(
+    cauldronLightUniforms,
+    'Cauldron',
+    cauldronLightUniforms.uCauldronLightPosition
+  );
+  addLight(spawnLightUniforms, 'Spawn', spawnLightUniforms.uSpawnLightPosition);
+
+  Loop(MAX_CANDLE_LIGHTS, ({ i }) => {
+    If(i.greaterThanEqual(candleLightsUniforms.uCandleLightCount), () => {
+      Break();
+    });
+    addLight(
+      candleLightsUniforms,
+      'Candle',
+      candleLightsUniforms.uCandleLightPositions.element(i)
+    );
+  });
+
+  const plateFactors = plateLightsUniforms.uPlateLightFactors;
+  const plateLift = vec3(0, plateLightsUniforms.uPlateLightHeight, 0);
+  ['x', 'y', 'z'].forEach((component, index) =>
+    addLight(
+      plateLightsUniforms,
+      'Plate',
+      constant(PLATE_LIGHT_POSITIONS[index]).add(plateLift),
+      plateLightsUniforms.uPlateLightIntensity.mul(plateFactors[component])
+    )
+  );
+
+  return accum;
+});
+
+/**
+ * Adds the island point lights to a lit node material (island terrain,
+ * character, lantern). Lit like a direct diffuse light: the sum is scaled by
+ * the albedo and added through the emissive slot, on top of the material's
+ * own emissive. Idempotent. Classic (non-node) materials are skipped: they
+ * don't render under WebGPU anyway.
  */
 const patchIslandPointLights = material => {
-  const previousOnBeforeCompile = material.onBeforeCompile;
+  if (!material.isNodeMaterial || material.userData.islandPointLights) return;
+  material.userData.islandPointLights = true;
 
-  // three's lit materials declare a local `PointLight pointLight;` in main()
-  // when the scene has point lights, which would shadow the include's
-  // function and break the call — rename it on injection
-  const renamedPointLightChunk = pointLightChunk.replace(
-    'vec3 pointLight(',
-    'vec3 islandPointLight('
+  const baseEmissive = material.emissiveNode ?? materialEmissive;
+  material.emissiveNode = baseEmissive.add(
+    diffuseColor.rgb.mul(islandPointLights())
   );
-
-  material.onBeforeCompile = (shader, renderer) => {
-    previousOnBeforeCompile?.call(material, shader, renderer);
-
-    Object.assign(
-      shader.uniforms,
-      portalLightUniforms,
-      torchLightsUniforms,
-      lanternLightsUniforms,
-      beltLanternLightUniforms,
-      houseLanternLightUniforms,
-      indicatorLightsUniforms,
-      forgeLavaLightUniforms,
-      swordLightUniforms,
-      magicPortalLightUniforms,
-      wellLightUniforms,
-      windowLightUniforms,
-      plateLightsUniforms,
-      cauldronLightUniforms,
-      spawnLightUniforms,
-      candleLightsUniforms
-    );
-
-    shader.vertexShader = shader.vertexShader
-      .replace(
-        '#include <common>',
-        '#include <common>\nvarying vec3 vIslandLightsWorldPos;'
-      )
-      .replace(
-        '#include <worldpos_vertex>',
-        '#include <worldpos_vertex>\nvIslandLightsWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;'
-      );
-
-    shader.fragmentShader = shader.fragmentShader
-      .replace(
-        '#include <common>',
-        `#include <common>
-varying vec3 vIslandLightsWorldPos;
-${lightUniformsGlsl('Portal')}
-uniform vec3 uPortalLightPosition;
-${lightUniformsGlsl('Torch')}
-${lightUniformsGlsl('Lantern')}
-${lightUniformsGlsl('BeltLantern')}
-uniform vec3 uBeltLanternLightPosition;
-${lightUniformsGlsl('HouseLantern')}
-uniform vec3 uHouseLanternLightPosition;
-${lightUniformsGlsl('Indicator')}
-${lightUniformsGlsl('ForgeLava')}
-uniform vec3 uForgeLavaLightPosition;
-${lightUniformsGlsl('Sword')}
-uniform vec3 uSwordLightPosition;
-${lightUniformsGlsl('MagicPortal')}
-uniform vec3 uMagicPortalLightPosition;
-${lightUniformsGlsl('Well')}
-uniform vec3 uWellLightPosition;
-${lightUniformsGlsl('Window')}
-uniform vec3 uWindowLightPosition;
-${lightUniformsGlsl('Cauldron')}
-uniform vec3 uCauldronLightPosition;
-${lightUniformsGlsl('Spawn')}
-uniform vec3 uSpawnLightPosition;
-${lightUniformsGlsl('Plate')}
-uniform vec3 uPlateLightFactors;
-uniform float uPlateLightHeight;
-${lightUniformsGlsl('Candle')}
-#define MAX_CANDLE_LIGHTS ${MAX_CANDLE_LIGHTS}
-uniform vec3 uCandleLightPositions[MAX_CANDLE_LIGHTS];
-uniform int uCandleLightCount;
-#define PLATE_LIGHT_COUNT ${PLATE_LIGHT_POSITIONS.length}
-const vec3 PLATE_LIGHT_POSITIONS[PLATE_LIGHT_COUNT] = vec3[](
-    ${toGlslVec3Array(PLATE_LIGHT_POSITIONS)}
-);
-#define TORCH_LIGHT_COUNT ${TORCH_LIGHT_POSITIONS.length}
-const vec3 TORCH_LIGHT_POSITIONS[TORCH_LIGHT_COUNT] = vec3[](
-    ${toGlslVec3Array(TORCH_LIGHT_POSITIONS)}
-);
-#define LANTERN_LIGHT_COUNT ${LANTERN_LIGHT_POSITIONS.length}
-const vec3 LANTERN_LIGHT_POSITIONS[LANTERN_LIGHT_COUNT] = vec3[](
-    ${toGlslVec3Array(LANTERN_LIGHT_POSITIONS)}
-);
-#define INDICATOR_LIGHT_COUNT ${INDICATOR_LIGHT_POSITIONS.length}
-const vec3 INDICATOR_LIGHT_POSITIONS[INDICATOR_LIGHT_COUNT] = vec3[](
-    ${toGlslVec3Array(INDICATOR_LIGHT_POSITIONS)}
-);
-${renamedPointLightChunk}`
-      )
-      .replace(
-        '#include <lights_fragment_end>',
-        `#include <lights_fragment_end>
-// Island point lights: the lesson works in world space, so the view-space
-// normal is brought back to world
-vec3 islandLightNormal = inverseTransformDirection(normal, viewMatrix);
-vec3 islandLightViewDirection = normalize(vIslandLightsWorldPos - cameraPosition);
-vec3 islandLightAccum = vec3(0.0);
-${lightCallGlsl('Portal', 'uPortalLightPosition')}
-for (int i = 0; i < TORCH_LIGHT_COUNT; i++) {
-  ${lightCallGlsl('Torch', 'TORCH_LIGHT_POSITIONS[i]')}
-}
-for (int i = 0; i < LANTERN_LIGHT_COUNT; i++) {
-  ${lightCallGlsl('Lantern', 'LANTERN_LIGHT_POSITIONS[i]')}
-}
-${lightCallGlsl('BeltLantern', 'uBeltLanternLightPosition')}
-${lightCallGlsl('HouseLantern', 'uHouseLanternLightPosition')}
-for (int i = 0; i < INDICATOR_LIGHT_COUNT; i++) {
-  ${lightCallGlsl('Indicator', 'INDICATOR_LIGHT_POSITIONS[i]')}
-}
-${lightCallGlsl('ForgeLava', 'uForgeLavaLightPosition')}
-${lightCallGlsl('Sword', 'uSwordLightPosition')}
-${lightCallGlsl('MagicPortal', 'uMagicPortalLightPosition')}
-${lightCallGlsl('Well', 'uWellLightPosition')}
-${lightCallGlsl('Window', 'uWindowLightPosition')}
-${lightCallGlsl('Cauldron', 'uCauldronLightPosition')}
-${lightCallGlsl('Spawn', 'uSpawnLightPosition')}
-for (int i = 0; i < MAX_CANDLE_LIGHTS; i++) {
-  if (i >= uCandleLightCount) break;
-  ${lightCallGlsl('Candle', 'uCandleLightPositions[i]')}
-}
-for (int i = 0; i < PLATE_LIGHT_COUNT; i++) {
-  islandLightAccum += islandPointLight(
-    uPlateLightColor,
-    uPlateLightIntensity * uPlateLightFactors[i],
-    islandLightNormal,
-    PLATE_LIGHT_POSITIONS[i] + vec3(0.0, uPlateLightHeight, 0.0),
-    islandLightViewDirection,
-    uPlateLightSpecularPower,
-    vIslandLightsWorldPos,
-    uPlateLightDecay,
-    uPlateLightDecayPower
-  );
-}
-reflectedLight.directDiffuse += diffuseColor.rgb * islandLightAccum;`
-      );
-  };
   material.needsUpdate = true;
 };
 
@@ -605,5 +630,6 @@ export {
   plateLightsUniforms,
   candleLightsUniforms,
   setCandleLightPositions,
+  islandPointLights,
   patchIslandPointLights,
 };
