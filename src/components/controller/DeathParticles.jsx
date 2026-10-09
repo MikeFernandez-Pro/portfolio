@@ -148,90 +148,86 @@ const DeathParticles = () => {
     refreshDespawnAnimation();
   };
 
-  const controls = useControls(
-    'Player Death',
-    {
-      // Full death preview (character despawn + dust burst in parallel) at
-      // the character's current position
-      Play: () => playPlayerDeathPreview(),
-      'Reset Animation': () => {
-        resetDeathParticles();
-        resetDespawnAnimation();
-      },
-      // Freeze both animations at any moment (0 = alive, 1 = fully gone)
-      progress: {
-        value: 0,
-        min: 0,
-        max: 1,
-        step: 0.001,
-        onChange: v => {
-          scrubDeathParticles(v);
-          scrubDespawnAnimation(v);
-        },
-      },
-
-      // Character despawn (reverse respawn dissolve, no spiral). The lava
-      // look (color, intensity, noise) is shared with the respawn and lives
-      // in the Respawn Animation folder
-      despawnDissolve: {
-        value: DESPAWN_DEFAULTS.dissolveDuration,
-        min: 0.1,
-        max: 4,
-        step: 0.01,
-        onChange: v => setDespawnConfig('dissolveDuration', v),
-      },
-      despawnFade: {
-        value: DESPAWN_DEFAULTS.fadeDuration,
-        min: 0.1,
-        max: 4,
-        step: 0.01,
-        onChange: v => setDespawnConfig('fadeDuration', v),
-      },
-      despawnThickness: {
-        value: DESPAWN_DEFAULTS.thickness,
-        min: 0.01,
-        max: 1,
-        step: 0.01,
-        onChange: v => setDespawnConfig('thickness', v),
-      },
-
-      // Dust burst — rebuilds the geometry (new random spread) when changed
-      count: { value: PARTICLES_COUNT, min: 10, max: 500, step: 10 },
-      particlesDuration: {
-        value: d.duration,
-        min: 0.2,
-        max: 3,
-        step: 0.01,
-        onChange: v => (deathParticlesConfig.duration = v),
-      },
-      riseHeight: {
-        value: d.riseHeight,
-        min: 0.2,
-        max: 4,
-        step: 0.01,
-        onChange: v => withUniforms(u => (u.uRiseHeight.value = v)),
-      },
-      size: {
-        value: d.size,
-        min: 0.01,
-        max: 0.3,
-        step: 0.001,
-        onChange: v => withUniforms(u => (u.uSize.value = v)),
-      },
-      color: {
-        value: d.color,
-        onChange: v => withUniforms(u => u.uColor.value.set(v)),
-      },
-      intensity: {
-        value: d.intensity,
-        min: 1,
-        max: 10,
-        step: 0.01,
-        onChange: v => withUniforms(u => (u.uIntensity.value = v)),
+  const controls = useControls('Player Death', {
+    // Full death preview (character despawn + death particles in parallel) at
+    // the character's current position
+    Play: () => playPlayerDeathPreview(),
+    'Reset Animation': () => {
+      resetDeathParticles();
+      resetDespawnAnimation();
+    },
+    // Freeze both animations at any moment (0 = alive, 1 = fully gone)
+    progress: {
+      value: 0,
+      min: 0,
+      max: 1,
+      step: 0.001,
+      onChange: v => {
+        scrubDeathParticles(v);
+        scrubDespawnAnimation(v);
       },
     },
-    { collapsed: true }
-  );
+
+    // Character despawn (reverse respawn dissolve, no spiral). The lava
+    // look (color, intensity, noise) is shared with the respawn and lives
+    // in the Respawn Animation folder
+    despawnDissolve: {
+      value: DESPAWN_DEFAULTS.dissolveDuration,
+      min: 0.1,
+      max: 4,
+      step: 0.01,
+      onChange: v => setDespawnConfig('dissolveDuration', v),
+    },
+    despawnFade: {
+      value: DESPAWN_DEFAULTS.fadeDuration,
+      min: 0.1,
+      max: 4,
+      step: 0.01,
+      onChange: v => setDespawnConfig('fadeDuration', v),
+    },
+    despawnThickness: {
+      value: DESPAWN_DEFAULTS.thickness,
+      min: 0.01,
+      max: 1,
+      step: 0.01,
+      onChange: v => setDespawnConfig('thickness', v),
+    },
+
+    // Death particles — rebuild the geometry (new random spread) when changed
+    count: { value: PARTICLES_COUNT, min: 10, max: 500, step: 10 },
+    particlesDuration: {
+      value: d.duration,
+      min: 0.2,
+      max: 3,
+      step: 0.01,
+      onChange: v => (deathParticlesConfig.duration = v),
+    },
+    riseHeight: {
+      value: d.riseHeight,
+      min: 0.2,
+      max: 4,
+      step: 0.01,
+      onChange: v => withUniforms(u => (u.uRiseHeight.value = v)),
+    },
+    size: {
+      value: d.size,
+      min: 0.01,
+      max: 0.3,
+      step: 0.001,
+      onChange: v => withUniforms(u => (u.uSize.value = v)),
+    },
+    color: {
+      value: d.color,
+      onChange: v => withUniforms(u => u.uColor.value.set(v)),
+    },
+    intensity: {
+      value: d.intensity,
+      min: 1,
+      max: 10,
+      step: 0.01,
+      onChange: v => withUniforms(u => (u.uIntensity.value = v)),
+    },
+  });
 
   const particles = useMemo(() => {
     const count = controls.count;

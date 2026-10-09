@@ -97,49 +97,45 @@ const useHeadOrb = scene => {
     };
   }, [scene]);
 
-  useControls(
-    'HeadOrb',
-    {
-      color: {
-        value: ORB_DEFAULTS.color,
-        onChange: v => {
-          settings.color = v;
-          applySettings();
-        },
-      },
-      intensity: {
-        value: ORB_DEFAULTS.intensity,
-        min: 0,
-        max: 10,
-        step: 0.05,
-        onChange: v => {
-          settings.intensity = v;
-          applySettings();
-        },
-      },
-      scale: {
-        value: ORB_DEFAULTS.scale,
-        min: 0.01,
-        max: 2,
-        step: 0.01,
-        onChange: v => {
-          settings.scale = v;
-          applySettings();
-        },
-      },
-      height: {
-        value: ORB_DEFAULTS.height,
-        min: -2,
-        max: 2,
-        step: 0.01,
-        onChange: v => {
-          settings.height = v;
-          applySettings();
-        },
+  useControls('HeadOrb', {
+    color: {
+      value: ORB_DEFAULTS.color,
+      onChange: v => {
+        settings.color = v;
+        applySettings();
       },
     },
-    { collapsed: true, reset: true }
-  );
+    intensity: {
+      value: ORB_DEFAULTS.intensity,
+      min: 0,
+      max: 10,
+      step: 0.05,
+      onChange: v => {
+        settings.intensity = v;
+        applySettings();
+      },
+    },
+    scale: {
+      value: ORB_DEFAULTS.scale,
+      min: 0.01,
+      max: 2,
+      step: 0.01,
+      onChange: v => {
+        settings.scale = v;
+        applySettings();
+      },
+    },
+    height: {
+      value: ORB_DEFAULTS.height,
+      min: -2,
+      max: 2,
+      step: 0.01,
+      onChange: v => {
+        settings.height = v;
+        applySettings();
+      },
+    },
+  });
 
   // Fade with the respawn dissolve so the orb never floats in a half-formed
   // character

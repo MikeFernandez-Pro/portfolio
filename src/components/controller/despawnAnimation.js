@@ -5,8 +5,8 @@ import { useStore } from '#store/ZustandStorage.jsx';
 // Character despawn: the respawn dissolve played the other way around — the
 // formed character mixes into the voronoi lava, then the lava recedes to
 // nothing (no spiral). Plays the moment the character dies, in parallel with
-// the dust burst (DeathParticles). Fully independent of respawnAnimation.js:
-// it shares the character uniforms but has its own config and timeline.
+// the death particles. Fully independent of respawnAnimation.js: it shares
+// the character uniforms but has its own config and timeline.
 export const DESPAWN_DEFAULTS = {
   // Durations (seconds)
   dissolveDuration: 0.3, // formed character -> voronoi lava

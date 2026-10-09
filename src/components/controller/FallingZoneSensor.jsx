@@ -29,13 +29,9 @@ export default function FallingZoneSensor({ onEnter, onDeathEnter }) {
   onEnterRef.current = onEnter;
   onDeathEnterRef.current = onDeathEnter;
 
-  const { deathZoneHeight } = useControls(
-    'Falling',
-    {
-      deathZoneHeight: { value: -1, min: -10, max: 0, step: 0.1 },
-    },
-    { collapsed: true }
-  );
+  const { deathZoneHeight } = useControls('Falling', {
+    deathZoneHeight: { value: -1, min: -10, max: 0, step: 0.1 },
+  });
 
   useEffect(() => {
     const bvh = buildWorldSpaceBvh(nodes.fallingZone.geometry, {

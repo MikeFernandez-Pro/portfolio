@@ -62,77 +62,73 @@ function mulberry32(seed) {
  * Instanced wind-line ribbons drifting above the islands.
  */
 const WindLines = () => {
-  const controls = useControls(
-    'Wind Lines',
-    {
-      enabled: WIND_LINES_DEFAULTS.enabled,
-      color: WIND_LINES_DEFAULTS.color,
-      direction: {
-        value: WIND_LINES_DEFAULTS.direction,
-        min: -Math.PI,
-        max: Math.PI,
-        step: 0.01,
-      },
-      gridSpacing: {
-        value: WIND_LINES_DEFAULTS.gridSpacing,
-        min: 1,
-        max: 12,
-        step: 0.1,
-      },
-      geometryLength: {
-        value: WIND_LINES_DEFAULTS.geometryLength,
-        min: 1,
-        max: 30,
-        step: 0.1,
-      },
-      baseHeight: {
-        value: WIND_LINES_DEFAULTS.baseHeight,
-        min: -2,
-        max: 12,
-        step: 0.1,
-      },
-      heightVariation: {
-        value: WIND_LINES_DEFAULTS.heightVariation,
-        min: 0,
-        max: 12,
-        step: 0.1,
-      },
-      width: {
-        value: WIND_LINES_DEFAULTS.width,
-        min: 0.02,
-        max: 0.5,
-        step: 0.01,
-      },
-      speed: { value: WIND_LINES_DEFAULTS.speed, min: 0, max: 5, step: 0.01 },
-      alphaMultiplier: {
-        value: WIND_LINES_DEFAULTS.alphaMultiplier,
-        min: 0,
-        max: 2,
-        step: 0.01,
-      },
-      lengthMultiplier: {
-        value: WIND_LINES_DEFAULTS.lengthMultiplier,
-        min: 0.1,
-        max: 4,
-        step: 0.01,
-      },
-      centerX: {
-        value: WIND_LINES_DEFAULTS.centerX,
-        min: -60,
-        max: 60,
-        step: 0.5,
-      },
-      centerZ: {
-        value: WIND_LINES_DEFAULTS.centerZ,
-        min: -80,
-        max: 40,
-        step: 0.5,
-      },
-      sizeX: { value: WIND_LINES_DEFAULTS.sizeX, min: 4, max: 120, step: 1 },
-      sizeZ: { value: WIND_LINES_DEFAULTS.sizeZ, min: 4, max: 160, step: 1 },
+  const controls = useControls('Wind Lines', {
+    enabled: WIND_LINES_DEFAULTS.enabled,
+    color: WIND_LINES_DEFAULTS.color,
+    direction: {
+      value: WIND_LINES_DEFAULTS.direction,
+      min: -Math.PI,
+      max: Math.PI,
+      step: 0.01,
     },
-    { collapsed: true }
-  );
+    gridSpacing: {
+      value: WIND_LINES_DEFAULTS.gridSpacing,
+      min: 1,
+      max: 12,
+      step: 0.1,
+    },
+    geometryLength: {
+      value: WIND_LINES_DEFAULTS.geometryLength,
+      min: 1,
+      max: 30,
+      step: 0.1,
+    },
+    baseHeight: {
+      value: WIND_LINES_DEFAULTS.baseHeight,
+      min: -2,
+      max: 12,
+      step: 0.1,
+    },
+    heightVariation: {
+      value: WIND_LINES_DEFAULTS.heightVariation,
+      min: 0,
+      max: 12,
+      step: 0.1,
+    },
+    width: {
+      value: WIND_LINES_DEFAULTS.width,
+      min: 0.02,
+      max: 0.5,
+      step: 0.01,
+    },
+    speed: { value: WIND_LINES_DEFAULTS.speed, min: 0, max: 5, step: 0.01 },
+    alphaMultiplier: {
+      value: WIND_LINES_DEFAULTS.alphaMultiplier,
+      min: 0,
+      max: 2,
+      step: 0.01,
+    },
+    lengthMultiplier: {
+      value: WIND_LINES_DEFAULTS.lengthMultiplier,
+      min: 0.1,
+      max: 4,
+      step: 0.01,
+    },
+    centerX: {
+      value: WIND_LINES_DEFAULTS.centerX,
+      min: -60,
+      max: 60,
+      step: 0.5,
+    },
+    centerZ: {
+      value: WIND_LINES_DEFAULTS.centerZ,
+      min: -80,
+      max: 40,
+      step: 0.5,
+    },
+    sizeX: { value: WIND_LINES_DEFAULTS.sizeX, min: 4, max: 120, step: 1 },
+    sizeZ: { value: WIND_LINES_DEFAULTS.sizeZ, min: 4, max: 160, step: 1 },
+  });
 
   const uniforms = useMemo(
     () => ({

@@ -17,8 +17,6 @@ const PORTAL_PLATE_ID = 'portalPlate';
 const SEA_PLATE_ID = 'seaPlate';
 const HALLOWEEN_PLATE_ID = 'halloweenPlate';
 
-const INTERACTIVE_ELEMENTS_COUNT = 9;
-
 const MAIL_BOX_URL = 'mailto:contact@mike-fernandez.dev';
 const LINKEDIN_URL =
   'https://www.linkedin.com/in/mike-fernandez-front-end-dev/';
@@ -160,9 +158,4 @@ const interactiveElementsData = {
   },
 };
 
-export {
-  INTERACTIVE_ELEMENTS_COUNT,
-  PORTAL_ID,
-  MAIL_BOX_URL,
-  interactiveElementsData,
-};
+export { PORTAL_ID, MAIL_BOX_URL, interactiveElementsData };

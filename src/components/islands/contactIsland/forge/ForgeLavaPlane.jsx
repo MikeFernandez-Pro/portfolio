@@ -33,7 +33,6 @@ const LAVA_DEFAULTS = {
   // Glow intensity range: min at rest, max when the bellows fully close
   minIntensity: 10,
   maxIntensity: 40,
-  contrast: 1.5,
   borderThicknessX: 0.05,
   borderThicknessY: 0.09,
   perlinNoiseStrength: 0.22,
@@ -41,7 +40,7 @@ const LAVA_DEFAULTS = {
 
 /**
  * Standalone lava plane replacing the GLB lava mesh (island_6, hidden).
- * Flat by default (rotated -90° on X), spun around Y via the Leva control.
+ * Flat by default (rotated -90° on X), spun around Y via its debug control.
  */
 const ForgeLavaPlane = ({ blowerMesh }) => {
   const uniformsRef = useRef(null);
@@ -67,7 +66,6 @@ const ForgeLavaPlane = ({ blowerMesh }) => {
       uCrustColor: uniform(new THREE.Color(LAVA_DEFAULTS.crustColor)),
       uGlowColor: uniform(new THREE.Color(LAVA_DEFAULTS.glowColor)),
       uIntensity: uniform(LAVA_DEFAULTS.minIntensity),
-      uContrast: uniform(LAVA_DEFAULTS.contrast),
       uBorderThicknessX: uniform(LAVA_DEFAULTS.borderThicknessX),
       uBorderThicknessY: uniform(LAVA_DEFAULTS.borderThicknessY),
       uPerlinNoiseStrength: uniform(LAVA_DEFAULTS.perlinNoiseStrength),
@@ -200,15 +198,6 @@ const ForgeLavaPlane = ({ blowerMesh }) => {
           gaspParamsRef.current.peak = value;
         },
       },
-      contrast: {
-        value: LAVA_DEFAULTS.contrast,
-        min: 0.1,
-        max: 8,
-        step: 0.1,
-        onChange: value => {
-          if (uniformsRef.current) uniformsRef.current.uContrast.value = value;
-        },
-      },
       borderThicknessX: {
         value: LAVA_DEFAULTS.borderThicknessX,
         min: 0,
@@ -239,8 +228,7 @@ const ForgeLavaPlane = ({ blowerMesh }) => {
             uniformsRef.current.uPerlinNoiseStrength.value = value;
         },
       },
-    },
-    { collapsed: true }
+    }
   );
 
   useFrame((_, delta) => {

@@ -143,23 +143,19 @@ const FloatingSkills = () => {
     [mesh]
   );
 
-  useControls(
-    'Skills',
-    {
-      color: {
-        value: SKILLS_COLOR,
-        onChange: value => uniforms.uColor.value.set(value),
-      },
-      intensity: {
-        value: SKILLS_INTENSITY,
-        min: 0,
-        max: 20,
-        step: 0.01,
-        onChange: value => (uniforms.uIntensity.value = value),
-      },
+  useControls('Skills', {
+    color: {
+      value: SKILLS_COLOR,
+      onChange: value => uniforms.uColor.value.set(value),
     },
-    { collapsed: true }
-  );
+    intensity: {
+      value: SKILLS_INTENSITY,
+      min: 0,
+      max: 20,
+      step: 0.01,
+      onChange: value => (uniforms.uIntensity.value = value),
+    },
+  });
 
   // Fade in with the magic glyph activation
   useEffect(() => {

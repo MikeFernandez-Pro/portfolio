@@ -9,10 +9,6 @@ import {
   smokeColumnTimeOffset,
 } from '#shaders/smoke/smoke.js';
 
-// Stable fallback so the matrices effect doesn't re-run on every render
-// for groups without an offset control
-const NO_OFFSET = [0, 0, 0];
-
 /**
  * Group of smoke columns reusing the bonfire smoke shader: one shared
  * material and a single instanced mesh (one draw call per group), tuned
@@ -100,34 +96,22 @@ const SmokeColumns = props => {
     height: { value: d.height, min: 0.5, max: 20, step: 0.1 },
   };
 
-  // Shared world-space offset, only for groups whose defaults ask for it
-  // (torch positions are baked, the cauldron still gets tuned live)
-  if (d.offset) {
-    schema.offset = { value: d.offset, step: 0.01 };
-  }
-
-  const controls = useControls(folderName, schema, {
-    collapsed: true,
-    reset: true,
-  });
+  const controls = useControls(folderName, schema);
   const { width, height } = controls;
-  const offset = controls.offset ?? NO_OFFSET;
 
   useEffect(() => {
     const columnOffsets = geometry.attributes.aColumnOffset;
     const timeOffsets = geometry.attributes.aTimeOffset;
 
     positions.forEach(([x, y, z], index) => {
-      const columnX = x + offset[0];
-      const columnZ = z + offset[2];
-      columnOffsets.setXYZ(index, columnX, y + offset[1], columnZ);
-      timeOffsets.setX(index, smokeColumnTimeOffset(columnX, columnZ));
+      columnOffsets.setXYZ(index, x, y, z);
+      timeOffsets.setX(index, smokeColumnTimeOffset(x, z));
     });
     columnOffsets.needsUpdate = true;
     timeOffsets.needsUpdate = true;
 
     columnScale.value.set(width, height / 10);
-  }, [positions, width, height, offset, geometry, columnScale]);
+  }, [positions, width, height, geometry, columnScale]);
 
   return (
     // Columns are spread across the map while the mesh sits at the origin,

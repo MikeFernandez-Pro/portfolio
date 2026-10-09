@@ -163,153 +163,141 @@ const useLanternAttachment = ({ scene, characterBody, characterMesh }) => {
 
   useLanternMaterial(scene, lanternMeshRef);
 
-  useControls(
-    'LanternTransform',
-    {
-      position: {
-        value: TRANSFORM_DEFAULTS.position,
-        step: 0.01,
-        onChange: v => {
-          transform.position = v;
-          applyTransform();
-        },
-      },
-      rotation: {
-        value: TRANSFORM_DEFAULTS.rotation,
-        step: 0.01,
-        onChange: v => {
-          transform.rotation = v;
-          applyTransform();
-        },
-      },
-      scale: {
-        value: TRANSFORM_DEFAULTS.scale,
-        min: 0.1,
-        max: 3,
-        step: 0.01,
-        onChange: v => {
-          transform.scale = v;
-          applyTransform();
-        },
+  useControls('LanternTransform', {
+    position: {
+      value: TRANSFORM_DEFAULTS.position,
+      step: 0.01,
+      onChange: v => {
+        transform.position = v;
+        applyTransform();
       },
     },
-    { collapsed: true, reset: true }
-  );
+    rotation: {
+      value: TRANSFORM_DEFAULTS.rotation,
+      step: 0.01,
+      onChange: v => {
+        transform.rotation = v;
+        applyTransform();
+      },
+    },
+    scale: {
+      value: TRANSFORM_DEFAULTS.scale,
+      min: 0.1,
+      max: 3,
+      step: 0.01,
+      onChange: v => {
+        transform.scale = v;
+        applyTransform();
+      },
+    },
+  });
 
-  useControls(
-    'LanternSwing',
-    {
-      stiffness: {
-        value: SWING_DEFAULTS.stiffness,
-        min: 1,
-        max: 200,
-        step: 1,
-        onChange: v => (swing.stiffness = v),
-      },
-      damping: {
-        value: SWING_DEFAULTS.damping,
-        min: 0,
-        max: 30,
-        step: 0.1,
-        onChange: v => (swing.damping = v),
-      },
-      maxAngle: {
-        value: SWING_DEFAULTS.maxAngle,
-        min: 0,
-        max: 1.5,
-        step: 0.01,
-        onChange: v => (swing.maxAngle = v),
-      },
-      influence: {
-        value: SWING_DEFAULTS.influence,
-        min: -0.2,
-        max: 0.2,
-        step: 0.005,
-        onChange: v => (swing.influence = v),
-      },
-      yawInfluence: {
-        value: SWING_DEFAULTS.yawInfluence,
-        min: -1,
-        max: 1,
-        step: 0.01,
-        onChange: v => (swing.yawInfluence = v),
-      },
-      verticalInfluence: {
-        value: SWING_DEFAULTS.verticalInfluence,
-        min: -0.2,
-        max: 0.2,
-        step: 0.005,
-        onChange: v => (swing.verticalInfluence = v),
-      },
-      smoothing: {
-        value: SWING_DEFAULTS.smoothing,
-        min: 1,
-        max: 40,
-        step: 0.5,
-        onChange: v => (swing.smoothing = v),
-      },
+  useControls('LanternSwing', {
+    stiffness: {
+      value: SWING_DEFAULTS.stiffness,
+      min: 1,
+      max: 200,
+      step: 1,
+      onChange: v => (swing.stiffness = v),
     },
-    { collapsed: true, reset: true }
-  );
+    damping: {
+      value: SWING_DEFAULTS.damping,
+      min: 0,
+      max: 30,
+      step: 0.1,
+      onChange: v => (swing.damping = v),
+    },
+    maxAngle: {
+      value: SWING_DEFAULTS.maxAngle,
+      min: 0,
+      max: 1.5,
+      step: 0.01,
+      onChange: v => (swing.maxAngle = v),
+    },
+    influence: {
+      value: SWING_DEFAULTS.influence,
+      min: -0.2,
+      max: 0.2,
+      step: 0.005,
+      onChange: v => (swing.influence = v),
+    },
+    yawInfluence: {
+      value: SWING_DEFAULTS.yawInfluence,
+      min: -1,
+      max: 1,
+      step: 0.01,
+      onChange: v => (swing.yawInfluence = v),
+    },
+    verticalInfluence: {
+      value: SWING_DEFAULTS.verticalInfluence,
+      min: -0.2,
+      max: 0.2,
+      step: 0.005,
+      onChange: v => (swing.verticalInfluence = v),
+    },
+    smoothing: {
+      value: SWING_DEFAULTS.smoothing,
+      min: 1,
+      max: 40,
+      step: 0.5,
+      onChange: v => (swing.smoothing = v),
+    },
+  });
 
   // Fake point light following the lantern (BeltLanternLight debug folder)
-  useControls(
-    'BeltLanternLight',
-    {
-      color: {
-        value: BELT_LANTERN_LIGHT_DEFAULTS.color,
-        onChange: v => {
-          beltLanternLightUniforms.uBeltLanternLightColor.value.set(v);
-        },
-      },
-      intensity: {
-        value: BELT_LANTERN_LIGHT_DEFAULTS.intensity,
-        min: 0,
-        max: 10,
-        step: 0.05,
-        onChange: v => {
-          beltLanternLightUniforms.uBeltLanternLightIntensity.value = v;
-        },
-      },
-      decay: {
-        value: BELT_LANTERN_LIGHT_DEFAULTS.decay,
-        min: 0,
-        max: 1,
-        step: 0.005,
-        onChange: v => {
-          beltLanternLightUniforms.uBeltLanternLightDecay.value = v;
-        },
-      },
-      decayPower: {
-        value: BELT_LANTERN_LIGHT_DEFAULTS.decayPower,
-        min: 0.1,
-        max: 8,
-        step: 0.05,
-        onChange: v => {
-          beltLanternLightUniforms.uBeltLanternLightDecayPower.value = v;
-        },
-      },
-      specularPower: {
-        value: BELT_LANTERN_LIGHT_DEFAULTS.specularPower,
-        min: 1,
-        max: 64,
-        step: 1,
-        onChange: v => {
-          beltLanternLightUniforms.uBeltLanternLightSpecularPower.value = v;
-        },
-      },
-      offset: {
-        value: BELT_LANTERN_LIGHT_DEFAULTS.offset,
-        min: -1,
-        max: 1,
-        step: 0.01,
-        onChange: v => {
-          beltLanternLightSettings.offset = v;
-        },
+  useControls('BeltLanternLight', {
+    color: {
+      value: BELT_LANTERN_LIGHT_DEFAULTS.color,
+      onChange: v => {
+        beltLanternLightUniforms.uBeltLanternLightColor.value.set(v);
       },
     },
-    { collapsed: true, reset: true }
-  );
+    intensity: {
+      value: BELT_LANTERN_LIGHT_DEFAULTS.intensity,
+      min: 0,
+      max: 10,
+      step: 0.05,
+      onChange: v => {
+        beltLanternLightUniforms.uBeltLanternLightIntensity.value = v;
+      },
+    },
+    decay: {
+      value: BELT_LANTERN_LIGHT_DEFAULTS.decay,
+      min: 0,
+      max: 1,
+      step: 0.005,
+      onChange: v => {
+        beltLanternLightUniforms.uBeltLanternLightDecay.value = v;
+      },
+    },
+    decayPower: {
+      value: BELT_LANTERN_LIGHT_DEFAULTS.decayPower,
+      min: 0.1,
+      max: 8,
+      step: 0.05,
+      onChange: v => {
+        beltLanternLightUniforms.uBeltLanternLightDecayPower.value = v;
+      },
+    },
+    specularPower: {
+      value: BELT_LANTERN_LIGHT_DEFAULTS.specularPower,
+      min: 1,
+      max: 64,
+      step: 1,
+      onChange: v => {
+        beltLanternLightUniforms.uBeltLanternLightSpecularPower.value = v;
+      },
+    },
+    offset: {
+      value: BELT_LANTERN_LIGHT_DEFAULTS.offset,
+      min: -1,
+      max: 1,
+      step: 0.01,
+      onChange: v => {
+        beltLanternLightSettings.offset = v;
+      },
+    },
+  });
 
   useFrame((_, delta) => {
     const swingGroup = swingGroupRef.current;

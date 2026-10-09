@@ -16,28 +16,24 @@ const LanternsAndHome = props => {
     lanternsMaterial.emissiveIntensity = LANTERNS_EMISSIVE_INTENSITY;
   }, [lanternsMaterial]);
 
-  useControls(
-    'Lanterns',
-    {
-      emissiveColor: {
-        value: LANTERNS_EMISSIVE_COLOR,
-        onChange: value => {
-          lanternsMaterial.color.set(value);
-          lanternsMaterial.emissive.set(value);
-        },
-      },
-      emissiveIntensity: {
-        value: LANTERNS_EMISSIVE_INTENSITY,
-        min: 0,
-        max: 20,
-        step: 0.01,
-        onChange: value => {
-          lanternsMaterial.emissiveIntensity = value;
-        },
+  useControls('Lanterns', {
+    emissiveColor: {
+      value: LANTERNS_EMISSIVE_COLOR,
+      onChange: value => {
+        lanternsMaterial.color.set(value);
+        lanternsMaterial.emissive.set(value);
       },
     },
-    { collapsed: true }
-  );
+    emissiveIntensity: {
+      value: LANTERNS_EMISSIVE_INTENSITY,
+      min: 0,
+      max: 20,
+      step: 0.01,
+      onChange: value => {
+        lanternsMaterial.emissiveIntensity = value;
+      },
+    },
+  });
 
   return null;
 };

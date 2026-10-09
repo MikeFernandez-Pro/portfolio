@@ -200,13 +200,6 @@ const Islands = () => {
       ])
     );
 
-    const islandMesh = island.scene.getObjectByName('island_1');
-
-    if (islandMesh) {
-      islandMesh.castShadow = !IS_MOBILE_DEVICE;
-      islandMesh.receiveShadow = !IS_MOBILE_DEVICE;
-    }
-
     // Hide keyboard controls on mobile
     island.materials.controls.visible = !IS_MOBILE_DEVICE;
 

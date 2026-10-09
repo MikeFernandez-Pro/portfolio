@@ -74,7 +74,7 @@ const stripeMask = (phase, width, softness) =>
  * spirals, thin filaments and a pulsing hot core, all driven by one
  * three-sample perlin flow field (green channel of the packed texture).
  * The potion mesh has no UVs: the portal coordinates come from its
- * local-space XZ footprint. Opaque like the CSM original (uOpacity only
+ * local-space XZ footprint. Opaque (uOpacity only
  * feeds the discard threshold of the disc edge).
  */
 const createCauldronPortalMaterial = (u, noiseTexture) => {

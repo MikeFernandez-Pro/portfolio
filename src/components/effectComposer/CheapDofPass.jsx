@@ -146,31 +146,21 @@ const useCheapDofControls = bind => {
 
   const setDebugFocus = bind('debugFocus');
 
-  useControls(
-    'depthOfField',
-    {
-      // World units from the camera to the focal plane, and how far from it
-      // the blur reaches full strength
-      focusDistance: numberControl(
-        'focusDistance',
-        d.focusDistance,
-        0,
-        100,
-        0.1
-      ),
-      focusRange: numberControl('focusRange', d.focusRange, 1, 60, 0.5),
-      // Max blur radius as a fraction of screen height
-      bokehRadius: numberControl('bokehRadius', d.bokehRadius, 0, 0.03, 0.0005),
-      // Taps per pixel: more = smoother, less noisy
-      samples: numberControl('samples', d.samples, 4, 48, 1),
-      // Green = in focus, red = fully blurred
-      debugFocus: {
-        value: d.debugFocus,
-        onChange: v => setDebugFocus(v ? 1 : 0),
-      },
+  useControls('depthOfField', {
+    // World units from the camera to the focal plane, and how far from it
+    // the blur reaches full strength
+    focusDistance: numberControl('focusDistance', d.focusDistance, 0, 100, 0.1),
+    focusRange: numberControl('focusRange', d.focusRange, 1, 60, 0.5),
+    // Max blur radius as a fraction of screen height
+    bokehRadius: numberControl('bokehRadius', d.bokehRadius, 0, 0.03, 0.0005),
+    // Taps per pixel: more = smoother, less noisy
+    samples: numberControl('samples', d.samples, 4, 48, 1),
+    // Green = in focus, red = fully blurred
+    debugFocus: {
+      value: d.debugFocus,
+      onChange: v => setDebugFocus(v ? 1 : 0),
     },
-    { collapsed: true, reset: true }
-  );
+  });
 };
 
 export { createCheapDof, useCheapDofControls };

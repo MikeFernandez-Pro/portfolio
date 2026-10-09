@@ -48,45 +48,41 @@ const Sky = () => {
   );
 
   // Controls
-  const { count } = useControls(
-    'Stars',
-    {
-      count: {
-        value: STARS_DEFAULTS.count,
-        min: 0,
-        max: 10000,
-      },
-      pointSize: {
-        value: STARS_DEFAULTS.pointSize,
-        min: 0,
-        max: 10,
-        onChange: value => {
-          uniforms.uSize.value = value;
-        },
-      },
-      color1: {
-        value: STARS_DEFAULTS.color1,
-        onChange: value => uniforms.uColor1.value.set(value),
-      },
-      color2: {
-        value: STARS_DEFAULTS.color2,
-        onChange: value => uniforms.uColor2.value.set(value),
-      },
-      color3: {
-        value: STARS_DEFAULTS.color3,
-        onChange: value => uniforms.uColor3.value.set(value),
-      },
-      brightness: {
-        value: STARS_DEFAULTS.brightness,
-        min: 0,
-        max: 10,
-        onChange: value => {
-          uniforms.uBrightness.value = value;
-        },
+  const { count } = useControls('Stars', {
+    count: {
+      value: STARS_DEFAULTS.count,
+      min: 0,
+      max: 10000,
+    },
+    pointSize: {
+      value: STARS_DEFAULTS.pointSize,
+      min: 0,
+      max: 10,
+      onChange: value => {
+        uniforms.uSize.value = value;
       },
     },
-    { collapsed: true }
-  );
+    color1: {
+      value: STARS_DEFAULTS.color1,
+      onChange: value => uniforms.uColor1.value.set(value),
+    },
+    color2: {
+      value: STARS_DEFAULTS.color2,
+      onChange: value => uniforms.uColor2.value.set(value),
+    },
+    color3: {
+      value: STARS_DEFAULTS.color3,
+      onChange: value => uniforms.uColor3.value.set(value),
+    },
+    brightness: {
+      value: STARS_DEFAULTS.brightness,
+      min: 0,
+      max: 10,
+      onChange: value => {
+        uniforms.uBrightness.value = value;
+      },
+    },
+  });
 
   const stars = useMemo(() => {
     const positionsArray = new Float32Array(count * 3);
@@ -127,7 +123,11 @@ const Sky = () => {
     const starTime = REDUCED_MOTION_AT_LOAD ? float(0) : time;
     material.sizeNode = aSize
       .mul(uniforms.uSize)
-      .mul(sin(starTime.mul(5).add(aSize.mul(10))).mul(0.1).add(0.9))
+      .mul(
+        sin(starTime.mul(5).add(aSize.mul(10)))
+          .mul(0.1)
+          .add(0.9)
+      )
       .mul(2);
 
     // 64px star tile at the UV origin of the 512px packed texture (blue)

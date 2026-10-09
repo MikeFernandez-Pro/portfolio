@@ -52,17 +52,13 @@ const Experience = () => {
   const camera = useThree(state => state.camera);
   const gameplayCameraRotationRef = useRef(null);
 
-  const controls = useControls(
-    'Background',
-    {
-      bottomColor: '#000649',
-      topColor: '#0077ff',
-      // 0 = the whole sky is bottomColor, 1 = all topColor; in between the
-      // blend band slides proportionally
-      mixHeight: { value: 0.3, min: 0, max: 1, step: 0.01 },
-    },
-    { collapsed: true }
-  );
+  const controls = useControls('Background', {
+    bottomColor: '#000649',
+    topColor: '#0077ff',
+    // 0 = the whole sky is bottomColor, 1 = all topColor; in between the
+    // blend band slides proportionally
+    mixHeight: { value: 0.3, min: 0, max: 1, step: 0.01 },
+  });
 
   // The gradient's blend band (fixed width) slides with mixHeight, past the
   // zenith at 0 (bottomColor fills the sphere) and past the horizon at 1
@@ -74,80 +70,72 @@ const Experience = () => {
     THREE.MathUtils.clamp(skyMixCenter + SKY_MIX_BAND / 2, 0, 1),
   ];
 
-  const { freeCamera } = useControls(
-    'Camera',
-    {
-      // Full free-fly OrbitControls; the third-person follow pauses while on
-      freeCamera: IS_PHOTO_MODE,
-    },
-    { collapsed: true }
-  );
+  const { freeCamera } = useControls('Camera', {
+    // Full free-fly OrbitControls; the third-person follow pauses while on
+    freeCamera: IS_PHOTO_MODE,
+  });
 
-  useControls(
-    'Sounds',
-    {
-      // Looping sounds get their volume applied live; one-shots (glyph,
-      // pressure plate) and the distance-attenuated ones (portal, hammer)
-      // read SOUND_VOLUMES on their next play / character move
-      ambient: {
-        value: SOUND_VOLUMES.ambient,
-        min: 0,
-        max: 1,
-        step: 0.01,
-        onChange: value => {
-          SOUND_VOLUMES.ambient = value;
-          ambientSound.volume(value);
-        },
-      },
-      running: {
-        value: SOUND_VOLUMES.running,
-        min: 0,
-        max: 1,
-        step: 0.01,
-        onChange: value => {
-          SOUND_VOLUMES.running = value;
-          runningSoundEffect.volume(value);
-        },
-      },
-      magicGlyph: {
-        value: SOUND_VOLUMES.magicGlyph,
-        min: 0,
-        max: 1,
-        step: 0.01,
-        onChange: value => {
-          SOUND_VOLUMES.magicGlyph = value;
-        },
-      },
-      pressurePlate: {
-        value: SOUND_VOLUMES.pressurePlate,
-        min: 0,
-        max: 1,
-        step: 0.01,
-        onChange: value => {
-          SOUND_VOLUMES.pressurePlate = value;
-        },
-      },
-      portal: {
-        value: SOUND_VOLUMES.portal,
-        min: 0,
-        max: 1,
-        step: 0.01,
-        onChange: value => {
-          SOUND_VOLUMES.portal = value;
-        },
-      },
-      hammer: {
-        value: SOUND_VOLUMES.hammer,
-        min: 0,
-        max: 1,
-        step: 0.01,
-        onChange: value => {
-          SOUND_VOLUMES.hammer = value;
-        },
+  useControls('Sounds', {
+    // Looping sounds get their volume applied live; one-shots (glyph,
+    // pressure plate) and the distance-attenuated ones (portal, hammer)
+    // read SOUND_VOLUMES on their next play / character move
+    ambient: {
+      value: SOUND_VOLUMES.ambient,
+      min: 0,
+      max: 1,
+      step: 0.01,
+      onChange: value => {
+        SOUND_VOLUMES.ambient = value;
+        ambientSound.volume(value);
       },
     },
-    { collapsed: true }
-  );
+    running: {
+      value: SOUND_VOLUMES.running,
+      min: 0,
+      max: 1,
+      step: 0.01,
+      onChange: value => {
+        SOUND_VOLUMES.running = value;
+        runningSoundEffect.volume(value);
+      },
+    },
+    magicGlyph: {
+      value: SOUND_VOLUMES.magicGlyph,
+      min: 0,
+      max: 1,
+      step: 0.01,
+      onChange: value => {
+        SOUND_VOLUMES.magicGlyph = value;
+      },
+    },
+    pressurePlate: {
+      value: SOUND_VOLUMES.pressurePlate,
+      min: 0,
+      max: 1,
+      step: 0.01,
+      onChange: value => {
+        SOUND_VOLUMES.pressurePlate = value;
+      },
+    },
+    portal: {
+      value: SOUND_VOLUMES.portal,
+      min: 0,
+      max: 1,
+      step: 0.01,
+      onChange: value => {
+        SOUND_VOLUMES.portal = value;
+      },
+    },
+    hammer: {
+      value: SOUND_VOLUMES.hammer,
+      min: 0,
+      max: 1,
+      step: 0.01,
+      onChange: value => {
+        SOUND_VOLUMES.hammer = value;
+      },
+    },
+  });
 
   useEffect(() => {
     useStore.setState({ freeCameraActive: freeCamera });
@@ -184,8 +172,8 @@ const Experience = () => {
         // In photo mode orbit around the islands instead of the world origin
         <OrbitControls target={IS_PHOTO_MODE ? [-1.35, 5, -15] : undefined} />
       )}
-      {DEBUG_ENABLED && !IS_PHOTO_MODE && <DebugInspector />}
-      {DEBUG_ENABLED && !IS_PHOTO_MODE && <PhysicsDebug />}
+      {DEBUG_ENABLED && <DebugInspector />}
+      {DEBUG_ENABLED && <PhysicsDebug />}
       {/* Stays mounted with debug off: its initial onChange calls set up the
           respawn/spiral shader uniforms the real death animation uses; the
           headless useControls renders no UI for it */}

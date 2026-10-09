@@ -21,7 +21,9 @@ export const useStore = create(
     activePlate: undefined,
 
     characterPosition: undefined,
-    isCharacterMoving: false,
+    // Written by the controller from the contact solve; the grass trample
+    // reads it for takeoff / landing impulses
+    characterGrounded: true,
 
     // Debug: free OrbitControls camera (pauses the third-person follow)
     freeCameraActive: false,

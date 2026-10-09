@@ -9,15 +9,8 @@ const keysConfigList = {
   KeyD: 'rightward',
 };
 
-const directionOffset = (
-  { forward, backward, leftward, rightward },
-  characterBody
-) => {
+const directionOffset = ({ forward, backward, leftward, rightward }) => {
   if (!forward && !backward && !leftward && !rightward) return undefined;
-
-  if (characterBody.current.isSleeping()) {
-    characterBody.current.wakeUp();
-  }
 
   if (forward && leftward) return (7 * Math.PI) / 4;
   if (forward && rightward) return (5 * Math.PI) / 4;

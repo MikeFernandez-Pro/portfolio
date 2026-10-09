@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { IS_PHOTO_MODE } from '#utils/utils.js';
-
 /**
  * The three.js Inspector-backed implementation of useControls, active when
  * DEBUG_ENABLED (see debug.js) — production builds use the headless version
@@ -12,7 +10,7 @@ import { IS_PHOTO_MODE } from '#utils/utils.js';
  * with this module gone.
  *
  * Bindings land in the Inspector's Parameters tab. Behaviors call sites rely
- * on (leva's contract):
+ * on (the useControls contract):
  * - keys with `onChange` are transient: excluded from the returned state and
  *   fired once with the initial value after mount, then on every change
  * - keys without `onChange` live in state and trigger a re-render on change
@@ -162,9 +160,6 @@ const addResetButton = (folder, state) => {
 // keep their declared order regardless of component mount order
 const createInspector = Inspector => {
   const inspector = new Inspector();
-  // Controls still register (their initial onChange calls set up uniforms),
-  // the panel is just never shown in photo mode
-  if (IS_PHOTO_MODE) inspector.setVisible(false);
   // Start closed (just its toggle button): the Inspector restores the panel
   // as it was left, saved in localStorage
   const { profiler } = inspector;
@@ -228,8 +223,8 @@ const isVectorLike = value =>
 
 const isHexColor = value => /^#[0-9a-f]{3,8}$/i.test(value);
 
-// Leva shows sliders with a sensible step even when none is given; without
-// this, integer-ish values (e.g. particle counts) would become floats
+// Sliders need a sensible step even when none is given; without this,
+// integer-ish values (e.g. particle counts) would become floats
 const inferStep = (min, max) => {
   if (typeof min !== 'number' || typeof max !== 'number') return undefined;
   const range = max - min;
@@ -259,7 +254,7 @@ const addScalarEditor = (folder, params, key, config) => {
 };
 
 const useInspectorControls = (folderName, schema) => {
-  // Folder name and schema are captured on first render, like leva
+  // Folder name and schema are captured on first render
   const folderNameRef = useRef(folderName);
   const schemaRef = useRef(schema);
 
@@ -370,7 +365,7 @@ const useInspectorControls = (folderName, schema) => {
         resetters.push(() => editor.setValue(value));
       }
 
-      // leva fires onChange once with the initial value after mount
+      // onChange fires once with the initial value after mount
       if (onChange) onChange(value);
     }
 

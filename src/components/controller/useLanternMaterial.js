@@ -135,52 +135,48 @@ const useLanternMaterial = (characterScene, lanternMeshRef) => {
     };
   }, [characterScene]);
 
-  useControls(
-    'LanternColors',
-    {
-      blackColor: {
-        value: COLOR_DEFAULTS.blackColor,
-        onChange: v => colorUniformsRef.current?.uBlackColor.value.set(v),
-      },
-      whiteColor: {
-        value: COLOR_DEFAULTS.whiteColor,
-        onChange: v => colorUniformsRef.current?.uWhiteColor.value.set(v),
-      },
-      whiteIntensity: {
-        value: COLOR_DEFAULTS.whiteIntensity,
-        min: 0,
-        max: 10,
-        step: 0.05,
-        onChange: v => {
-          if (colorUniformsRef.current)
-            colorUniformsRef.current.uWhiteIntensity.value = v;
-        },
-      },
-      redColor: {
-        value: COLOR_DEFAULTS.redColor,
-        onChange: v => colorUniformsRef.current?.uRedColor.value.set(v),
-      },
-      roughness: {
-        value: COLOR_DEFAULTS.roughness,
-        min: 0,
-        max: 1,
-        step: 0.01,
-        onChange: v => {
-          if (materialRef.current) materialRef.current.roughness = v;
-        },
-      },
-      metalness: {
-        value: COLOR_DEFAULTS.metalness,
-        min: 0,
-        max: 1,
-        step: 0.01,
-        onChange: v => {
-          if (materialRef.current) materialRef.current.metalness = v;
-        },
+  useControls('LanternColors', {
+    blackColor: {
+      value: COLOR_DEFAULTS.blackColor,
+      onChange: v => colorUniformsRef.current?.uBlackColor.value.set(v),
+    },
+    whiteColor: {
+      value: COLOR_DEFAULTS.whiteColor,
+      onChange: v => colorUniformsRef.current?.uWhiteColor.value.set(v),
+    },
+    whiteIntensity: {
+      value: COLOR_DEFAULTS.whiteIntensity,
+      min: 0,
+      max: 10,
+      step: 0.05,
+      onChange: v => {
+        if (colorUniformsRef.current)
+          colorUniformsRef.current.uWhiteIntensity.value = v;
       },
     },
-    { collapsed: true, reset: true }
-  );
+    redColor: {
+      value: COLOR_DEFAULTS.redColor,
+      onChange: v => colorUniformsRef.current?.uRedColor.value.set(v),
+    },
+    roughness: {
+      value: COLOR_DEFAULTS.roughness,
+      min: 0,
+      max: 1,
+      step: 0.01,
+      onChange: v => {
+        if (materialRef.current) materialRef.current.roughness = v;
+      },
+    },
+    metalness: {
+      value: COLOR_DEFAULTS.metalness,
+      min: 0,
+      max: 1,
+      step: 0.01,
+      onChange: v => {
+        if (materialRef.current) materialRef.current.metalness = v;
+      },
+    },
+  });
 };
 
 export { useLanternMaterial };

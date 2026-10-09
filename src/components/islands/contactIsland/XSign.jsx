@@ -37,77 +37,73 @@ const XSign = () => {
     [atlasTexture]
   );
 
-  useControls(
-    'XSign',
-    {
-      color: {
-        value: X_SIGN_COLOR,
-        onChange: value => {
-          materialRef.current?.color.set(value);
-        },
-      },
-      emissiveColor: {
-        value: X_SIGN_EMISSIVE_COLOR,
-        onChange: value => {
-          materialRef.current?.emissive.set(value);
-        },
-      },
-      emissiveIntensity: {
-        value: X_SIGN_EMISSIVE_INTENSITY,
-        min: 0,
-        max: 10,
-        step: 0.01,
-        onChange: value => {
-          if (materialRef.current) {
-            materialRef.current.emissiveIntensity = value;
-          }
-        },
-      },
-      rotationX: {
-        value: X_SIGN_ROTATION_X,
-        min: -Math.PI / 2,
-        max: Math.PI / 2,
-        step: 0.001,
-        onChange: value => {
-          if (meshRef.current) {
-            meshRef.current.rotation.x = value;
-          }
-        },
-      },
-      rotationY: {
-        value: X_SIGN_ROTATION_Y,
-        min: 0,
-        max: Math.PI,
-        step: 0.001,
-        onChange: value => {
-          if (meshRef.current) {
-            meshRef.current.rotation.y = value;
-          }
-        },
-      },
-      rotationZ: {
-        value: X_SIGN_ROTATION_Z,
-        min: -Math.PI,
-        max: Math.PI,
-        step: 0.001,
-        onChange: value => {
-          if (meshRef.current) {
-            meshRef.current.rotation.z = value;
-          }
-        },
-      },
-      scale: {
-        value: X_SIGN_SCALE,
-        min: 0.1,
-        max: 3,
-        step: 0.01,
-        onChange: value => {
-          meshRef.current?.scale.setScalar(value);
-        },
+  useControls('XSign', {
+    color: {
+      value: X_SIGN_COLOR,
+      onChange: value => {
+        materialRef.current?.color.set(value);
       },
     },
-    { collapsed: true, reset: true }
-  );
+    emissiveColor: {
+      value: X_SIGN_EMISSIVE_COLOR,
+      onChange: value => {
+        materialRef.current?.emissive.set(value);
+      },
+    },
+    emissiveIntensity: {
+      value: X_SIGN_EMISSIVE_INTENSITY,
+      min: 0,
+      max: 10,
+      step: 0.01,
+      onChange: value => {
+        if (materialRef.current) {
+          materialRef.current.emissiveIntensity = value;
+        }
+      },
+    },
+    rotationX: {
+      value: X_SIGN_ROTATION_X,
+      min: -Math.PI / 2,
+      max: Math.PI / 2,
+      step: 0.001,
+      onChange: value => {
+        if (meshRef.current) {
+          meshRef.current.rotation.x = value;
+        }
+      },
+    },
+    rotationY: {
+      value: X_SIGN_ROTATION_Y,
+      min: 0,
+      max: Math.PI,
+      step: 0.001,
+      onChange: value => {
+        if (meshRef.current) {
+          meshRef.current.rotation.y = value;
+        }
+      },
+    },
+    rotationZ: {
+      value: X_SIGN_ROTATION_Z,
+      min: -Math.PI,
+      max: Math.PI,
+      step: 0.001,
+      onChange: value => {
+        if (meshRef.current) {
+          meshRef.current.rotation.z = value;
+        }
+      },
+    },
+    scale: {
+      value: X_SIGN_SCALE,
+      min: 0.1,
+      max: 3,
+      step: 0.01,
+      onChange: value => {
+        meshRef.current?.scale.setScalar(value);
+      },
+    },
+  });
 
   return (
     <mesh

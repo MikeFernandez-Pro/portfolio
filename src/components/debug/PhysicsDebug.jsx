@@ -116,31 +116,27 @@ const PhysicsDebug = () => {
     }
   });
 
-  useControls(
-    'Physics',
-    {
-      visualize: {
-        value: false,
-        onChange: value => {
-          stateRef.current.visualize = value;
-          physicsWorld.debugCapture = value;
-          if (value) buildRef.current();
-          else disposeRef.current();
-        },
+  useControls('Physics', {
+    visualize: {
+      value: false,
+      onChange: value => {
+        stateRef.current.visualize = value;
+        physicsWorld.debugCapture = value;
+        if (value) buildRef.current();
+        else disposeRef.current();
       },
-      showBvh: {
-        value: false,
-        onChange: value => {
-          stateRef.current.showBvh = value;
-          if (stateRef.current.visualize) buildRef.current();
-        },
-      },
-      refresh: () => {
+    },
+    showBvh: {
+      value: false,
+      onChange: value => {
+        stateRef.current.showBvh = value;
         if (stateRef.current.visualize) buildRef.current();
       },
     },
-    { collapsed: true }
-  );
+    refresh: () => {
+      if (stateRef.current.visualize) buildRef.current();
+    },
+  });
 
   useEffect(() => {
     const dispose = disposeRef.current;

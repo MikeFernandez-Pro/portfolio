@@ -15,8 +15,8 @@ import {
 
 /**
  * Per-column time offset in [0, 100), hashed from the column's world XZ:
- * columns sharing a material don't sway in sync. Same hash as the old GLSL,
- * evaluated on the CPU (the instanced columns pass it as an attribute).
+ * columns sharing a material don't sway in sync. Evaluated on the CPU (the
+ * instanced columns pass it as an attribute).
  */
 const smokeColumnTimeOffset = (x, z) => {
   const h = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453;
@@ -39,8 +39,8 @@ const createSmokeUniforms = defaults => ({
  * space). `timeOffset`: float node, the column's unscaled time offset.
  * `place`: maps the swayed plane-local position to the mesh's local space
  * (SmokeColumns scales and offsets each column there: a positionNode
- * replaces the InstancedMesh transform in three r186, so the columns do
- * their own instancing).
+ * replaces the InstancedMesh transform, so the columns do their own
+ * instancing).
  */
 const createSmokeMaterial = (u, timeOffset, place = position => position) => {
   const material = new THREE.MeshBasicNodeMaterial({
@@ -50,7 +50,7 @@ const createSmokeMaterial = (u, timeOffset, place = position => position) => {
 
   const columnTime = time.add(timeOffset.mul(u.uTimeOffsetStrength));
 
-  // Sway growing with height. max: below the anchor (y < 0) the GLSL pow was
+  // Sway growing with height. max: below the anchor (y < 0) the pow would be
   // NaN; that half is fully faded out anyway (alpha 0 under positionY 0)
   const p = positionGeometry;
   const sway = sin(p.y.mul(u.uDisplacementUv).sub(columnTime))

@@ -1,4 +1,10 @@
-import { useRef, useCallback, useEffect, useLayoutEffect, useMemo } from 'react';
+import {
+  useRef,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+} from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF, useAnimations } from '@react-three/drei/webgpu';
 import gsap from 'gsap';
@@ -224,40 +230,36 @@ const CharacterController = () => {
   // Debug: play the falling animation in place and tune the body pitch
   // applied while it plays. The preview freezes the body and suspends the
   // controller loop so gameplay code doesn't override the animation
-  useControls(
-    'Falling',
-    {
-      bodyAngle: {
-        value: DEFAULT_FALLING_BODY_ANGLE,
-        min: -90,
-        max: 90,
-        step: 1,
-        onChange: v => {
-          fallingBodyAngle = (v * Math.PI) / 180;
-          if (fallingHipsRef.current) {
-            bakeFallingBodyAngle(fallingHipsRef.current);
-          }
-        },
-      },
-      playFalling: () => {
-        fallingPreviewActive = true;
-        runningSoundEffect.stop();
-        characterBody.current.setBodyType(FIXED);
-        updateCharacterAnimation(FALLING);
-      },
-      stopPreview: () => {
-        fallingPreviewActive = false;
-        characterBody.current.setBodyType(DYNAMIC);
-        updateCharacterAnimation(IDLE);
+  useControls('Falling', {
+    bodyAngle: {
+      value: DEFAULT_FALLING_BODY_ANGLE,
+      min: -90,
+      max: 90,
+      step: 1,
+      onChange: v => {
+        fallingBodyAngle = (v * Math.PI) / 180;
+        if (fallingHipsRef.current) {
+          bakeFallingBodyAngle(fallingHipsRef.current);
+        }
       },
     },
-    { collapsed: true }
-  );
+    playFalling: () => {
+      fallingPreviewActive = true;
+      runningSoundEffect.stop();
+      characterBody.current.setBodyType(FIXED);
+      updateCharacterAnimation(FALLING);
+    },
+    stopPreview: () => {
+      fallingPreviewActive = false;
+      characterBody.current.setBodyType(DYNAMIC);
+      updateCharacterAnimation(IDLE);
+    },
+  });
 
   // Full death sequence, fired by the death-zone sensor (or the fallback
   // DEATH_HEIGHT check): the character freezes and disintegrates mid-air in
   // the falling pose (formed -> voronoi lava -> gone, the respawn dissolve
-  // reversed) while the dust burst rises from where it died; then the
+  // reversed) while the death particles rise from where it died; then the
   // character teleports to spawn and the respawn dissolve reforms it
   const killCharacter = useCallback(() => {
     if (characterRespawning) return;
@@ -267,7 +269,6 @@ const CharacterController = () => {
     characterJumping = false;
     characterSprinting = false;
     updateCharacterAnimation(FALLING);
-    useStore.setState({ isCharacterMoving: false });
     playDespawnAnimation();
     playDeathParticles(characterBody.current.translation());
 
@@ -389,9 +390,7 @@ const CharacterController = () => {
 
     // Intro camera pan: input ignored, the character idles
     const controlsLocked = useStore.getState().introControlsLocked;
-    direction = controlsLocked
-      ? undefined
-      : directionOffset(eventKeys, characterBody);
+    direction = controlsLocked ? undefined : directionOffset(eventKeys);
     characterIsMoving = direction !== undefined ? true : false;
 
     if (
@@ -441,7 +440,6 @@ const CharacterController = () => {
       // The falling pose survives the dissolve; anything else resets to idle
       if (currentAnimation !== IDLE && currentAnimation !== FALLING) {
         updateCharacterAnimation(IDLE);
-        useStore.setState({ isCharacterMoving: false });
       }
       characterBody.current.setLinvel(
         { x: 0, y: characterBody.current.linvel().y, z: 0 },
@@ -459,8 +457,6 @@ const CharacterController = () => {
       runningSoundEffect.stop();
       if (currentAnimation !== IDLE && !characterJumping && !characterFalling) {
         updateCharacterAnimation(IDLE);
-
-        useStore.setState({ isCharacterMoving: false });
       }
 
       characterBody.current.setLinvel(
@@ -484,7 +480,6 @@ const CharacterController = () => {
       !characterFalling
     ) {
       updateCharacterAnimation(RUN);
-      useStore.setState({ isCharacterMoving: true });
       runningSoundEffect.play();
     }
 
@@ -562,7 +557,6 @@ const CharacterController = () => {
           characterBody.current.clearGrounded();
           runningSoundEffect.stop();
           updateCharacterAnimation(FALLING);
-          useStore.setState({ isCharacterMoving: false });
         }}
         onDeathEnter={state => {
           if (state.other.rigidBody !== characterBody.current) return;

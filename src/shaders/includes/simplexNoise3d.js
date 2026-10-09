@@ -1,7 +1,7 @@
 //	Simplex 3D Noise
 //	by Ian McEwan, Ashima Arts
 //
-// TSL port of simplexNoise3d.glsl. Written without assign(): a TSL expression
+// Written without assign(): a TSL expression
 // that isn't a var is re-evaluated where it is used, so mutating a variable it
 // depends on (GLSL's `i = mod(i, 289.0)`) would change it after the fact.
 // mod() keeps GLSL's floor semantics on the WGSL backend too.

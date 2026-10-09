@@ -106,14 +106,12 @@ const IslandPointLightsControls = () => {
 
   useControls(
     'TorchLights',
-    groupSchema(torchLightsUniforms, 'Torch', TORCH_LIGHTS_DEFAULTS),
-    { collapsed: true, reset: true }
+    groupSchema(torchLightsUniforms, 'Torch', TORCH_LIGHTS_DEFAULTS)
   );
 
   useControls(
     'LanternLights',
-    groupSchema(lanternLightsUniforms, 'Lantern', LANTERN_LIGHTS_DEFAULTS),
-    { collapsed: true, reset: true }
+    groupSchema(lanternLightsUniforms, 'Lantern', LANTERN_LIGHTS_DEFAULTS)
   );
 
   // Standalone lantern near the house on the first island, not part of the
@@ -134,95 +132,72 @@ const IslandPointLightsControls = () => {
           houseLanternLightUniforms.uHouseLanternLightPosition.value.set(...v);
         },
       },
-    },
-    { collapsed: true, reset: true }
+    }
   );
 
   useControls(
     'CandlesLight',
-    groupSchema(candleLightsUniforms, 'Candle', CANDLE_LIGHTS_DEFAULTS),
-    { collapsed: true, reset: true }
+    groupSchema(candleLightsUniforms, 'Candle', CANDLE_LIGHTS_DEFAULTS)
   );
 
   useControls(
     'IndicatorLights',
-    groupSchema(
-      indicatorLightsUniforms,
-      'Indicator',
-      INDICATOR_LIGHTS_DEFAULTS
-    ),
-    { collapsed: true, reset: true }
+    groupSchema(indicatorLightsUniforms, 'Indicator', INDICATOR_LIGHTS_DEFAULTS)
   );
 
-  useControls(
-    'CauldronLight',
-    {
-      ...groupSchema(
-        cauldronLightUniforms,
-        'Cauldron',
-        CAULDRON_LIGHT_DEFAULTS
-      ),
-      height: {
-        value: CAULDRON_LIGHT_DEFAULTS.height,
-        min: -1,
-        max: 5,
-        step: 0.01,
-        onChange: v => {
-          cauldronLightUniforms.uCauldronLightPosition.value.y =
-            CAULDRON_LIGHT_DEFAULTS.position[1] + v;
-        },
+  useControls('CauldronLight', {
+    ...groupSchema(cauldronLightUniforms, 'Cauldron', CAULDRON_LIGHT_DEFAULTS),
+    height: {
+      value: CAULDRON_LIGHT_DEFAULTS.height,
+      min: -1,
+      max: 5,
+      step: 0.01,
+      onChange: v => {
+        cauldronLightUniforms.uCauldronLightPosition.value.y =
+          CAULDRON_LIGHT_DEFAULTS.position[1] + v;
       },
     },
-    { collapsed: true, reset: true }
-  );
+  });
 
-  useControls(
-    'SpawnLight',
-    {
-      ...groupSchema(spawnLightUniforms, 'Spawn', SPAWN_LIGHT_DEFAULTS),
-      // The uniform is driven by the respawn timeline (0 at rest); the control
-      // only sets the peak intensity the fade rises to
-      intensity: {
-        value: SPAWN_LIGHT_DEFAULTS.intensity,
-        min: 0,
-        max: 15,
-        step: 0.05,
-        onChange: v => {
-          spawnLightSettings.intensity = v;
-        },
-      },
-      height: {
-        value: SPAWN_LIGHT_DEFAULTS.height,
-        min: -2,
-        max: 5,
-        step: 0.01,
-        onChange: v => {
-          spawnLightUniforms.uSpawnLightPosition.value.y =
-            SPAWN_LIGHT_DEFAULTS.position[1] + v;
-        },
+  useControls('SpawnLight', {
+    ...groupSchema(spawnLightUniforms, 'Spawn', SPAWN_LIGHT_DEFAULTS),
+    // The uniform is driven by the respawn timeline (0 at rest); the control
+    // only sets the peak intensity the fade rises to
+    intensity: {
+      value: SPAWN_LIGHT_DEFAULTS.intensity,
+      min: 0,
+      max: 15,
+      step: 0.05,
+      onChange: v => {
+        spawnLightSettings.intensity = v;
       },
     },
-    { collapsed: true, reset: true }
-  );
+    height: {
+      value: SPAWN_LIGHT_DEFAULTS.height,
+      min: -2,
+      max: 5,
+      step: 0.01,
+      onChange: v => {
+        spawnLightUniforms.uSpawnLightPosition.value.y =
+          SPAWN_LIGHT_DEFAULTS.position[1] + v;
+      },
+    },
+  });
 
   // Per-plate on/off is driven by the activation ramps in PressurePlates
   // (uPlateLightFactors); these controls set the shared look
-  useControls(
-    'PlatesLight',
-    {
-      ...groupSchema(plateLightsUniforms, 'Plate', PLATE_LIGHTS_DEFAULTS),
-      height: {
-        value: PLATE_LIGHTS_DEFAULTS.height,
-        min: -1,
-        max: 5,
-        step: 0.01,
-        onChange: v => {
-          plateLightsUniforms.uPlateLightHeight.value = v;
-        },
+  useControls('PlatesLight', {
+    ...groupSchema(plateLightsUniforms, 'Plate', PLATE_LIGHTS_DEFAULTS),
+    height: {
+      value: PLATE_LIGHTS_DEFAULTS.height,
+      min: -1,
+      max: 5,
+      step: 0.01,
+      onChange: v => {
+        plateLightsUniforms.uPlateLightHeight.value = v;
       },
     },
-    { collapsed: true, reset: true }
-  );
+  });
 
   // The intensity uniform is driven every frame by the bellows gasp in
   // ForgeLavaPlane, sweeping minIntensity..maxIntensity — drop the base
@@ -236,86 +211,70 @@ const IslandPointLightsControls = () => {
 
   // showHelper has no onChange so it comes back as state and re-renders the
   // marker below; the position input (x/y/z fields) moves it live
-  const { showHelper: showForgeLavaHelper } = useControls(
-    'ForgeLavaLight',
-    {
-      showHelper: false,
-      ...forgeLavaLightSchema,
-      // Resting intensity (bellows open)
-      minIntensity: {
-        value: FORGE_LAVA_LIGHT_DEFAULTS.minIntensity,
-        min: 0,
-        max: 100,
-        step: 0.05,
-        onChange: v => {
-          forgeLavaLightSettings.minIntensity = v;
-        },
-      },
-      // Gasp peak intensity (bellows fully closed)
-      maxIntensity: {
-        value: FORGE_LAVA_LIGHT_DEFAULTS.maxIntensity,
-        min: 0,
-        max: 100,
-        step: 0.05,
-        onChange: v => {
-          forgeLavaLightSettings.maxIntensity = v;
-        },
-      },
-      position: {
-        value: FORGE_LAVA_LIGHT_DEFAULTS.position,
-        step: 0.01,
-        onChange: v => {
-          forgeLavaLightUniforms.uForgeLavaLightPosition.value.set(...v);
-        },
+  const { showHelper: showForgeLavaHelper } = useControls('ForgeLavaLight', {
+    showHelper: false,
+    ...forgeLavaLightSchema,
+    // Resting intensity (bellows open)
+    minIntensity: {
+      value: FORGE_LAVA_LIGHT_DEFAULTS.minIntensity,
+      min: 0,
+      max: 100,
+      step: 0.05,
+      onChange: v => {
+        forgeLavaLightSettings.minIntensity = v;
       },
     },
-    { collapsed: true, reset: true }
-  );
+    // Gasp peak intensity (bellows fully closed)
+    maxIntensity: {
+      value: FORGE_LAVA_LIGHT_DEFAULTS.maxIntensity,
+      min: 0,
+      max: 100,
+      step: 0.05,
+      onChange: v => {
+        forgeLavaLightSettings.maxIntensity = v;
+      },
+    },
+    position: {
+      value: FORGE_LAVA_LIGHT_DEFAULTS.position,
+      step: 0.01,
+      onChange: v => {
+        forgeLavaLightUniforms.uForgeLavaLightPosition.value.set(...v);
+      },
+    },
+  });
 
-  useControls(
-    'SwordLight',
-    {
-      ...groupSchema(swordLightUniforms, 'Sword', SWORD_LIGHT_DEFAULTS),
-      position: {
-        value: SWORD_LIGHT_DEFAULTS.position,
-        step: 0.01,
-        onChange: v => {
-          swordLightUniforms.uSwordLightPosition.value.set(...v);
-        },
+  useControls('SwordLight', {
+    ...groupSchema(swordLightUniforms, 'Sword', SWORD_LIGHT_DEFAULTS),
+    position: {
+      value: SWORD_LIGHT_DEFAULTS.position,
+      step: 0.01,
+      onChange: v => {
+        swordLightUniforms.uSwordLightPosition.value.set(...v);
       },
     },
-    { collapsed: true, reset: true }
-  );
+  });
 
-  useControls(
-    'WellLight',
-    {
-      ...groupSchema(wellLightUniforms, 'Well', WELL_LIGHT_DEFAULTS),
-      position: {
-        value: WELL_LIGHT_DEFAULTS.position,
-        step: 0.01,
-        onChange: v => {
-          wellLightUniforms.uWellLightPosition.value.set(...v);
-        },
+  useControls('WellLight', {
+    ...groupSchema(wellLightUniforms, 'Well', WELL_LIGHT_DEFAULTS),
+    position: {
+      value: WELL_LIGHT_DEFAULTS.position,
+      step: 0.01,
+      onChange: v => {
+        wellLightUniforms.uWellLightPosition.value.set(...v);
       },
     },
-    { collapsed: true, reset: true }
-  );
+  });
 
-  useControls(
-    'WindowLight',
-    {
-      ...groupSchema(windowLightUniforms, 'Window', WINDOW_LIGHT_DEFAULTS),
-      position: {
-        value: WINDOW_LIGHT_DEFAULTS.position,
-        step: 0.01,
-        onChange: v => {
-          windowLightUniforms.uWindowLightPosition.value.set(...v);
-        },
+  useControls('WindowLight', {
+    ...groupSchema(windowLightUniforms, 'Window', WINDOW_LIGHT_DEFAULTS),
+    position: {
+      value: WINDOW_LIGHT_DEFAULTS.position,
+      step: 0.01,
+      onChange: v => {
+        windowLightUniforms.uWindowLightPosition.value.set(...v);
       },
     },
-    { collapsed: true, reset: true }
-  );
+  });
 
   return (
     <>

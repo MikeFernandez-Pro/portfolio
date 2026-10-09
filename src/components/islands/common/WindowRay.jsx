@@ -160,83 +160,79 @@ const WindowRay = () => {
 
   useEffect(() => () => material.dispose(), [material]);
 
-  useControls(
-    'WindowRay',
-    {
-      color: {
-        value: RAY_COLOR,
-        onChange: value => {
-          uniforms.uColor.value.set(value);
-        },
-      },
-      opacity: {
-        value: RAY_OPACITY,
-        min: 0,
-        max: 1,
-        step: 0.01,
-        onChange: value => {
-          uniforms.uOpacity.value = value;
-        },
-      },
-      start: {
-        value: RAY_START,
-        min: 0,
-        max: 1,
-        step: 0.01,
-        onChange: value => {
-          uniforms.uStart.value = value;
-        },
-      },
-      end: {
-        value: RAY_END,
-        min: 0,
-        max: 1,
-        step: 0.01,
-        onChange: value => {
-          uniforms.uEnd.value = value;
-        },
-      },
-      smoothness: {
-        value: RAY_SMOOTHNESS,
-        min: 0.1,
-        max: 5,
-        step: 0.01,
-        onChange: value => {
-          uniforms.uSmoothness.value = value;
-        },
-      },
-      edgeSmoothness: {
-        value: RAY_EDGE_SMOOTHNESS,
-        min: 0.01,
-        max: 0.5,
-        step: 0.01,
-        onChange: value => {
-          uniforms.uEdgeSmoothness.value = value;
-        },
-      },
-      // View-angle fade hiding the beam's hard corners: strength blends the
-      // effect in (0 = off), power shapes how fast grazing faces melt away
-      angleFadeStrength: {
-        value: RAY_ANGLE_FADE_STRENGTH,
-        min: 0,
-        max: 1,
-        step: 0.01,
-        onChange: value => {
-          uniforms.uAngleFadeStrength.value = value;
-        },
-      },
-      angleFadePower: {
-        value: RAY_ANGLE_FADE_POWER,
-        min: 0.1,
-        max: 8,
-        step: 0.01,
-        onChange: value => {
-          uniforms.uAngleFadePower.value = value;
-        },
+  useControls('WindowRay', {
+    color: {
+      value: RAY_COLOR,
+      onChange: value => {
+        uniforms.uColor.value.set(value);
       },
     },
-    { collapsed: true, reset: true }
-  );
+    opacity: {
+      value: RAY_OPACITY,
+      min: 0,
+      max: 1,
+      step: 0.01,
+      onChange: value => {
+        uniforms.uOpacity.value = value;
+      },
+    },
+    start: {
+      value: RAY_START,
+      min: 0,
+      max: 1,
+      step: 0.01,
+      onChange: value => {
+        uniforms.uStart.value = value;
+      },
+    },
+    end: {
+      value: RAY_END,
+      min: 0,
+      max: 1,
+      step: 0.01,
+      onChange: value => {
+        uniforms.uEnd.value = value;
+      },
+    },
+    smoothness: {
+      value: RAY_SMOOTHNESS,
+      min: 0.1,
+      max: 5,
+      step: 0.01,
+      onChange: value => {
+        uniforms.uSmoothness.value = value;
+      },
+    },
+    edgeSmoothness: {
+      value: RAY_EDGE_SMOOTHNESS,
+      min: 0.01,
+      max: 0.5,
+      step: 0.01,
+      onChange: value => {
+        uniforms.uEdgeSmoothness.value = value;
+      },
+    },
+    // View-angle fade hiding the beam's hard corners: strength blends the
+    // effect in (0 = off), power shapes how fast grazing faces melt away
+    angleFadeStrength: {
+      value: RAY_ANGLE_FADE_STRENGTH,
+      min: 0,
+      max: 1,
+      step: 0.01,
+      onChange: value => {
+        uniforms.uAngleFadeStrength.value = value;
+      },
+    },
+    angleFadePower: {
+      value: RAY_ANGLE_FADE_POWER,
+      min: 0.1,
+      max: 8,
+      step: 0.01,
+      onChange: value => {
+        uniforms.uAngleFadePower.value = value;
+      },
+    },
+  });
 
   return <mesh geometry={geometry} material={material} />;
 };

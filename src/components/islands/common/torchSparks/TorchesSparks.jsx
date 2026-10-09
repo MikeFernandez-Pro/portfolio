@@ -43,27 +43,23 @@ const LARGE_TORCHES_SPARKS = {
 };
 
 const TorchesSparks = () => {
-  const controls = useControls(
-    'TorchesSparks',
-    {
-      color: {
-        value: SPARKS_COLOR,
-      },
-      intensity: {
-        value: SPARKS_INTENSITY,
-        min: 0,
-        max: 10,
-        step: 0.01,
-      },
-      sizeScale: {
-        value: 2.12,
-        min: 0,
-        max: 3,
-        step: 0.01,
-      },
+  const controls = useControls('TorchesSparks', {
+    color: {
+      value: SPARKS_COLOR,
     },
-    { collapsed: true }
-  );
+    intensity: {
+      value: SPARKS_INTENSITY,
+      min: 0,
+      max: 10,
+      step: 0.01,
+    },
+    sizeScale: {
+      value: 2.12,
+      min: 0,
+      max: 3,
+      step: 0.01,
+    },
+  });
 
   return (
     <>

@@ -141,93 +141,89 @@ const CloudShadows = () => {
     cloudShadowUniforms.uCloudShadowNoise.value = perlinNoiseTexture;
   }, [perlinNoiseTexture]);
 
-  useControls(
-    'Cloud Shadows',
-    {
-      enabled: {
-        value: CLOUD_SHADOW_DEFAULTS.enabled,
-        onChange: value => {
-          cloudShadowUniforms.uCloudShadowEnabled.value = value ? 1 : 0;
-        },
-      },
-      direction: {
-        value: CLOUD_SHADOW_DEFAULTS.direction,
-        min: -Math.PI,
-        max: Math.PI,
-        step: 0.01,
-        onChange: value => {
-          cloudShadowUniforms.uCloudShadowDirection.value.set(
-            Math.cos(value),
-            Math.sin(value)
-          );
-        },
-      },
-      speed: {
-        value: CLOUD_SHADOW_DEFAULTS.speed,
-        min: 0,
-        max: 0.05,
-        step: 0.0001,
-        onChange: value => {
-          cloudShadowUniforms.uCloudShadowSpeed.value = value;
-        },
-      },
-      scale: {
-        value: CLOUD_SHADOW_DEFAULTS.scale,
-        min: 0.001,
-        max: 0.05,
-        step: 0.001,
-        onChange: value => {
-          cloudShadowUniforms.uCloudShadowScale.value = value;
-        },
-      },
-      layers: {
-        value: CLOUD_SHADOW_DEFAULTS.layers,
-        min: 1,
-        max: 6,
-        step: 1,
-        onChange: value => {
-          cloudShadowUniforms.uCloudShadowLayers.value = value;
-        },
-      },
-      coverage: {
-        value: CLOUD_SHADOW_DEFAULTS.coverage,
-        min: 0,
-        max: 1,
-        step: 0.01,
-        onChange: value => {
-          cloudShadowUniforms.uCloudShadowCoverage.value = value;
-        },
-      },
-      softness: {
-        value: CLOUD_SHADOW_DEFAULTS.softness,
-        min: 0,
-        max: 0.5,
-        step: 0.001,
-        onChange: value => {
-          cloudShadowUniforms.uCloudShadowSoftness.value = value;
-        },
-      },
-      darkness: {
-        value: CLOUD_SHADOW_DEFAULTS.darkness,
-        min: 0,
-        max: 1,
-        step: 0.01,
-        onChange: value => {
-          cloudShadowUniforms.uCloudShadowDarkness.value = value;
-        },
-      },
-      power: {
-        value: CLOUD_SHADOW_DEFAULTS.power,
-        min: 0.1,
-        max: 4,
-        step: 0.1,
-        onChange: value => {
-          cloudShadowUniforms.uCloudShadowPower.value = value;
-        },
+  useControls('Cloud Shadows', {
+    enabled: {
+      value: CLOUD_SHADOW_DEFAULTS.enabled,
+      onChange: value => {
+        cloudShadowUniforms.uCloudShadowEnabled.value = value ? 1 : 0;
       },
     },
-    { collapsed: true }
-  );
+    direction: {
+      value: CLOUD_SHADOW_DEFAULTS.direction,
+      min: -Math.PI,
+      max: Math.PI,
+      step: 0.01,
+      onChange: value => {
+        cloudShadowUniforms.uCloudShadowDirection.value.set(
+          Math.cos(value),
+          Math.sin(value)
+        );
+      },
+    },
+    speed: {
+      value: CLOUD_SHADOW_DEFAULTS.speed,
+      min: 0,
+      max: 0.05,
+      step: 0.0001,
+      onChange: value => {
+        cloudShadowUniforms.uCloudShadowSpeed.value = value;
+      },
+    },
+    scale: {
+      value: CLOUD_SHADOW_DEFAULTS.scale,
+      min: 0.001,
+      max: 0.05,
+      step: 0.001,
+      onChange: value => {
+        cloudShadowUniforms.uCloudShadowScale.value = value;
+      },
+    },
+    layers: {
+      value: CLOUD_SHADOW_DEFAULTS.layers,
+      min: 1,
+      max: 6,
+      step: 1,
+      onChange: value => {
+        cloudShadowUniforms.uCloudShadowLayers.value = value;
+      },
+    },
+    coverage: {
+      value: CLOUD_SHADOW_DEFAULTS.coverage,
+      min: 0,
+      max: 1,
+      step: 0.01,
+      onChange: value => {
+        cloudShadowUniforms.uCloudShadowCoverage.value = value;
+      },
+    },
+    softness: {
+      value: CLOUD_SHADOW_DEFAULTS.softness,
+      min: 0,
+      max: 0.5,
+      step: 0.001,
+      onChange: value => {
+        cloudShadowUniforms.uCloudShadowSoftness.value = value;
+      },
+    },
+    darkness: {
+      value: CLOUD_SHADOW_DEFAULTS.darkness,
+      min: 0,
+      max: 1,
+      step: 0.01,
+      onChange: value => {
+        cloudShadowUniforms.uCloudShadowDarkness.value = value;
+      },
+    },
+    power: {
+      value: CLOUD_SHADOW_DEFAULTS.power,
+      min: 0.1,
+      max: 4,
+      step: 0.1,
+      onChange: value => {
+        cloudShadowUniforms.uCloudShadowPower.value = value;
+      },
+    },
+  });
 
   useFrame(({ elapsed }) => {
     // The shader ignores everything when disabled; skip the feed too.

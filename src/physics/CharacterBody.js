@@ -32,7 +32,6 @@ export class CharacterBody {
     this.capsuleHalfHeight = capsuleHalfHeight;
     this.capsuleRadius = capsuleRadius;
     this.capsuleOffsetY = capsuleOffsetY;
-    this.userData = undefined;
   }
 
   // The Object3D kept in sync with the body (what the RigidBody wrapper did)
@@ -101,12 +100,4 @@ export class CharacterBody {
     this._grounded = false;
     this._groundedTimer = 0;
   }
-
-  // The character never sleeps: the controller wakes it on every input and
-  // rapier's sleep only ever saved CPU, it never changed behavior here
-  isSleeping() {
-    return false;
-  }
-
-  wakeUp() {}
 }

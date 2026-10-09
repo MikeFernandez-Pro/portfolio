@@ -69,27 +69,23 @@ for (let i = 0; i < TOTAL_FIREFLIES_COUNT; i++) {
 }
 
 const FireFlies = () => {
-  const controls = useControls(
-    'FireFlies',
-    {
-      color: {
-        value: FIREFLIES_COLOR,
-      },
-      intensity: {
-        value: FIREFLIES_INTENSITY,
-        min: 0,
-        max: 20,
-        step: 0.01,
-      },
-      size: {
-        value: FIREFLIES_SIZE,
-        min: 0,
-        max: 0.2,
-        step: 0.001,
-      },
+  const controls = useControls('FireFlies', {
+    color: {
+      value: FIREFLIES_COLOR,
     },
-    { collapsed: true }
-  );
+    intensity: {
+      value: FIREFLIES_INTENSITY,
+      min: 0,
+      max: 20,
+      step: 0.01,
+    },
+    size: {
+      value: FIREFLIES_SIZE,
+      min: 0,
+      max: 0.2,
+      step: 0.001,
+    },
+  });
 
   const { fireflies, uniforms } = useMemo(() => {
     const uniforms = {

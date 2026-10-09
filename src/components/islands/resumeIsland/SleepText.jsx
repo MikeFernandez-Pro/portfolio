@@ -61,48 +61,44 @@ const SleepText = () => {
     maxScale,
     swayAmplitude,
     swayFrequency,
-  } = useControls(
-    'SleepText',
-    {
-      duration: {
-        value: SLEEP_TEXT_DEFAULTS.duration,
-        min: 0.2,
-        max: 8,
-        step: 0.1,
-      },
-      riseHeight: {
-        value: SLEEP_TEXT_DEFAULTS.riseHeight,
-        min: 0,
-        max: 3,
-        step: 0.01,
-      },
-      minScale: {
-        value: SLEEP_TEXT_DEFAULTS.minScale,
-        min: 0,
-        max: 1,
-        step: 0.005,
-      },
-      maxScale: {
-        value: SLEEP_TEXT_DEFAULTS.maxScale,
-        min: 0,
-        max: 1,
-        step: 0.005,
-      },
-      swayAmplitude: {
-        value: SLEEP_TEXT_DEFAULTS.swayAmplitude,
-        min: 0,
-        max: 0.5,
-        step: 0.005,
-      },
-      swayFrequency: {
-        value: SLEEP_TEXT_DEFAULTS.swayFrequency,
-        min: 0,
-        max: 10,
-        step: 0.1,
-      },
+  } = useControls('SleepText', {
+    duration: {
+      value: SLEEP_TEXT_DEFAULTS.duration,
+      min: 0.2,
+      max: 8,
+      step: 0.1,
     },
-    { collapsed: true, reset: true }
-  );
+    riseHeight: {
+      value: SLEEP_TEXT_DEFAULTS.riseHeight,
+      min: 0,
+      max: 3,
+      step: 0.01,
+    },
+    minScale: {
+      value: SLEEP_TEXT_DEFAULTS.minScale,
+      min: 0,
+      max: 1,
+      step: 0.005,
+    },
+    maxScale: {
+      value: SLEEP_TEXT_DEFAULTS.maxScale,
+      min: 0,
+      max: 1,
+      step: 0.005,
+    },
+    swayAmplitude: {
+      value: SLEEP_TEXT_DEFAULTS.swayAmplitude,
+      min: 0,
+      max: 0.5,
+      step: 0.005,
+    },
+    swayFrequency: {
+      value: SLEEP_TEXT_DEFAULTS.swayFrequency,
+      min: 0,
+      max: 10,
+      step: 0.1,
+    },
+  });
 
   useLayoutEffect(() => {
     let cancelled = false;
@@ -191,8 +187,7 @@ const SleepText = () => {
       if (letter) {
         letter.position.x =
           BASE_POSITION[0] +
-          swayAmplitude *
-            Math.sin(swayFrequency * state.elapsed + i * 3);
+          swayAmplitude * Math.sin(swayFrequency * state.elapsed + i * 3);
       }
     }
   });

@@ -291,119 +291,107 @@ const EffectComposer = props => {
     if (post.dof) post.dof.uniforms.enabled.value = experienceStarted ? 1 : 0;
   }, [post, experienceStarted]);
 
-  useControls(
-    'Ambient Occlusion',
-    {
-      // View-space radius of the horizon search
-      radius: {
-        value: 1,
-        min: 0.01,
-        max: 4,
-        step: 0.01,
-        onChange: bind('aoRadius'),
-      },
-      distanceExponent: {
-        value: 1,
-        min: 1,
-        max: 4,
-        step: 0.01,
-        onChange: bind('aoDistanceExponent'),
-      },
-      distanceFallOff: {
-        value: 1,
-        min: 0.01,
-        max: 1,
-        step: 0.01,
-        onChange: bind('aoDistanceFallOff'),
-      },
-      thickness: {
-        value: 1,
-        min: 0.01,
-        max: 10,
-        step: 0.01,
-        onChange: bind('aoThickness'),
-      },
-      scale: {
-        value: 1,
-        min: 0.01,
-        max: 2,
-        step: 0.01,
-        onChange: bind('aoScale'),
-      },
-      samples: {
-        value: 16,
-        min: 4,
-        max: 32,
-        step: 1,
-        onChange: bind('aoSamples'),
-      },
-      // occlusion^intensity
-      intensity: {
-        value: 1.5,
-        min: 0.01,
-        max: 4,
-        step: 0.01,
-        onChange: bind('aoIntensity'),
-      },
-      // Occluded areas darken toward this color instead of black
-      color: { value: '#bce3ff', onChange: bind('aoColor') },
-      halfRes: { value: true, onChange: bind('aoHalfRes') },
-      denoiseRadius: {
-        value: 5,
-        min: 1,
-        max: 12,
-        step: 0.1,
-        onChange: bind('aoDenoiseRadius'),
-      },
+  useControls('Ambient Occlusion', {
+    // View-space radius of the horizon search
+    radius: {
+      value: 1,
+      min: 0.01,
+      max: 4,
+      step: 0.01,
+      onChange: bind('aoRadius'),
     },
-    { collapsed: true }
-  );
+    distanceExponent: {
+      value: 1,
+      min: 1,
+      max: 4,
+      step: 0.01,
+      onChange: bind('aoDistanceExponent'),
+    },
+    distanceFallOff: {
+      value: 1,
+      min: 0.01,
+      max: 1,
+      step: 0.01,
+      onChange: bind('aoDistanceFallOff'),
+    },
+    thickness: {
+      value: 1,
+      min: 0.01,
+      max: 10,
+      step: 0.01,
+      onChange: bind('aoThickness'),
+    },
+    scale: {
+      value: 1,
+      min: 0.01,
+      max: 2,
+      step: 0.01,
+      onChange: bind('aoScale'),
+    },
+    samples: {
+      value: 16,
+      min: 4,
+      max: 32,
+      step: 1,
+      onChange: bind('aoSamples'),
+    },
+    // occlusion^intensity
+    intensity: {
+      value: 1.5,
+      min: 0.01,
+      max: 4,
+      step: 0.01,
+      onChange: bind('aoIntensity'),
+    },
+    // Occluded areas darken toward this color instead of black
+    color: { value: '#bce3ff', onChange: bind('aoColor') },
+    halfRes: { value: true, onChange: bind('aoHalfRes') },
+    denoiseRadius: {
+      value: 5,
+      min: 1,
+      max: 12,
+      step: 0.1,
+      onChange: bind('aoDenoiseRadius'),
+    },
+  });
 
   useCheapDofControls(name => bind(`dof.${name}`));
 
-  useControls(
-    'Bloom',
-    {
-      intensity: {
-        value: 2,
-        min: 0,
-        max: 10,
-        step: 0.1,
-        onChange: bind('bloomIntensity'),
-      },
-      radius: {
-        value: 0.85,
-        min: 0,
-        max: 1,
-        step: 0.01,
-        onChange: bind('bloomRadius'),
-      },
-      luminanceThreshold: {
-        value: 2,
-        min: 0,
-        max: 5,
-        step: 0.05,
-        onChange: bind('bloomThreshold'),
-      },
-      luminanceSmoothing: {
-        value: 1,
-        min: 0,
-        max: 2,
-        step: 0.05,
-        onChange: bind('bloomSmoothing'),
-      },
+  useControls('Bloom', {
+    intensity: {
+      value: 2,
+      min: 0,
+      max: 10,
+      step: 0.1,
+      onChange: bind('bloomIntensity'),
     },
-    { collapsed: true }
-  );
+    radius: {
+      value: 0.85,
+      min: 0,
+      max: 1,
+      step: 0.01,
+      onChange: bind('bloomRadius'),
+    },
+    luminanceThreshold: {
+      value: 2,
+      min: 0,
+      max: 5,
+      step: 0.05,
+      onChange: bind('bloomThreshold'),
+    },
+    luminanceSmoothing: {
+      value: 1,
+      min: 0,
+      max: 2,
+      step: 0.05,
+      onChange: bind('bloomSmoothing'),
+    },
+  });
 
   // MSAA A/B against SMAA-only (rebuilds the pipeline, see above)
-  useControls(
-    'Antialiasing',
-    {
-      msaa: { value: COMPOSER_MSAA, options: [0, 4], onChange: setMsaa },
-    },
-    { collapsed: true }
-  );
+  useControls('Antialiasing', {
+    msaa: { value: COMPOSER_MSAA, options: [0, 4], onChange: setMsaa },
+  });
 
   // A job in the 'render' phase replaces R3F's default render
   useFrame(

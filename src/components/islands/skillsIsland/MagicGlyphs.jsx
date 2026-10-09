@@ -41,69 +41,65 @@ const MagicGlyphs = props => {
   // control offsets the light from it
   const glyphBaseYRef = useRef(null);
 
-  useControls(
-    'SkillsPortalLight',
-    {
-      color: {
-        value: MAGIC_PORTAL_LIGHT_DEFAULTS.color,
-        onChange: v => {
-          magicPortalLightUniforms.uMagicPortalLightColor.value.set(v);
-        },
-      },
-      intensity: {
-        value: MAGIC_PORTAL_LIGHT_DEFAULTS.intensity,
-        min: 0,
-        max: 10,
-        step: 0.05,
-        onChange: v => {
-          magicPortalLightSettings.intensity = v;
-          magicPortalLightUniforms.uMagicPortalLightIntensity.value =
-            v * lightProgressRef.current;
-        },
-      },
-      decay: {
-        value: MAGIC_PORTAL_LIGHT_DEFAULTS.decay,
-        min: 0,
-        max: 1,
-        step: 0.005,
-        onChange: v => {
-          magicPortalLightUniforms.uMagicPortalLightDecay.value = v;
-        },
-      },
-      decayPower: {
-        value: MAGIC_PORTAL_LIGHT_DEFAULTS.decayPower,
-        min: 0.1,
-        max: 8,
-        step: 0.05,
-        onChange: v => {
-          magicPortalLightUniforms.uMagicPortalLightDecayPower.value = v;
-        },
-      },
-      height: {
-        value: MAGIC_PORTAL_LIGHT_DEFAULTS.height,
-        min: -1,
-        max: 5,
-        step: 0.01,
-        onChange: v => {
-          magicPortalLightSettings.height = v;
-          if (glyphBaseYRef.current !== null) {
-            magicPortalLightUniforms.uMagicPortalLightPosition.value.y =
-              glyphBaseYRef.current + v;
-          }
-        },
-      },
-      specularPower: {
-        value: MAGIC_PORTAL_LIGHT_DEFAULTS.specularPower,
-        min: 1,
-        max: 64,
-        step: 1,
-        onChange: v => {
-          magicPortalLightUniforms.uMagicPortalLightSpecularPower.value = v;
-        },
+  useControls('SkillsPortalLight', {
+    color: {
+      value: MAGIC_PORTAL_LIGHT_DEFAULTS.color,
+      onChange: v => {
+        magicPortalLightUniforms.uMagicPortalLightColor.value.set(v);
       },
     },
-    { collapsed: true, reset: true }
-  );
+    intensity: {
+      value: MAGIC_PORTAL_LIGHT_DEFAULTS.intensity,
+      min: 0,
+      max: 10,
+      step: 0.05,
+      onChange: v => {
+        magicPortalLightSettings.intensity = v;
+        magicPortalLightUniforms.uMagicPortalLightIntensity.value =
+          v * lightProgressRef.current;
+      },
+    },
+    decay: {
+      value: MAGIC_PORTAL_LIGHT_DEFAULTS.decay,
+      min: 0,
+      max: 1,
+      step: 0.005,
+      onChange: v => {
+        magicPortalLightUniforms.uMagicPortalLightDecay.value = v;
+      },
+    },
+    decayPower: {
+      value: MAGIC_PORTAL_LIGHT_DEFAULTS.decayPower,
+      min: 0.1,
+      max: 8,
+      step: 0.05,
+      onChange: v => {
+        magicPortalLightUniforms.uMagicPortalLightDecayPower.value = v;
+      },
+    },
+    height: {
+      value: MAGIC_PORTAL_LIGHT_DEFAULTS.height,
+      min: -1,
+      max: 5,
+      step: 0.01,
+      onChange: v => {
+        magicPortalLightSettings.height = v;
+        if (glyphBaseYRef.current !== null) {
+          magicPortalLightUniforms.uMagicPortalLightPosition.value.y =
+            glyphBaseYRef.current + v;
+        }
+      },
+    },
+    specularPower: {
+      value: MAGIC_PORTAL_LIGHT_DEFAULTS.specularPower,
+      min: 1,
+      max: 64,
+      step: 1,
+      onChange: v => {
+        magicPortalLightUniforms.uMagicPortalLightSpecularPower.value = v;
+      },
+    },
+  });
 
   useEffect(() => {
     // Off at rest, the activation animation below raises it

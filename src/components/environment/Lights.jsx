@@ -123,114 +123,101 @@ const ShadowDebugView = ({ lightRef, enabled }) => {
 
 const Lights = () => {
   const characterLightRef = useRef(null);
-  const pointLightRef = useRef(null);
 
-  const directionalLightControls = useControls(
-    'directionalLight',
-    {
-      intensity: {
-        value: 13.0,
-        min: 0,
-        max: 40,
-      },
-      color: {
-        value: '#3d72f7',
-      },
-      bias: {
-        value: 0,
-        min: -0.01,
-        max: 0.01,
-        step: 0.0001,
-      },
-      normalBias: {
-        value: 0.13,
-        min: 0,
-        max: 0.2,
-        step: 0.001,
-      },
-      // PCF filter radius, in shadow-map texels
-      radius: {
-        value: 2,
-        min: 0,
-        max: 10,
-        step: 0.1,
-      },
-      // Shadow map resolution. Transient: the live shadow map must be
-      // disposed so three reallocates it at the new size on the next frame
-      mapSize: {
-        value: 2048,
-        options: [512, 1024, 2048, 4096],
-        onChange: value => {
-          const light = characterLightRef.current;
-          if (!light) return;
+  const directionalLightControls = useControls('directionalLight', {
+    intensity: {
+      value: 13.0,
+      min: 0,
+      max: 40,
+    },
+    color: {
+      value: '#3d72f7',
+    },
+    bias: {
+      value: 0,
+      min: -0.01,
+      max: 0.01,
+      step: 0.0001,
+    },
+    normalBias: {
+      value: 0.13,
+      min: 0,
+      max: 0.2,
+      step: 0.001,
+    },
+    // PCF filter radius, in shadow-map texels
+    radius: {
+      value: 2,
+      min: 0,
+      max: 10,
+      step: 0.1,
+    },
+    // Shadow map resolution. Transient: the live shadow map must be
+    // disposed so three reallocates it at the new size on the next frame
+    mapSize: {
+      value: 2048,
+      options: [512, 1024, 2048, 4096],
+      onChange: value => {
+        const light = characterLightRef.current;
+        if (!light) return;
 
-          light.shadow.mapSize.set(value, value);
-          light.shadow.map?.dispose();
-          light.shadow.map = null;
-        },
+        light.shadow.mapSize.set(value, value);
+        light.shadow.map?.dispose();
+        light.shadow.map = null;
       },
     },
-    { collapsed: true }
-  );
+  });
 
-  const shadowCameraControls = useControls(
-    'Shadow Camera',
-    {
-      debugHelpers: false,
-      near: {
-        value: -5,
-        min: -10,
-        max: 50,
-        step: 0.1,
-      },
-      far: {
-        value: 36,
-        min: 1,
-        max: 200,
-        step: 1,
-      },
-      top: {
-        value: 22,
-        min: 1,
-        max: 100,
-        step: 1,
-      },
-      right: {
-        value: 5,
-        min: 1,
-        max: 100,
-        step: 1,
-      },
-      bottom: {
-        value: -15,
-        min: -100,
-        max: -1,
-        step: 1,
-      },
-      left: {
-        value: -42,
-        min: -100,
-        max: -1,
-        step: 1,
-      },
+  const shadowCameraControls = useControls('Shadow Camera', {
+    debugHelpers: false,
+    near: {
+      value: -5,
+      min: -10,
+      max: 50,
+      step: 0.1,
     },
-    { collapsed: true }
-  );
+    far: {
+      value: 36,
+      min: 1,
+      max: 200,
+      step: 1,
+    },
+    top: {
+      value: 22,
+      min: 1,
+      max: 100,
+      step: 1,
+    },
+    right: {
+      value: 5,
+      min: 1,
+      max: 100,
+      step: 1,
+    },
+    bottom: {
+      value: -15,
+      min: -100,
+      max: -1,
+      step: 1,
+    },
+    left: {
+      value: -42,
+      min: -100,
+      max: -1,
+      step: 1,
+    },
+  });
 
-  const ambientLightControls = useControls(
-    'ambientLight',
-    {
-      intensity: {
-        value: 4,
-        min: 0,
-        max: 20,
-      },
-      color: {
-        value: '#2664ff',
-      },
+  const ambientLightControls = useControls('ambientLight', {
+    intensity: {
+      value: 4,
+      min: 0,
+      max: 20,
     },
-    { collapsed: true }
-  );
+    color: {
+      value: '#2664ff',
+    },
+  });
 
   const scene = useThree(state => state.scene);
   const targetObject = useMemo(() => new THREE.Object3D(), []);
@@ -293,9 +280,6 @@ const Lights = () => {
 
     return () => {
       scene.remove(targetObject);
-
-      if (IS_MOBILE_DEVICE) return;
-
       unsubCharacterPosition?.();
     };
   }, []);
@@ -313,13 +297,9 @@ const Lights = () => {
         color={directionalLightControls.color}
         castShadow={!IS_MOBILE_DEVICE && !IS_PHOTO_MODE}
         target={targetObject}
+        // The mapSize control's onChange only runs after mount: the
+        // precompile frame already needs the full-size map
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-near={shadowCameraControls.near}
-        shadow-camera-far={shadowCameraControls.far}
-        shadow-camera-top={shadowCameraControls.top}
-        shadow-camera-right={shadowCameraControls.right}
-        shadow-camera-bottom={shadowCameraControls.bottom}
-        shadow-camera-left={shadowCameraControls.left}
         shadow-bias={directionalLightControls.bias}
         shadow-normalBias={directionalLightControls.normalBias}
         shadow-radius={directionalLightControls.radius}
@@ -330,12 +310,7 @@ const Lights = () => {
         enabled={shadowCameraControls.debugHelpers}
       />
 
-      <pointLight
-        ref={pointLightRef}
-        position={[-9.7, 12, -59.5]}
-        intensity={45}
-        color="#ad7351"
-      />
+      <pointLight position={[-9.7, 12, -59.5]} intensity={45} color="#ad7351" />
     </>
   );
 };

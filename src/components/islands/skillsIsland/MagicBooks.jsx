@@ -176,59 +176,55 @@ const MagicBooks = props => {
     u.uLavaOpacity.value = 1;
   };
 
-  useControls(
-    'MagicBooks',
-    {
-      Play: () => playBooksDissolve(),
-      'Reset Animation': () => resetBooksDissolve(),
-      intensity: {
-        value: BOOKS_DISSOLVE_DEFAULTS.intensity,
-        min: 0,
-        max: 100,
-        step: 0.1,
-        onChange: value => {
-          uniforms.uIntensity.value = value;
-        },
-      },
-      color: {
-        value: BOOKS_DISSOLVE_DEFAULTS.color,
-        onChange: value => {
-          uniforms.uColor.value.set(value);
-        },
-      },
-      // Build-time values, read when the next Play/activation builds its
-      // timeline
-      dissolveDuration: {
-        value: BOOKS_DISSOLVE_DEFAULTS.dissolveDuration,
-        min: 0.1,
-        max: 4,
-        step: 0.01,
-        onChange: value => {
-          booksDissolveConfig.dissolveDuration = value;
-        },
-      },
-      formDuration: {
-        value: BOOKS_DISSOLVE_DEFAULTS.formDuration,
-        min: 0.1,
-        max: 4,
-        step: 0.01,
-        onChange: value => {
-          booksDissolveConfig.formDuration = value;
-        },
-      },
-      // Animated peak: thickness ramps 0 -> this -> 0 across the dissolve
-      thickness: {
-        value: BOOKS_DISSOLVE_DEFAULTS.thickness,
-        min: 0.01,
-        max: 1,
-        step: 0.01,
-        onChange: value => {
-          booksDissolveConfig.thickness = value;
-        },
+  useControls('MagicBooks', {
+    Play: () => playBooksDissolve(),
+    'Reset Animation': () => resetBooksDissolve(),
+    intensity: {
+      value: BOOKS_DISSOLVE_DEFAULTS.intensity,
+      min: 0,
+      max: 100,
+      step: 0.1,
+      onChange: value => {
+        uniforms.uIntensity.value = value;
       },
     },
-    { collapsed: true, reset: true }
-  );
+    color: {
+      value: BOOKS_DISSOLVE_DEFAULTS.color,
+      onChange: value => {
+        uniforms.uColor.value.set(value);
+      },
+    },
+    // Build-time values, read when the next Play/activation builds its
+    // timeline
+    dissolveDuration: {
+      value: BOOKS_DISSOLVE_DEFAULTS.dissolveDuration,
+      min: 0.1,
+      max: 4,
+      step: 0.01,
+      onChange: value => {
+        booksDissolveConfig.dissolveDuration = value;
+      },
+    },
+    formDuration: {
+      value: BOOKS_DISSOLVE_DEFAULTS.formDuration,
+      min: 0.1,
+      max: 4,
+      step: 0.01,
+      onChange: value => {
+        booksDissolveConfig.formDuration = value;
+      },
+    },
+    // Animated peak: thickness ramps 0 -> this -> 0 across the dissolve
+    thickness: {
+      value: BOOKS_DISSOLVE_DEFAULTS.thickness,
+      min: 0.01,
+      max: 1,
+      step: 0.01,
+      onChange: value => {
+        booksDissolveConfig.thickness = value;
+      },
+    },
+  });
 
   useEffect(() => {
     // Subscribe to magicGlyphActivation zustand store state

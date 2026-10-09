@@ -17,7 +17,11 @@ import PressurePlateAudio from '#assets/sounds/pressure-plate.mp3';
 const PLATE_EMISSIVE_COLOR = new THREE.Color('#68CFF2');
 let plateActiveIntensity = 3.56;
 
-const createPlateAnimation = (material, lightIndex, pressurePlateSoundEffect) => {
+const createPlateAnimation = (
+  material,
+  lightIndex,
+  pressurePlateSoundEffect
+) => {
   const progress = { value: 0 };
 
   return gsap.to(progress, {
@@ -53,33 +57,29 @@ const PressurePlates = props => {
     []
   );
 
-  useControls(
-    'Plates',
-    {
-      emissiveColor: {
-        value: `#${PLATE_EMISSIVE_COLOR.getHexString()}`,
-        onChange: value => {
-          PLATE_EMISSIVE_COLOR.set(value);
-        },
-      },
-      activeIntensity: {
-        value: plateActiveIntensity,
-        min: 0,
-        max: 20,
-        step: 0.01,
-        onChange: value => {
-          plateActiveIntensity = value;
-
-          // Reflect the new intensity on the currently activated plate
-          const activePlate = useStore.getState().activePlate;
-          if (activePlate && island.materials[activePlate]) {
-            island.materials[activePlate].emissiveIntensity = value;
-          }
-        },
+  useControls('Plates', {
+    emissiveColor: {
+      value: `#${PLATE_EMISSIVE_COLOR.getHexString()}`,
+      onChange: value => {
+        PLATE_EMISSIVE_COLOR.set(value);
       },
     },
-    { collapsed: true }
-  );
+    activeIntensity: {
+      value: plateActiveIntensity,
+      min: 0,
+      max: 20,
+      step: 0.01,
+      onChange: value => {
+        plateActiveIntensity = value;
+
+        // Reflect the new intensity on the currently activated plate
+        const activePlate = useStore.getState().activePlate;
+        if (activePlate && island.materials[activePlate]) {
+          island.materials[activePlate].emissiveIntensity = value;
+        }
+      },
+    },
+  });
 
   useEffect(() => {
     // Plate ids match the GLB material names

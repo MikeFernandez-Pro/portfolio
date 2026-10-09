@@ -2,7 +2,7 @@ import { useLayoutEffect } from 'react';
 import { useControls } from '#utils/useControls.jsx';
 
 /**
- * Leva controls for the emissive GLB island materials.
+ * Debug controls for the emissive GLB island materials.
  * Defaults match the tuned debug panel values.
  */
 const MATERIAL_DEFAULTS = {
@@ -35,33 +35,29 @@ const useMaterialControls = (folderName, material, defaults) => {
     material.emissiveIntensity = defaults.emissiveIntensity;
   }, [material, defaults]);
 
-  useControls(
-    folderName,
-    {
-      color: {
-        value: defaults.color,
-        onChange: value => {
-          material.color.set(value);
-        },
-      },
-      emissiveColor: {
-        value: defaults.emissiveColor,
-        onChange: value => {
-          material.emissive.set(value);
-        },
-      },
-      emissiveIntensity: {
-        value: defaults.emissiveIntensity,
-        min: 0,
-        max: 20,
-        step: 0.01,
-        onChange: value => {
-          material.emissiveIntensity = value;
-        },
+  useControls(folderName, {
+    color: {
+      value: defaults.color,
+      onChange: value => {
+        material.color.set(value);
       },
     },
-    { collapsed: true }
-  );
+    emissiveColor: {
+      value: defaults.emissiveColor,
+      onChange: value => {
+        material.emissive.set(value);
+      },
+    },
+    emissiveIntensity: {
+      value: defaults.emissiveIntensity,
+      min: 0,
+      max: 20,
+      step: 0.01,
+      onChange: value => {
+        material.emissiveIntensity = value;
+      },
+    },
+  });
 };
 
 const IslandMaterialsControls = props => {
@@ -82,30 +78,22 @@ const IslandMaterialsControls = props => {
     materials.torchesAndFire,
     MATERIAL_DEFAULTS.Torches
   );
-  useMaterialControls(
-    'Candles',
-    materials.candles,
-    MATERIAL_DEFAULTS.Candles
-  );
+  useMaterialControls('Candles', materials.candles, MATERIAL_DEFAULTS.Candles);
   useLayoutEffect(() => {
     materials.controls.emissiveIntensity = 5.2;
   }, [materials.controls]);
 
-  useControls(
-    'Controls',
-    {
-      emissiveIntensity: {
-        value: 5.2,
-        min: 0,
-        max: 20,
-        step: 0.01,
-        onChange: value => {
-          materials.controls.emissiveIntensity = value;
-        },
+  useControls('Controls', {
+    emissiveIntensity: {
+      value: 5.2,
+      min: 0,
+      max: 20,
+      step: 0.01,
+      onChange: value => {
+        materials.controls.emissiveIntensity = value;
       },
     },
-    { collapsed: true }
-  );
+  });
 
   return null;
 };

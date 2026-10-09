@@ -3,7 +3,8 @@
 // Parameters tab, and the physics debug view.
 //
 // Dev only AND opt-in via the URL hash (localhost:5173/#debug), same
-// convention as #photo. `import.meta.env.DEV` is replaced with a literal at
+// convention as #photo (one hash, so the two modes never run together).
+// `import.meta.env.DEV` is replaced with a literal at
 // build time, so production builds still tree-shake the Inspector and
 // inspectorControls.jsx out of the bundle.
 // Without the hash, useControls falls back to the headless version that still

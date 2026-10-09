@@ -105,36 +105,32 @@ const ForgeSparks = props => {
 
   forgeSparksRef.current = uniforms;
 
-  useControls(
-    'ForgeSparks',
-    {
-      color: {
-        value: FORGE_SPARKS_COLOR,
-        onChange: value => {
-          uniforms.uColor.value.set(value);
-        },
-      },
-      intensity: {
-        value: FORGE_SPARKS_INTENSITY,
-        min: 0,
-        max: 20,
-        step: 0.01,
-        onChange: value => {
-          uniforms.uIntensity.value = value;
-        },
-      },
-      size: {
-        value: FORGE_SPARKS_SIZE,
-        min: 0,
-        max: 0.5,
-        step: 0.001,
-        onChange: value => {
-          uniforms.uSize.value = value;
-        },
+  useControls('ForgeSparks', {
+    color: {
+      value: FORGE_SPARKS_COLOR,
+      onChange: value => {
+        uniforms.uColor.value.set(value);
       },
     },
-    { collapsed: true }
-  );
+    intensity: {
+      value: FORGE_SPARKS_INTENSITY,
+      min: 0,
+      max: 20,
+      step: 0.01,
+      onChange: value => {
+        uniforms.uIntensity.value = value;
+      },
+    },
+    size: {
+      value: FORGE_SPARKS_SIZE,
+      min: 0,
+      max: 0.5,
+      step: 0.001,
+      onChange: value => {
+        uniforms.uSize.value = value;
+      },
+    },
+  });
 
   return <primitive object={sparks} />;
 };

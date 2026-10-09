@@ -41,17 +41,16 @@ import {
 
 import { cloudShadowFactor } from '#environment/CloudShadows.jsx';
 
-// TSL port of the old CSM grass (vertex.glsl, fragment.glsl,
-// fragmentUnlit.glsl). Blades are built in the vertex stage from the vertex
-// and instance ids; aBladePosition is the CPU-placed root in patch space
-// ([-1, 1] on x/z, see grassPlacement.js).
+// Blades are built in the vertex stage from the vertex and instance ids;
+// aBladePosition is the CPU-placed root in patch space ([-1, 1] on x/z, see
+// grassPlacement.js).
 //
-// MSAA: the blades are thin triangles, and the old shader declared its
-// varyings `centroid` so MSAA could not extrapolate them past their vertex
-// range. Here the per-vertex values that matter are made safe instead: the
-// root->tip gradient is rebuilt in the fragment stage from a clamped height
-// percent, the patch lighting is constant per blade (extrapolating a
-// constant changes nothing), and the normals are renormalized with a floor.
+// MSAA: the blades are thin triangles, MSAA extrapolates varyings past their
+// vertex range and TSL has no centroid sampling. The per-vertex values that
+// matter are made safe instead: the root->tip gradient is rebuilt in the
+// fragment stage from a clamped height percent, the patch lighting is
+// constant per blade (extrapolating a constant changes nothing), and the
+// normals are renormalized with a floor.
 
 /**
  * Uniform nodes driven by the Grass.jsx controls. `.value` works like the
@@ -169,8 +168,8 @@ const voronoiCells = Fn(([p]) => {
 const rand = n => fract(sin(n).mul(43758.5453123));
 // t is a whole number: the power is unrolled into multiplies. pow() of a
 // negative base is NaN in WGSL, and the blade width calls this with
-// 1 - x < 0 at the root (x = 1.06 - heightPercent), where the GLSL original
-// got a real (slightly negative) cube
+// 1 - x < 0 at the root (x = 1.06 - heightPercent), where it must stay a real
+// (slightly negative) cube
 const easeOut = (x, t) => {
   const base = float(1).sub(x).toVar();
   let power = base;
