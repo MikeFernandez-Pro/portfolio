@@ -151,7 +151,7 @@ const App = () => {
           powerPreference: 'high-performance',
           antialias: false,
           toneMapping: THREE.NoToneMapping,
-          shadows: IS_MOBILE_DEVICE ? false : 'variance',
+          shadows: IS_MOBILE_DEVICE ? false : 'percentage',
         }}
         // R3F 10 canary leaves state.gl null under WebGPU (its getter is
         // flattened by the first store update), and drei 11 still reads it

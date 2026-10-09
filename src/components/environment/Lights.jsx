@@ -8,6 +8,18 @@ import * as THREE from 'three';
 import { useStore } from '#store/ZustandStorage.jsx';
 import { IS_MOBILE_DEVICE, IS_PHOTO_MODE } from '#utils/utils.js';
 
+// The directional light sits at this offset from the character it follows
+const LIGHT_OFFSET = new THREE.Vector3(-3, 4, 3);
+// Shadow camera orientation (it looks from the light at its target). Constant
+// since the offset is: its inverse brings a point into light space
+const LIGHT_ROTATION = new THREE.Matrix4().lookAt(
+  LIGHT_OFFSET,
+  new THREE.Vector3(),
+  THREE.Object3D.DEFAULT_UP
+);
+const LIGHT_ROTATION_INVERSE = LIGHT_ROTATION.clone().transpose();
+const _snapped = new THREE.Vector3();
+
 /**
  * Renders the scene through a free OrbitControls camera while the gameplay
  * camera keeps following the character (visible via CameraHelper).
@@ -81,17 +93,20 @@ const ShadowDebugView = ({ lightRef, enabled }) => {
 
   // Draw the scene from the debug camera after the post-processing used the
   // main cam
-  useFrame(({ renderer, scene: world, size }) => {
-    if (!enabled || !debugCameraRef.current) return;
+  useFrame(
+    ({ renderer, scene: world, size }) => {
+      if (!enabled || !debugCameraRef.current) return;
 
-    orbitControlsRef.current?.update();
+      orbitControlsRef.current?.update();
 
-    renderer.setRenderTarget(null);
-    renderer.setViewport(0, 0, size.width, size.height);
-    renderer.setScissorTest(false);
-    renderer.clear(true, true, true);
-    renderer.render(world, debugCameraRef.current);
-  }, { phase: 'render', after: 'postProcessing' });
+      renderer.setRenderTarget(null);
+      renderer.setViewport(0, 0, size.width, size.height);
+      renderer.setScissorTest(false);
+      renderer.clear(true, true, true);
+      renderer.render(world, debugCameraRef.current);
+    },
+    { phase: 'render', after: 'postProcessing' }
+  );
 
   if (!enabled) return null;
 
@@ -131,12 +146,13 @@ const Lights = () => {
         value: 0.13,
         min: 0,
         max: 0.2,
-          step: 0.001,
+        step: 0.001,
       },
+      // PCF filter radius, in shadow-map texels
       radius: {
-        value:4,
+        value: 2,
         min: 0,
-        max: 25,
+        max: 10,
         step: 0.1,
       },
       // Shadow map resolution. Transient: the live shadow map must be
@@ -192,7 +208,7 @@ const Lights = () => {
         step: 1,
       },
       left: {
-        value: -42,   
+        value: -42,
         min: -100,
         max: -1,
         step: 1,
@@ -246,19 +262,29 @@ const Lights = () => {
       : useStore.subscribe(
           state => state.characterPosition,
           characterPosition => {
-            if (characterPosition && characterLightRef.current) {
-              targetObject.position.set(
-                characterPosition.x,
-                characterPosition.y,
-                characterPosition.z
-              );
-              characterLightRef.current.position.set(
-                characterPosition.x - 3,
-                characterPosition.y + 4,
-                characterPosition.z + 3
-              );
-              characterLightRef.current.target = targetObject;
-              characterLightRef.current.target.updateMatrixWorld();
+            const light = characterLightRef.current;
+            if (characterPosition && light) {
+              // Move the shadow camera by whole shadow-map texels only: a
+              // sub-texel slide resamples every shadow edge each frame, which
+              // makes them shimmer while the character walks
+              const { camera: shadowCam, mapSize } = light.shadow;
+              const texelX = (shadowCam.right - shadowCam.left) / mapSize.x;
+              const texelY = (shadowCam.top - shadowCam.bottom) / mapSize.y;
+              _snapped
+                .set(
+                  characterPosition.x,
+                  characterPosition.y,
+                  characterPosition.z
+                )
+                .applyMatrix4(LIGHT_ROTATION_INVERSE);
+              _snapped.x = Math.round(_snapped.x / texelX) * texelX;
+              _snapped.y = Math.round(_snapped.y / texelY) * texelY;
+              _snapped.applyMatrix4(LIGHT_ROTATION);
+
+              targetObject.position.copy(_snapped);
+              light.position.copy(_snapped).add(LIGHT_OFFSET);
+              light.target = targetObject;
+              light.target.updateMatrixWorld();
             }
           }
         );
@@ -282,7 +308,7 @@ const Lights = () => {
       />
       <directionalLight
         ref={characterLightRef}
-        position={[-3, 4, 3]}
+        position={LIGHT_OFFSET.toArray()}
         intensity={directionalLightControls.intensity}
         color={directionalLightControls.color}
         castShadow={!IS_MOBILE_DEVICE && !IS_PHOTO_MODE}
