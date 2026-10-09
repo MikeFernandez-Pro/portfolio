@@ -5,7 +5,7 @@ import * as THREE from 'three/webgpu';
 
 import { ForgeSparks } from './ForgeSparks.jsx';
 import { useStore } from '#store';
-import { SOUND_VOLUMES } from '#utils/soundVolumes.js';
+import { useDistanceVolume } from '#utils/useDistanceVolume.js';
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 
 import HammerSoundEffect from '#assets/sounds/hammer.mp3';
@@ -21,7 +21,6 @@ const Forge = props => {
 
   const forgeHammerAnimationRef = useRef();
   const forgeSparksRef = useRef();
-  const experienceStartedRef = useRef(useStore.getState().experienceStarted);
 
   const hammerSoundEffect = useMemo(
     () =>
@@ -33,40 +32,19 @@ const Forge = props => {
     []
   );
 
+  useDistanceVolume(hammerSoundEffect, HAMMER_POSITION, {
+    maxDistance: HAMMER_MAX_DISTANCE,
+    gain: 1,
+    cap: 0.2,
+    volumeKey: 'hammer',
+  });
+
   useEffect(() => {
     /**
      * Animations
      */
     islandAnimations.actions['anvilAnimation'].loop = THREE.LoopOnce;
     islandAnimations.actions['anvilAnimation'].clampWhenFinished = true;
-
-    /**
-     * Storage Subscriptions
-     */
-    const unsubExperienceStarted = useStore.subscribe(
-      state => state.experienceStarted,
-      experienceStarted => {
-        if (experienceStarted) {
-          experienceStartedRef.current = true;
-        }
-      }
-    );
-
-    const unsubCharacterPosition = useStore.subscribe(
-      state => state.characterPosition,
-      characterPosition => {
-        if (characterPosition) {
-          hammerSoundEffect.volume(
-            HAMMER_POSITION.distanceTo(characterPosition) < HAMMER_MAX_DISTANCE
-              ? Math.min(
-                  1 / HAMMER_POSITION.distanceTo(characterPosition),
-                  0.2
-                ) * SOUND_VOLUMES.hammer
-              : 0
-          );
-        }
-      }
-    );
 
     /**
      * Sounds Effects
@@ -86,7 +64,8 @@ const Forge = props => {
         }
       );
 
-      if (!experienceStartedRef.current) return;
+      // Silent until Enter (the loading peek already shows the forge)
+      if (!useStore.getState().experienceStarted) return;
       hammerSoundEffect.play();
     }, HAMMER_INTERVAL);
 
@@ -97,8 +76,6 @@ const Forge = props => {
       forgeHammerAnimationRef.current?.kill();
       forgeHammerAnimationRef.current = null;
 
-      unsubExperienceStarted();
-      unsubCharacterPosition();
       clearInterval(forgeHammerInterval);
     };
   }, []);

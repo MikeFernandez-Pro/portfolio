@@ -4,7 +4,7 @@ import * as THREE from 'three/webgpu';
 import gsap from 'gsap';
 import { Howl } from 'howler';
 
-import { useStore } from '#store';
+import { subscribeWhenSet, useStore } from '#store';
 import { SOUND_VOLUMES } from '#utils/soundVolumes.js';
 import {
   pointLights,
@@ -102,7 +102,7 @@ const ProjectPlates = props => {
       );
     }
 
-    const unsubSelectedProject = useStore.subscribe(
+    const unsubSelectedProject = subscribeWhenSet(
       state => state.selectedProject,
       (selectedProject, previousProject) => {
         plates[selectedProject].animation.play();

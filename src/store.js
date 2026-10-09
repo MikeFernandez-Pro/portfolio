@@ -30,3 +30,16 @@ export const useStore = create(
     freeCameraActive: false,
   }))
 );
+
+/**
+ * Calls `callback(value, previous)` whenever the selected state changes to
+ * a set (truthy) value, and once right away if it already is, so a remount
+ * catches up with a state reached before it. Returns the unsubscribe.
+ */
+export const subscribeWhenSet = (selector, callback) => {
+  const current = selector(useStore.getState());
+  if (current) callback(current, undefined);
+  return useStore.subscribe(selector, (value, previous) => {
+    if (value) callback(value, previous);
+  });
+};

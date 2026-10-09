@@ -5,7 +5,7 @@ import { Howl } from 'howler';
 import gsap from 'gsap';
 import * as THREE from 'three/webgpu';
 
-import { useStore } from '#store';
+import { subscribeWhenSet } from '#store';
 import { SOUND_VOLUMES } from '#utils/soundVolumes.js';
 import { pointLights } from '#islands/world/pointLights/pointLights.js';
 import { pointLightControls } from '#islands/world/pointLights/pointLightControls.js';
@@ -106,7 +106,7 @@ const SkillsGlyph = props => {
      * Storage Subscriptions
      */
     // The glyphs light up when the Skills island awakens
-    const unsubAwake = useStore.subscribe(
+    const unsubAwake = subscribeWhenSet(
       state => state.skillsIslandAwake,
       () => {
         awakeRef.current = true;

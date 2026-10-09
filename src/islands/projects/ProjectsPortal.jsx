@@ -6,8 +6,8 @@ import { Howl } from 'howler';
 import gsap from 'gsap';
 import * as THREE from 'three/webgpu';
 
-import { useStore } from '#store';
-import { SOUND_VOLUMES } from '#utils/soundVolumes.js';
+import { subscribeWhenSet, useStore } from '#store';
+import { useDistanceVolume } from '#utils/useDistanceVolume.js';
 import { pointLights } from '#islands/world/pointLights/pointLights.js';
 import { pointLightControls } from '#islands/world/pointLights/pointLightControls.js';
 
@@ -74,6 +74,13 @@ const ProjectsPortal = props => {
   );
 
   useEffect(() => () => sparks.material.dispose(), [sparks]);
+
+  useDistanceVolume(portalSoundEffect, PORTAL_POSITION, {
+    maxDistance: 13,
+    gain: 2,
+    cap: 0.8,
+    volumeKey: 'portal',
+  });
 
   // Target radius of the open portal; the scale-up animation reads it live
   const openSizeRef = useRef(PORTAL_OPEN_SIZE);
@@ -147,7 +154,7 @@ const ProjectsPortal = props => {
     );
 
     // Point the shader at the selected project's atlas rect and open
-    const unsubSelectedProject = useStore.subscribe(
+    const unsubSelectedProject = subscribeWhenSet(
       state => state.selectedProject,
       selectedProject => {
         if (selectedProject) {
@@ -162,27 +169,9 @@ const ProjectsPortal = props => {
       }
     );
 
-    // Update portal sound effect volume based on character position
-    const unsubCharacterPosition = useStore.subscribe(
-      state => state.characterPosition,
-      characterPosition => {
-        if (characterPosition) {
-          portalSoundEffect.volume(
-            PORTAL_POSITION.distanceTo(characterPosition) < 13
-              ? Math.min(
-                  (1 / PORTAL_POSITION.distanceTo(characterPosition)) * 2,
-                  0.8
-                ) * SOUND_VOLUMES.portal
-              : 0
-          );
-        }
-      }
-    );
-
     // Remove subscriptions on unmount
     return () => {
       unsubSelectedProject();
-      unsubCharacterPosition();
       portalScaleUpAnimation?.kill();
     };
   }, [portalUniforms, sparks, portalSoundEffect]);

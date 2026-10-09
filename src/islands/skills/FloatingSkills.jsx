@@ -18,7 +18,7 @@ import { Font } from 'three/addons/loaders/FontLoader.js';
 import gsap from 'gsap';
 
 import { useControls } from '#debug/useControls.jsx';
-import { useStore } from '#store';
+import { subscribeWhenSet } from '#store';
 import fontJson from '#assets/fonts/metamorphous.typeface.json';
 
 // Floating skill words above the skills island, in Metamorphous: flat text
@@ -166,9 +166,7 @@ const FloatingSkills = () => {
       ease: 'expo.in',
       paused: true,
     });
-    if (useStore.getState().skillsIslandAwake) fadeIn.play();
-
-    const unsubAwake = useStore.subscribe(
+    const unsubAwake = subscribeWhenSet(
       state => state.skillsIslandAwake,
       () => fadeIn.play()
     );

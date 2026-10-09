@@ -2,7 +2,7 @@ import { useMemo, useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { Discard, Fn, If, materialColor, max, uniform, vec4 } from 'three/tsl';
 
-import { useStore } from '#store';
+import { subscribeWhenSet } from '#store';
 import { useControls } from '#debug/useControls.jsx';
 import { uniformControls } from '#debug/uniformControls.js';
 import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
@@ -204,7 +204,7 @@ const MagicBooks = props => {
 
   useEffect(() => {
     // The books appear when the Skills island awakens
-    const unsubAwake = useStore.subscribe(
+    const unsubAwake = subscribeWhenSet(
       state => state.skillsIslandAwake,
       () => {
         playBooksDissolve(booksDissolveConfig.delay);
