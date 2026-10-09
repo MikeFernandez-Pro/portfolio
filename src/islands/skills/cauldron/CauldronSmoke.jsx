@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useLoader } from '@react-three/fiber';
 import { useControls } from '#debug/useControls.jsx';
 import { uniformControls } from '#debug/uniformControls.js';
@@ -25,17 +25,38 @@ import { hash12 } from '#shaders/includes/hash.js';
 
 import smokeUrl from '#assets/textures/smoke.webp';
 
+// World-space cauldron position (GLB `pot` node through the island group
+// transform): the smoke rises from just above the potion surface (the
+// offset control shifts it)
+const POSITION = [8.64, 3.1, -29.73];
+
+const DEFAULTS = {
+  color: '#00ffd4',
+  opacity: 1,
+  density: 0.6,
+  speed: 0.07,
+  edgeFade: 0.5,
+  topFadeStart: 0.48,
+  topFadeEnd: 1,
+  bottomFadeStart: 0.31,
+  bottomFadeEnd: 0.41,
+  sway: true,
+  timeOffsetStrength: 1,
+  swayScale: 2.16,
+  swayPower: 3,
+  swayAmplitude: 0.16,
+  width: 1.94,
+  height: 2.8,
+  offset: [0, 0.83, 0],
+};
+
 /**
  * The cauldron's smoke column: same 1x10 plane and debug schema as
  * TorchSmoke, but a single plain mesh with its own shader pair driven by
  * smoke.png instead of the procedural perlin — fully separate from the
  * torch/bonfire smoke.
  */
-const CauldronSmoke = props => {
-  const { folderName, position, defaults } = props;
-
-  const defaultsRef = useRef(defaults);
-
+const CauldronSmoke = () => {
   const smokeTexture = useLoader(THREE.TextureLoader, smokeUrl);
   useMemo(() => {
     smokeTexture.colorSpace = THREE.NoColorSpace;
@@ -45,7 +66,7 @@ const CauldronSmoke = props => {
   }, [smokeTexture]);
 
   const { smokeMaterial, uniforms } = useMemo(() => {
-    const d = defaultsRef.current;
+    const d = DEFAULTS;
     const uniforms = {
       uColor: uniform(new THREE.Color(d.color)),
       uOpacity: uniform(d.opacity),
@@ -137,9 +158,9 @@ const CauldronSmoke = props => {
 
   const smokeControl = uniformControls(uniforms);
 
-  const d = defaultsRef.current;
+  const d = DEFAULTS;
 
-  const { width, height, offset } = useControls(folderName, {
+  const { width, height, offset } = useControls('CauldronSmoke', {
     color: smokeControl('uColor', d.color),
     opacity: smokeControl('uOpacity', d.opacity, 0, 1, 0.01),
     // Gamma on the texture: < 1 = denser smoke (keeps the detail), > 1 =
@@ -194,9 +215,9 @@ const CauldronSmoke = props => {
     // geometry
     <mesh
       position={[
-        position[0] + offset[0],
-        position[1] + offset[1],
-        position[2] + offset[2],
+        POSITION[0] + offset[0],
+        POSITION[1] + offset[1],
+        POSITION[2] + offset[2],
       ]}
       scale={[width, height / 10, 1]}
       material={smokeMaterial}

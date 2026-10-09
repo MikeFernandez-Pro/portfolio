@@ -102,12 +102,12 @@ const FOLDER_TREE = {
   },
   ProjectsPlates: { Plates: null, PlatesLight: null },
   Cauldron: {
-    CauldronLiquid: null,
+    CauldronPotion: null,
     CauldronBubbles: null,
     CauldronLight: null,
     CauldronSmoke: null,
   },
-  SkillsPortal: { Skills: null, MagicBooks: null, SkillsPortalLight: null },
+  SkillsIsland: { Skills: null, MagicBooks: null, SkillsGlyphLight: null },
 };
 
 // Extra titles funneled into another leaf's folder: their bindings merge

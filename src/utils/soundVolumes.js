@@ -5,7 +5,7 @@
 const SOUND_VOLUMES = {
   ambient: 0.09,
   running: 0.4,
-  magicGlyph: 0.15,
+  skillsGlyph: 0.15,
   pressurePlate: 0.09,
   portal: 0.7,
   hammer: 0.5,

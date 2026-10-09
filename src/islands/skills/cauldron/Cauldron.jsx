@@ -1,162 +1,26 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useControls } from '#debug/useControls.jsx';
-import { uniformControls } from '#debug/uniformControls.js';
 import * as THREE from 'three/webgpu';
-import {
-  cos,
-  float,
-  floor,
-  fract,
-  length,
-  mix,
-  PI2,
-  pow,
-  sin,
-  smoothstep,
-  sqrt,
-  step,
-  time,
-  uniform,
-  vec2,
-  vec3,
-  vec4,
-} from 'three/tsl';
-import { hash12 } from '#shaders/includes/hash.js';
-
-import {
-  createCauldronPortalMaterial,
-  createCauldronPortalUniforms,
-} from '#shaders/cauldronPotion.js';
-import {
-  createParticleSprite,
-  particleAttribute,
-  pointCoord,
-} from '#utils/pointSprites.js';
 
 import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
+
+import {
+  POTION_DEFAULTS,
+  createCauldronPotionMaterial,
+  createCauldronPotionUniforms,
+  potionControls,
+} from './cauldronPotion.js';
+import {
+  cauldronBubblesControls,
+  createCauldronBubbles,
+} from './cauldronBubbles.js';
 
 // Pot self-rotation is idle motion; the liquid/bubbles stay animated
 const SPEED = REDUCED_MOTION_AT_LOAD ? 0 : 0.5;
 const POTION_PLANE_HEIGHT = 0;
 const BUBBLES_SURFACE_OFFSET = 0.02;
-
-// Boiling bubbles popping on the potion surface
-const BUBBLES_DEFAULTS = {
-  count: 5,
-  color: '#35d567',
-  intensity: 1,
-  opacity: 1,
-  coreOpacity: 0.51,
-  rimThickness: 0.14,
-  size: 0.171,
-  speed: 0.465,
-  growPower: 0.7,
-  pop: 0.855,
-  spread: 0.75,
-};
-
-// Buffers are allocated at the max once; the count control only changes
-// how many sprite instances are drawn. Spawn spots are hashed per cycle in
-// the shader, so only per-bubble timing/size randomness lives here.
-const BUBBLES_COUNT = 80;
-const bubblesPhases = new Float32Array(BUBBLES_COUNT);
-const bubblesSpeeds = new Float32Array(BUBBLES_COUNT);
-const bubblesSizes = new Float32Array(BUBBLES_COUNT);
-
-for (let i = 0; i < BUBBLES_COUNT; i++) {
-  bubblesPhases[i] = Math.random();
-  bubblesSpeeds[i] = Math.random() * 0.8 + 0.6;
-  bubblesSizes[i] = Math.random() * 0.6 + 0.4;
-}
-
-// Portal shader defaults
-const PORTAL_DEFAULTS = {
-  deepColor: '#429852',
-  midColor: '#30e011',
-  brightColor: '#35d567',
-  opacity: 0.82,
-  distortionScale: 1.4,
-  distortionStrength: 0.2,
-  distortionSpeed: 0.1,
-  rotationSpeed: 0.6,
-  backgroundStrength: 2,
-  backgroundCenterGlow: 1.67,
-  backgroundFalloff: 2.96,
-  backgroundCloudContrast: 0,
-  ribbonStrength: 0.61,
-  ribbonCount: 3.5,
-  ribbonWidth: 0.185,
-  ribbonTwist: -3.99,
-  ribbonSpeed: -0.51,
-  ribbonBreakup: 0,
-  filamentStrength: 0.59,
-  filamentCount: 3,
-  filamentWidth: 0.06,
-  filamentTwist: -10,
-  filamentSpeed: 1,
-  filamentBreakup: 0.37,
-  coreStrength: 0.69,
-  coreRadius: 0.1,
-  coreSoftness: 0.185,
-  coreHalo: 0.33,
-  corePulseAmount: 0.109,
-  corePulseSpeed: 0.66,
-};
-
-// Boiling bubbles: each loops on its own phase and respawns at a new random
-// spot of the surface every cycle, like water at a rolling boil: it stays in
-// place, swells, then bursts
-const createBubblesMaterial = u => {
-  const material = new THREE.PointsNodeMaterial({
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-  });
-
-  const aPhase = particleAttribute(bubblesPhases, 1);
-  const aSpeed = particleAttribute(bubblesSpeeds, 1);
-  const aSize = particleAttribute(bubblesSizes, 1);
-
-  const progress = time.mul(u.uSpeed).mul(aSpeed).add(aPhase);
-  const t = fract(progress);
-  const cycle = floor(progress);
-
-  const seed = vec2(aPhase.mul(137.13), aSpeed.mul(91.7)).add(cycle);
-  const angle = hash12(seed).mul(PI2);
-  const radius = sqrt(hash12(seed.add(17.31))).mul(u.uSpread);
-  material.positionNode = vec3(
-    cos(angle).mul(radius).mul(u.uHalfSize.x),
-    0,
-    sin(angle).mul(radius).mul(u.uHalfSize.y)
-  );
-
-  // The size swells over the whole life (uGrowPower shapes the curve),
-  // while the alpha pops sharply at the end instead of shrinking
-  const swell = pow(t, u.uGrowPower);
-  const life = smoothstep(0, 0.08, t).mul(
-    smoothstep(u.uPopStart, 1, t).oneMinus()
-  );
-  // gl_PointSize = uSize * uResolution.y * aSize * swell / -viewZ
-  material.sizeNode = u.uSize.mul(aSize).mul(swell).mul(2);
-
-  // Bright rim around a tunable fill (0 = hollow ring, 1 = full disc),
-  // alpha 0 outside the disc
-  const distanceToCenter = length(pointCoord.sub(0.5));
-  const rim = smoothstep(
-    float(0.48).sub(u.uRimThickness),
-    0.48,
-    distanceToCenter
-  );
-  const alpha = mix(u.uCoreOpacity, 1, rim)
-    .mul(life)
-    .mul(u.uOpacity)
-    .mul(step(distanceToCenter, 0.5));
-  material.colorNode = vec4(u.uColor.mul(u.uIntensity), alpha);
-
-  return material;
-};
 
 const Cauldron = props => {
   const { island } = props;
@@ -167,9 +31,9 @@ const Cauldron = props => {
 
   const perlinNoiseTexture = useVoronoiPerlinTexture();
 
-  // The potion mesh has no UVs: the vertex shader maps the portal onto the
+  // The potion mesh has no UVs: the vertex shader maps the potion onto the
   // liquid disc from its local-space XZ bounds instead
-  const portalBounds = useMemo(() => {
+  const potionBounds = useMemo(() => {
     const geometry = island.nodes.island_8.geometry;
     if (!geometry.boundingBox) geometry.computeBoundingBox();
     const { min, max } = geometry.boundingBox;
@@ -190,115 +54,48 @@ const Cauldron = props => {
 
     if (bubblesPointsRef.current) {
       bubblesPointsRef.current.position.y =
-        portalBounds.surfaceY + BUBBLES_SURFACE_OFFSET + height;
+        potionBounds.surfaceY + BUBBLES_SURFACE_OFFSET + height;
     }
   };
 
   useLayoutEffect(() => {
     applyPlaneHeight(planeHeightRef.current);
-  }, [portalBounds]);
+  }, [potionBounds]);
 
-  const { bubbles, bubblesUniforms } = useMemo(() => {
-    const bubblesUniforms = {
-      uHalfSize: uniform(portalBounds.halfSize),
-      uColor: uniform(new THREE.Color(BUBBLES_DEFAULTS.color)),
-      uIntensity: uniform(BUBBLES_DEFAULTS.intensity),
-      uOpacity: uniform(BUBBLES_DEFAULTS.opacity),
-      uCoreOpacity: uniform(BUBBLES_DEFAULTS.coreOpacity),
-      uRimThickness: uniform(BUBBLES_DEFAULTS.rimThickness),
-      uSize: uniform(BUBBLES_DEFAULTS.size),
-      uSpeed: uniform(BUBBLES_DEFAULTS.speed),
-      uGrowPower: uniform(BUBBLES_DEFAULTS.growPower),
-      uPopStart: uniform(BUBBLES_DEFAULTS.pop),
-      uSpread: uniform(BUBBLES_DEFAULTS.spread),
-    };
-    const bubbles = createParticleSprite(
-      createBubblesMaterial(bubblesUniforms),
-      BUBBLES_DEFAULTS.count
-    );
+  const { bubbles, uniforms: bubblesUniforms } = useMemo(() => {
+    const created = createCauldronBubbles(potionBounds.halfSize);
     // Above the liquid disc (the height follows the planeHeight control)
-    bubbles.position.set(
-      portalBounds.center.x,
-      portalBounds.surfaceY + BUBBLES_SURFACE_OFFSET + POTION_PLANE_HEIGHT,
-      portalBounds.center.y
+    created.bubbles.position.set(
+      potionBounds.center.x,
+      potionBounds.surfaceY + BUBBLES_SURFACE_OFFSET + POTION_PLANE_HEIGHT,
+      potionBounds.center.y
     );
-    return { bubbles, bubblesUniforms };
-  }, [portalBounds]);
+    return created;
+  }, [potionBounds]);
 
   useEffect(() => () => bubbles.material.dispose(), [bubbles]);
   bubblesPointsRef.current = bubbles;
 
-  const bubblesControl = uniformControls(bubblesUniforms);
+  useControls(
+    'CauldronBubbles',
+    cauldronBubblesControls(bubbles, bubblesUniforms)
+  );
 
-  useControls('CauldronBubbles', {
-    count: {
-      value: BUBBLES_DEFAULTS.count,
-      min: 0,
-      max: BUBBLES_COUNT,
-      step: 1,
-      onChange: v => {
-        bubbles.count = v;
-      },
-    },
-    color: bubblesControl('uColor', BUBBLES_DEFAULTS.color),
-    intensity: bubblesControl(
-      'uIntensity',
-      BUBBLES_DEFAULTS.intensity,
-      0,
-      20,
-      0.1
-    ),
-    opacity: bubblesControl('uOpacity', BUBBLES_DEFAULTS.opacity, 0, 1, 0.01),
-    // Inside fill of the bubble (0 = hollow ring, 1 = full disc)
-    coreOpacity: bubblesControl(
-      'uCoreOpacity',
-      BUBBLES_DEFAULTS.coreOpacity,
-      0,
-      1,
-      0.01
-    ),
-    rimThickness: bubblesControl(
-      'uRimThickness',
-      BUBBLES_DEFAULTS.rimThickness,
-      0.01,
-      0.48,
-      0.005
-    ),
-    size: bubblesControl('uSize', BUBBLES_DEFAULTS.size, 0, 0.3, 0.001),
-    speed: bubblesControl('uSpeed', BUBBLES_DEFAULTS.speed, 0, 2, 0.005),
-    // Shape of the swelling over a bubble's life (< 1 grows fast then
-    // slows down, > 1 the opposite)
-    growPower: bubblesControl(
-      'uGrowPower',
-      BUBBLES_DEFAULTS.growPower,
-      0.2,
-      3,
-      0.01
-    ),
-    // Life fraction where the burst begins (closer to 1 = more sudden)
-    pop: bubblesControl('uPopStart', BUBBLES_DEFAULTS.pop, 0.5, 0.99, 0.005),
-    spread: bubblesControl('uSpread', BUBBLES_DEFAULTS.spread, 0, 1, 0.01),
-  });
-
-  const { portalMaterial, portalUniforms } = useMemo(() => {
-    const portalUniforms = createCauldronPortalUniforms(
-      PORTAL_DEFAULTS,
-      portalBounds
+  const { potionMaterial, potionUniforms } = useMemo(() => {
+    const potionUniforms = createCauldronPotionUniforms(
+      POTION_DEFAULTS,
+      potionBounds
     );
-    const portalMaterial = createCauldronPortalMaterial(
-      portalUniforms,
+    const potionMaterial = createCauldronPotionMaterial(
+      potionUniforms,
       perlinNoiseTexture
     );
-    return { portalMaterial, portalUniforms };
-  }, [perlinNoiseTexture, portalBounds]);
+    return { potionMaterial, potionUniforms };
+  }, [perlinNoiseTexture, potionBounds]);
 
-  useEffect(() => () => portalMaterial.dispose(), [portalMaterial]);
+  useEffect(() => () => potionMaterial.dispose(), [potionMaterial]);
 
-  const potionControl = uniformControls(portalUniforms);
-
-  const d = PORTAL_DEFAULTS;
-
-  useControls('CauldronLiquid', {
+  useControls('CauldronPotion', {
     planeHeight: {
       value: POTION_PLANE_HEIGHT,
       min: -0.5,
@@ -306,132 +103,7 @@ const Cauldron = props => {
       step: 0.001,
       onChange: applyPlaneHeight,
     },
-    deepColor: potionControl('uDeepColor', d.deepColor),
-    midColor: potionControl('uMidColor', d.midColor),
-    brightColor: potionControl('uBrightColor', d.brightColor),
-    opacity: potionControl('uOpacity', d.opacity, 0, 1, 0.01),
-    distortionScale: potionControl(
-      'uDistortionScale',
-      d.distortionScale,
-      0,
-      3,
-      0.01
-    ),
-    distortionStrength: potionControl(
-      'uDistortionStrength',
-      d.distortionStrength,
-      0,
-      0.2,
-      0.001
-    ),
-    distortionSpeed: potionControl(
-      'uDistortionSpeed',
-      d.distortionSpeed,
-      0,
-      0.5,
-      0.001
-    ),
-    rotationSpeed: potionControl(
-      'uRotationSpeed',
-      d.rotationSpeed,
-      -3,
-      3,
-      0.01
-    ),
-    backgroundStrength: potionControl(
-      'uBackgroundStrength',
-      d.backgroundStrength,
-      0,
-      4,
-      0.01
-    ),
-    backgroundCenterGlow: potionControl(
-      'uBackgroundCenterGlow',
-      d.backgroundCenterGlow,
-      0,
-      4,
-      0.01
-    ),
-    backgroundFalloff: potionControl(
-      'uBackgroundFalloff',
-      d.backgroundFalloff,
-      0.1,
-      8,
-      0.01
-    ),
-    backgroundCloudContrast: potionControl(
-      'uBackgroundCloudContrast',
-      d.backgroundCloudContrast,
-      0,
-      1,
-      0.01
-    ),
-    ribbonStrength: potionControl(
-      'uRibbonStrength',
-      d.ribbonStrength,
-      0,
-      2,
-      0.01
-    ),
-    ribbonCount: potionControl('uRibbonCount', d.ribbonCount, 0, 20, 0.5),
-    ribbonWidth: potionControl('uRibbonWidth', d.ribbonWidth, 0, 0.5, 0.005),
-    ribbonTwist: potionControl('uRibbonTwist', d.ribbonTwist, -10, 10, 0.01),
-    ribbonSpeed: potionControl('uRibbonSpeed', d.ribbonSpeed, -3, 3, 0.01),
-    ribbonBreakup: potionControl('uRibbonBreakup', d.ribbonBreakup, 0, 1, 0.01),
-    filamentStrength: potionControl(
-      'uFilamentStrength',
-      d.filamentStrength,
-      0,
-      2,
-      0.01
-    ),
-    filamentCount: potionControl('uFilamentCount', d.filamentCount, 0, 30, 0.5),
-    filamentWidth: potionControl(
-      'uFilamentWidth',
-      d.filamentWidth,
-      0,
-      0.3,
-      0.005
-    ),
-    filamentTwist: potionControl(
-      'uFilamentTwist',
-      d.filamentTwist,
-      -10,
-      10,
-      0.01
-    ),
-    filamentSpeed: potionControl(
-      'uFilamentSpeed',
-      d.filamentSpeed,
-      -3,
-      3,
-      0.01
-    ),
-    filamentBreakup: potionControl(
-      'uFilamentBreakup',
-      d.filamentBreakup,
-      0,
-      1,
-      0.01
-    ),
-    coreStrength: potionControl('uCoreStrength', d.coreStrength, 0, 3, 0.01),
-    coreRadius: potionControl('uCoreRadius', d.coreRadius, 0, 0.5, 0.005),
-    coreSoftness: potionControl('uCoreSoftness', d.coreSoftness, 0, 0.5, 0.005),
-    coreHalo: potionControl('uCoreHalo', d.coreHalo, 0, 2, 0.01),
-    corePulseAmount: potionControl(
-      'uCorePulseAmount',
-      d.corePulseAmount,
-      0,
-      0.5,
-      0.001
-    ),
-    corePulseSpeed: potionControl(
-      'uCorePulseSpeed',
-      d.corePulseSpeed,
-      0,
-      3,
-      0.01
-    ),
+    ...potionControls(potionUniforms),
   });
 
   useFrame((state, delta) => {
@@ -447,7 +119,7 @@ const Cauldron = props => {
         skeleton={island.nodes.island_8.skeleton}
         morphTargetDictionary={island.nodes.island_8.morphTargetDictionary}
         morphTargetInfluences={island.nodes.island_8.morphTargetInfluences}
-        material={portalMaterial}
+        material={potionMaterial}
       />
       {/* Boiling bubbles above the liquid disc */}
       <primitive object={bubbles} />

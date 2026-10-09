@@ -25,13 +25,48 @@ import {
 } from 'three/tsl';
 
 import { rotate2d } from '#shaders/includes/rotate2d.js';
+import { uniformControls } from '#debug/uniformControls.js';
 
-/** Uniform nodes of the cauldron portal, from its defaults. */
-const createCauldronPortalUniforms = (defaults, bounds) => {
+// Potion shader defaults
+export const POTION_DEFAULTS = {
+  deepColor: '#429852',
+  midColor: '#30e011',
+  brightColor: '#35d567',
+  opacity: 0.82,
+  distortionScale: 1.4,
+  distortionStrength: 0.2,
+  distortionSpeed: 0.1,
+  rotationSpeed: 0.6,
+  backgroundStrength: 2,
+  backgroundCenterGlow: 1.67,
+  backgroundFalloff: 2.96,
+  backgroundCloudContrast: 0,
+  ribbonStrength: 0.61,
+  ribbonCount: 3.5,
+  ribbonWidth: 0.185,
+  ribbonTwist: -3.99,
+  ribbonSpeed: -0.51,
+  ribbonBreakup: 0,
+  filamentStrength: 0.59,
+  filamentCount: 3,
+  filamentWidth: 0.06,
+  filamentTwist: -10,
+  filamentSpeed: 1,
+  filamentBreakup: 0.37,
+  coreStrength: 0.69,
+  coreRadius: 0.1,
+  coreSoftness: 0.185,
+  coreHalo: 0.33,
+  corePulseAmount: 0.109,
+  corePulseSpeed: 0.66,
+};
+
+/** Uniform nodes of the cauldron potion, from its defaults. */
+const createCauldronPotionUniforms = (defaults, bounds) => {
   const d = defaults;
   return {
-    uPortalCenter: uniform(bounds.center),
-    uPortalHalfSize: uniform(bounds.halfSize),
+    uPotionCenter: uniform(bounds.center),
+    uPotionHalfSize: uniform(bounds.halfSize),
     uDeepColor: uniform(new THREE.Color(d.deepColor)),
     uMidColor: uniform(new THREE.Color(d.midColor)),
     uBrightColor: uniform(new THREE.Color(d.brightColor)),
@@ -72,25 +107,25 @@ const stripeMask = (phase, width, softness) =>
  * Painted vortex on the potion disc: a cloudy background, broad broken
  * spirals, thin filaments and a pulsing hot core, all driven by one
  * three-sample perlin flow field (green channel of the packed texture).
- * The potion mesh has no UVs: the portal coordinates come from its
+ * The potion mesh has no UVs: the potion coordinates come from its
  * local-space XZ footprint. Opaque (uOpacity only
  * feeds the discard threshold of the disc edge).
  */
-const createCauldronPortalMaterial = (u, noiseTexture) => {
+const createCauldronPotionMaterial = (u, noiseTexture) => {
   const material = new THREE.MeshStandardNodeMaterial();
 
   // -1..1 across the liquid disc, 0 at its center
-  const portalPosition = varying(
-    positionGeometry.xz.sub(u.uPortalCenter).div(u.uPortalHalfSize),
-    'vPortalPosition'
+  const potionPosition = varying(
+    positionGeometry.xz.sub(u.uPotionCenter).div(u.uPotionHalfSize),
+    'vPotionPosition'
   );
 
   material.colorNode = Fn(() => {
-    const baseRadius = length(portalPosition).toVar();
+    const baseRadius = length(potionPosition).toVar();
     const perlin = uv => texture(noiseTexture, uv).g;
 
     // One shared three-sample flow field drives every visual layer
-    const noiseUv = portalPosition
+    const noiseUv = potionPosition
       .mul(u.uDistortionScale)
       .mul(0.42)
       .add(
@@ -109,7 +144,7 @@ const createCauldronPortalMaterial = (u, noiseTexture) => {
     const distortion = vec2(noiseX, noiseY).mul(2).sub(1);
     const centerStability = smoothstep(0.02, 0.55, baseRadius);
     const flowPosition = rotate2d(time.mul(u.uRotationSpeed))
-      .mul(portalPosition)
+      .mul(potionPosition)
       .add(
         distortion.mul(u.uDistortionStrength).mul(mix(0.3, 1, centerStability))
       )
@@ -213,4 +248,94 @@ const createCauldronPortalMaterial = (u, noiseTexture) => {
   return material;
 };
 
-export { createCauldronPortalMaterial, createCauldronPortalUniforms };
+// Debug entries for the potion look
+const potionControls = uniforms => {
+  const d = POTION_DEFAULTS;
+  const control = uniformControls(uniforms);
+  return {
+    deepColor: control('uDeepColor', d.deepColor),
+    midColor: control('uMidColor', d.midColor),
+    brightColor: control('uBrightColor', d.brightColor),
+    opacity: control('uOpacity', d.opacity, 0, 1, 0.01),
+    distortionScale: control('uDistortionScale', d.distortionScale, 0, 3, 0.01),
+    distortionStrength: control(
+      'uDistortionStrength',
+      d.distortionStrength,
+      0,
+      0.2,
+      0.001
+    ),
+    distortionSpeed: control(
+      'uDistortionSpeed',
+      d.distortionSpeed,
+      0,
+      0.5,
+      0.001
+    ),
+    rotationSpeed: control('uRotationSpeed', d.rotationSpeed, -3, 3, 0.01),
+    backgroundStrength: control(
+      'uBackgroundStrength',
+      d.backgroundStrength,
+      0,
+      4,
+      0.01
+    ),
+    backgroundCenterGlow: control(
+      'uBackgroundCenterGlow',
+      d.backgroundCenterGlow,
+      0,
+      4,
+      0.01
+    ),
+    backgroundFalloff: control(
+      'uBackgroundFalloff',
+      d.backgroundFalloff,
+      0.1,
+      8,
+      0.01
+    ),
+    backgroundCloudContrast: control(
+      'uBackgroundCloudContrast',
+      d.backgroundCloudContrast,
+      0,
+      1,
+      0.01
+    ),
+    ribbonStrength: control('uRibbonStrength', d.ribbonStrength, 0, 2, 0.01),
+    ribbonCount: control('uRibbonCount', d.ribbonCount, 0, 20, 0.5),
+    ribbonWidth: control('uRibbonWidth', d.ribbonWidth, 0, 0.5, 0.005),
+    ribbonTwist: control('uRibbonTwist', d.ribbonTwist, -10, 10, 0.01),
+    ribbonSpeed: control('uRibbonSpeed', d.ribbonSpeed, -3, 3, 0.01),
+    ribbonBreakup: control('uRibbonBreakup', d.ribbonBreakup, 0, 1, 0.01),
+    filamentStrength: control(
+      'uFilamentStrength',
+      d.filamentStrength,
+      0,
+      2,
+      0.01
+    ),
+    filamentCount: control('uFilamentCount', d.filamentCount, 0, 30, 0.5),
+    filamentWidth: control('uFilamentWidth', d.filamentWidth, 0, 0.3, 0.005),
+    filamentTwist: control('uFilamentTwist', d.filamentTwist, -10, 10, 0.01),
+    filamentSpeed: control('uFilamentSpeed', d.filamentSpeed, -3, 3, 0.01),
+    filamentBreakup: control('uFilamentBreakup', d.filamentBreakup, 0, 1, 0.01),
+    coreStrength: control('uCoreStrength', d.coreStrength, 0, 3, 0.01),
+    coreRadius: control('uCoreRadius', d.coreRadius, 0, 0.5, 0.005),
+    coreSoftness: control('uCoreSoftness', d.coreSoftness, 0, 0.5, 0.005),
+    coreHalo: control('uCoreHalo', d.coreHalo, 0, 2, 0.01),
+    corePulseAmount: control(
+      'uCorePulseAmount',
+      d.corePulseAmount,
+      0,
+      0.5,
+      0.001
+    ),
+    corePulseSpeed: control('uCorePulseSpeed', d.corePulseSpeed, 0, 3, 0.01),
+  };
+};
+
+export {
+  createCauldronPotionMaterial,
+  createCauldronPotionUniforms,
+  potionControls,
+};

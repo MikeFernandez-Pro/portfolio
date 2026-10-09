@@ -45,10 +45,6 @@ const TEXTURED_MATERIALS = [
   'spainFlag',
 ];
 
-// World-space cauldron position (GLB `pot` node through the island group
-// transform), smoke rises from just above the potion surface
-const CAULDRON_SMOKE_POSITION = [8.64, 3.1, -29.73];
-
 // World-space torch smoke positions: the torch flames (the coordinates noted
 // next to each sparks offset in TorchesSparks.jsx) minus the bonfire, which
 // already has its own Smoke component, with the hand-tuned per-torch offsets
@@ -329,29 +325,7 @@ const Islands = () => {
       <LanternsAndHome island={island} />
       <IslandMaterialsControls materials={materials} />
       <PointLightsControls />
-      <CauldronSmoke
-        folderName="CauldronSmoke"
-        position={CAULDRON_SMOKE_POSITION}
-        defaults={{
-          color: '#00ffd4',
-          opacity: 1,
-          density: 0.6,
-          speed: 0.07,
-          edgeFade: 0.5,
-          topFadeStart: 0.48,
-          topFadeEnd: 1,
-          bottomFadeStart: 0.31,
-          bottomFadeEnd: 0.41,
-          sway: true,
-          timeOffsetStrength: 1,
-          swayScale: 2.16,
-          swayPower: 3,
-          swayAmplitude: 0.16,
-          width: 1.94,
-          height: 2.8,
-          offset: [0, 0.83, 0],
-        }}
-      />
+      <CauldronSmoke />
       <TorchSmoke
         folderName="TorchesSmoke"
         positions={TORCH_SMOKE_POSITIONS}

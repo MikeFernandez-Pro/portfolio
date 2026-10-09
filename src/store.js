@@ -14,8 +14,8 @@ export const useStore = create(
 
     activatedInteractiveElement: { prev: undefined, current: undefined },
 
-    //Magic Glyph activation handler
-    magicGlyphActivation: false,
+    // Set once the character steps on the skills glyph; never goes back
+    skillsIslandAwake: false,
 
     // Project picked on the project plates (projects.js id); the projects
     // portal shows and opens it

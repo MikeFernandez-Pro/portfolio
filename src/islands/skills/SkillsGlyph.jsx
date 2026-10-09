@@ -10,22 +10,24 @@ import { SOUND_VOLUMES } from '#utils/soundVolumes.js';
 import { pointLights } from '#islands/world/pointLights/pointLights.js';
 import { pointLightControls } from '#islands/world/pointLights/pointLightControls.js';
 
-import MagicGlyphSoundEffect from '#assets/sounds/magic-glyph.mp3';
+import GlyphSoundEffect from '#assets/sounds/magic-glyph.mp3';
 
 const SkillsGlyph = props => {
   const { island } = props;
+  // The skills glyph material, as named in Blender
+  const glyphMaterial = island.materials.magicPortal;
 
-  const magicGlyphActivationRef = useRef(false);
+  const awakeRef = useRef(false);
 
   const majorGlyph = island.nodes.glyph;
   const minorGlyph = island.nodes.smallGlyph;
 
-  const magicGlyphSoundEffect = useMemo(
+  const glyphSoundEffect = useMemo(
     () =>
       new Howl({
-        src: [MagicGlyphSoundEffect],
+        src: [GlyphSoundEffect],
         autoplay: false,
-        volume: SOUND_VOLUMES.magicGlyph,
+        volume: SOUND_VOLUMES.skillsGlyph,
       }),
     []
   );
@@ -40,7 +42,7 @@ const SkillsGlyph = props => {
 
   const light = pointLights.skillsGlyph;
   useControls(
-    'SkillsPortalLight',
+    'SkillsGlyphLight',
     pointLightControls(light, {
       // Scaled by the awakening fade (lightProgressRef)
       intensity: {
@@ -70,8 +72,8 @@ const SkillsGlyph = props => {
 
   useEffect(() => {
     // Off at rest, the activation animation below raises it
-    island.materials.magicPortal.emissive = new THREE.Color('#ff6c43');
-    island.materials.magicPortal.emissiveIntensity = 0;
+    glyphMaterial.emissive = new THREE.Color('#ff6c43');
+    glyphMaterial.emissiveIntensity = 0;
 
     // The island point light sits above the major glyph; its world
     // position lives in the GLB, so it's resolved at runtime
@@ -82,8 +84,8 @@ const SkillsGlyph = props => {
       pointLights.skillsGlyph.settings.height;
 
     // Magic Glyphs Animation
-    let magicGlyphEmissiveAnimation = gsap.fromTo(
-      island.materials.magicPortal,
+    let glyphEmissiveAnimation = gsap.fromTo(
+      glyphMaterial,
       { emissiveIntensity: 0 },
       { duration: 1, emissiveIntensity: 9, paused: true }
     );
@@ -103,31 +105,31 @@ const SkillsGlyph = props => {
     /**
      * Storage Subscriptions
      */
-    // Subscribe to magicGlyphActivation zustand store state
-    const unsubMagicGlyphActivation = useStore.subscribe(
-      state => state.magicGlyphActivation,
+    // The glyphs light up when the Skills island awakens
+    const unsubAwake = useStore.subscribe(
+      state => state.skillsIslandAwake,
       () => {
-        magicGlyphActivationRef.current = true;
-        magicGlyphEmissiveAnimation.play();
+        awakeRef.current = true;
+        glyphEmissiveAnimation.play();
         magicLightAnimation.play();
 
         // Sound Effect
-        magicGlyphSoundEffect.play();
-        magicGlyphSoundEffect.fade(0, SOUND_VOLUMES.magicGlyph, 500);
+        glyphSoundEffect.play();
+        glyphSoundEffect.fade(0, SOUND_VOLUMES.skillsGlyph, 500);
       }
     );
 
     return () => {
-      unsubMagicGlyphActivation();
-      magicGlyphEmissiveAnimation.kill();
-      magicGlyphEmissiveAnimation = null;
+      unsubAwake();
+      glyphEmissiveAnimation.kill();
+      glyphEmissiveAnimation = null;
       magicLightAnimation.kill();
       magicLightAnimation = null;
     };
   }, [island]);
 
   useFrame((_state, delta) => {
-    if (magicGlyphActivationRef.current) {
+    if (awakeRef.current) {
       majorGlyph.rotation.y += delta;
       minorGlyph.rotation.y -= delta;
     }

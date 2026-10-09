@@ -2,7 +2,7 @@ import {
   triggerInteractiveLink,
   untriggerInteractiveLink,
   activateInteractiveElementLink,
-  activateMagicGlyph,
+  awakenSkillsIsland,
   selectProject,
 } from './interactiveElementsUtils.js';
 import { useStore } from '#store';
@@ -13,7 +13,7 @@ const LINKEDIN_ID = 'linkedIn';
 const VERCEL_ID = 'vercel';
 const PORTAL_ID = 'portal';
 const STATUE_ID = 'statue';
-const MAGIC_GLYPH_ID = 'magicGlyph';
+const SKILLS_GLYPH_ID = 'skillsGlyph';
 
 const MAIL_BOX_URL = 'mailto:contact@mike-fernandez.dev';
 const LINKEDIN_URL =
@@ -109,10 +109,10 @@ const interactiveElementsData = {
     rotation: [0, 0, 0],
     scale: [1.5, 1, 1.5],
   },
-  [MAGIC_GLYPH_ID]: {
+  [SKILLS_GLYPH_ID]: {
     userData: {
-      id: MAGIC_GLYPH_ID,
-      startInteraction: activateMagicGlyph,
+      id: SKILLS_GLYPH_ID,
+      startInteraction: awakenSkillsIsland,
     },
     position: [6.34, 2.69, -33.53],
     rotation: [0, -0.15, 0],

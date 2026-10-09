@@ -98,13 +98,13 @@ const Experience = () => {
         runningSoundEffect.volume(value);
       },
     },
-    magicGlyph: {
-      value: SOUND_VOLUMES.magicGlyph,
+    skillsGlyph: {
+      value: SOUND_VOLUMES.skillsGlyph,
       min: 0,
       max: 1,
       step: 0.01,
       onChange: value => {
-        SOUND_VOLUMES.magicGlyph = value;
+        SOUND_VOLUMES.skillsGlyph = value;
       },
     },
     pressurePlate: {

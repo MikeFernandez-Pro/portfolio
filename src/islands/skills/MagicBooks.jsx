@@ -10,12 +10,12 @@ import { toNodeMaterial } from '#utils/nodeMaterials.js';
 import { createDissolveUniforms, dissolveLava } from '#shaders/dissolve.js';
 
 // Same voronoi lava dissolve as the character respawn (respawnAnimation.js),
-// scoped to the books: hidden at rest, the glyph activation grows the lava in
+// scoped to the books: hidden at rest, the awakening grows the lava in
 // and then forms the real books over it. These are the production defaults —
 // the headless useControls fires each onChange once with them.
 const BOOKS_DISSOLVE_DEFAULTS = {
   // Timing (seconds)
-  delay: 0.4, // start offset after the glyph activation
+  delay: 0.4, // start offset after the awakening
   dissolveDuration: 1, // lava grows in, book opacity 0 -> 0.5
   formDuration: 1, // book opacity 0.5 -> 1 while the lava fades out
   // Look
@@ -145,7 +145,7 @@ const MagicBooks = props => {
     timelineRef.current = tl;
   };
 
-  // Back to the pre-activation resting state (hidden books), ready to replay
+  // Back to the resting state before the awakening (hidden books), ready to replay
   const resetBooksDissolve = () => {
     timelineRef.current?.kill();
     timelineRef.current = null;
@@ -169,7 +169,7 @@ const MagicBooks = props => {
       0.1
     ),
     color: control('uColor', BOOKS_DISSOLVE_DEFAULTS.color),
-    // Build-time values, read when the next Play/activation builds its
+    // Build-time values, read when the next Play/awakening builds its
     // timeline
     dissolveDuration: {
       value: BOOKS_DISSOLVE_DEFAULTS.dissolveDuration,
@@ -202,9 +202,9 @@ const MagicBooks = props => {
   });
 
   useEffect(() => {
-    // Subscribe to magicGlyphActivation zustand store state
-    const unsubMagicPlateActivation = useStore.subscribe(
-      state => state.magicGlyphActivation,
+    // The books appear when the Skills island awakens
+    const unsubAwake = useStore.subscribe(
+      state => state.skillsIslandAwake,
       () => {
         playBooksDissolve(booksDissolveConfig.delay);
       }
@@ -214,7 +214,7 @@ const MagicBooks = props => {
     return () => {
       timelineRef.current?.kill();
       timelineRef.current = null;
-      unsubMagicPlateActivation();
+      unsubAwake();
     };
   }, []);
 

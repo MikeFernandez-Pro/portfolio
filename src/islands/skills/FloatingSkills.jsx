@@ -157,25 +157,25 @@ const FloatingSkills = () => {
     },
   });
 
-  // Fade in with the magic glyph activation
+  // Fade in when the Skills island awakens
   useEffect(() => {
-    const activation = gsap.to(uniforms.uOpacity, {
+    const fadeIn = gsap.to(uniforms.uOpacity, {
       duration: 1,
       delay: 1,
       value: 1,
       ease: 'expo.in',
       paused: true,
     });
-    if (useStore.getState().magicGlyphActivation) activation.play();
+    if (useStore.getState().skillsIslandAwake) fadeIn.play();
 
-    const unsubMagicGlyphActivation = useStore.subscribe(
-      state => state.magicGlyphActivation,
-      () => activation.play()
+    const unsubAwake = useStore.subscribe(
+      state => state.skillsIslandAwake,
+      () => fadeIn.play()
     );
 
     return () => {
-      activation.kill();
-      unsubMagicGlyphActivation();
+      fadeIn.kill();
+      unsubAwake();
     };
   }, [uniforms]);
 

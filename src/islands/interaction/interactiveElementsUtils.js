@@ -99,11 +99,10 @@ const activateInteractiveElementLink = (url, isMailBox = false) => {
   }
 };
 
-const activateMagicGlyph = () => {
-  const magicGlyphActivation = useStore.getState().magicGlyphActivation;
-
-  if (!magicGlyphActivation) {
-    useStore.setState({ magicGlyphActivation: true });
+// The skills glyph: awakens the Skills island (once)
+const awakenSkillsIsland = () => {
+  if (!useStore.getState().skillsIslandAwake) {
+    useStore.setState({ skillsIslandAwake: true });
   }
 };
 
@@ -119,6 +118,6 @@ export {
   triggerInteractiveLink,
   untriggerInteractiveLink,
   activateInteractiveElementLink,
-  activateMagicGlyph,
+  awakenSkillsIsland,
   selectProject,
 };
