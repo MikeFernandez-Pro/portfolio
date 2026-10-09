@@ -90,7 +90,7 @@ const dissolveLava = (u, boundsMin, boundsMax) =>
     ).r;
 
     const lower = float(1).sub(u.uProgress);
-    // max: the despawn/respawn timelines set uThickness to 0; equal
+    // max: the death/respawn timelines set uThickness to 0; equal
     // smoothstep edges are NaN where the pattern lands exactly on them
     const pattern = smoothstep(
       lower,

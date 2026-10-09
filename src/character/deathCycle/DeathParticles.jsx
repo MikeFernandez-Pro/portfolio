@@ -17,24 +17,17 @@ import gsap from 'gsap';
 
 import { useStore } from '#store';
 import { useControls } from '#debug/useControls.jsx';
-import {
-  DESPAWN_DEFAULTS,
-  despawnConfig,
-  playDespawnAnimation,
-  scrubDespawnAnimation,
-  refreshDespawnAnimation,
-  resetDespawnAnimation,
-} from '#character/deathCycle/despawnAnimation.js';
+import { uniformControls } from '#debug/uniformControls.js';
+import { registerDeathParticles, targets } from './targets.js';
 import {
   createParticleSprite,
   particleAttribute,
   pointCoord,
 } from '#utils/pointSprites.js';
 
-// One-shot disintegration burst: when the character dies, it vanishes and
-// this cloud of glowing dust rises and fades from where it stood. Hidden at
-// rest; CharacterController positions and plays it through
-// playDeathParticles.
+// Death particles: when the character dies, it vanishes and this cloud of
+// glowing motes rises and fades from where it stood. Hidden at rest; the
+// death cycle positions and plays it through playDeathParticles.
 
 const PARTICLES_COUNT = 30;
 
@@ -58,13 +51,13 @@ const deathParticlesConfig = { ...DEATH_PARTICLES_DEFAULTS };
 // Play the burst at the given world position ({x, y, z}); returns the gsap
 // tween (or null when the system is not mounted yet)
 export const playDeathParticles = position => {
-  const { deathParticlesMesh, deathParticlesUniforms } = useStore.getState();
-  if (!deathParticlesMesh || !deathParticlesUniforms) return null;
+  if (!targets.particles) return null;
+  const { mesh, uniforms } = targets.particles;
 
-  deathParticlesMesh.position.set(position.x, position.y, position.z);
-  deathParticlesMesh.visible = true;
+  mesh.position.set(position.x, position.y, position.z);
+  mesh.visible = true;
 
-  const progress = deathParticlesUniforms.uProgress;
+  const progress = uniforms.uProgress;
   gsap.killTweensOf(progress);
   progress.value = 0;
   return gsap.to(progress, {
@@ -73,56 +66,37 @@ export const playDeathParticles = position => {
     // Linear: the per-particle pacing (delays, fade curve) lives in the shader
     ease: 'none',
     onComplete: () => {
-      deathParticlesMesh.visible = false;
+      mesh.visible = false;
     },
   });
 };
 
-// Stop the burst and return to the resting state (no dust)
+// Stop the burst and return to the resting state (no particles)
 export const resetDeathParticles = () => {
-  const { deathParticlesMesh, deathParticlesUniforms } = useStore.getState();
-  if (!deathParticlesMesh || !deathParticlesUniforms) return;
-  gsap.killTweensOf(deathParticlesUniforms.uProgress);
-  deathParticlesUniforms.uProgress.value = 0;
-  deathParticlesMesh.visible = false;
+  if (!targets.particles) return;
+  const { mesh, uniforms } = targets.particles;
+  gsap.killTweensOf(uniforms.uProgress);
+  uniforms.uProgress.value = 0;
+  mesh.visible = false;
 };
 
 // Freeze the burst at an arbitrary [0, 1] moment (progress scrubber). The
 // burst is placed at the character's current position when it appears
 export const scrubDeathParticles = progress => {
-  const { deathParticlesMesh, deathParticlesUniforms, characterPosition } =
-    useStore.getState();
-  if (!deathParticlesMesh || !deathParticlesUniforms) return;
+  if (!targets.particles) return;
+  const { mesh, uniforms } = targets.particles;
+  const { characterPosition } = useStore.getState();
 
-  if (!deathParticlesMesh.visible && progress > 0 && characterPosition) {
-    deathParticlesMesh.position.set(
+  if (!mesh.visible && progress > 0 && characterPosition) {
+    mesh.position.set(
       characterPosition.x,
       characterPosition.y,
       characterPosition.z
     );
   }
-  gsap.killTweensOf(deathParticlesUniforms.uProgress);
-  deathParticlesUniforms.uProgress.value = progress;
-  deathParticlesMesh.visible = progress > 0;
-};
-
-// Full death preview at the character's current position (falls back to
-// spawn): the character despawns (formed -> voronoi -> gone) while the dust
-// rises, exactly like a real death, then reforms once both are done. The
-// real death path (CharacterController) plays the two animations itself —
-// there the respawn animation reforms the character
-const playPlayerDeathPreview = () => {
-  const position = useStore.getState().characterPosition ?? {
-    x: 0,
-    y: 0.6,
-    z: 0,
-  };
-  const despawn = playDespawnAnimation();
-  const burst = playDeathParticles(position);
-  // gsap tweens/timelines are thenable
-  Promise.all([despawn, burst].filter(Boolean)).then(() =>
-    resetDespawnAnimation()
-  );
+  gsap.killTweensOf(uniforms.uProgress);
+  uniforms.uProgress.value = progress;
+  mesh.visible = progress > 0;
 };
 
 const DeathParticles = () => {
@@ -138,62 +112,12 @@ const DeathParticles = () => {
     []
   );
 
-  const withUniforms = updater => updater(uniforms);
-
   const d = DEATH_PARTICLES_DEFAULTS;
+  const control = uniformControls(uniforms);
 
-  // Despawn build-time values are baked into its timeline; re-apply the
-  // current scrub frame after a change so the tweak is visible immediately
-  const setDespawnConfig = (key, value) => {
-    despawnConfig[key] = value;
-    refreshDespawnAnimation();
-  };
-
+  // Shares the 'Player Death' folder with the death timeline controls
+  // (DeathCycleControls)
   const controls = useControls('Player Death', {
-    // Full death preview (character despawn + death particles in parallel) at
-    // the character's current position
-    Play: () => playPlayerDeathPreview(),
-    'Reset Animation': () => {
-      resetDeathParticles();
-      resetDespawnAnimation();
-    },
-    // Freeze both animations at any moment (0 = alive, 1 = fully gone)
-    progress: {
-      value: 0,
-      min: 0,
-      max: 1,
-      step: 0.001,
-      onChange: v => {
-        scrubDeathParticles(v);
-        scrubDespawnAnimation(v);
-      },
-    },
-
-    // Character despawn (reverse respawn dissolve, no spiral). The lava
-    // look (color, intensity, noise) is shared with the respawn and lives
-    // in the Respawn Animation folder
-    despawnDissolve: {
-      value: DESPAWN_DEFAULTS.dissolveDuration,
-      min: 0.1,
-      max: 4,
-      step: 0.01,
-      onChange: v => setDespawnConfig('dissolveDuration', v),
-    },
-    despawnFade: {
-      value: DESPAWN_DEFAULTS.fadeDuration,
-      min: 0.1,
-      max: 4,
-      step: 0.01,
-      onChange: v => setDespawnConfig('fadeDuration', v),
-    },
-    despawnThickness: {
-      value: DESPAWN_DEFAULTS.thickness,
-      min: 0.01,
-      max: 1,
-      step: 0.01,
-      onChange: v => setDespawnConfig('thickness', v),
-    },
-
     // Death particles — rebuild the geometry (new random spread) when changed
     count: { value: PARTICLES_COUNT, min: 10, max: 500, step: 10 },
     particlesDuration: {
@@ -203,31 +127,10 @@ const DeathParticles = () => {
       step: 0.01,
       onChange: v => (deathParticlesConfig.duration = v),
     },
-    riseHeight: {
-      value: d.riseHeight,
-      min: 0.2,
-      max: 4,
-      step: 0.01,
-      onChange: v => withUniforms(u => (u.uRiseHeight.value = v)),
-    },
-    size: {
-      value: d.size,
-      min: 0.01,
-      max: 0.3,
-      step: 0.001,
-      onChange: v => withUniforms(u => (u.uSize.value = v)),
-    },
-    color: {
-      value: d.color,
-      onChange: v => withUniforms(u => u.uColor.value.set(v)),
-    },
-    intensity: {
-      value: d.intensity,
-      min: 1,
-      max: 10,
-      step: 0.01,
-      onChange: v => withUniforms(u => (u.uIntensity.value = v)),
-    },
+    riseHeight: control('uRiseHeight', d.riseHeight, 0.2, 4, 0.01),
+    size: control('uSize', d.size, 0.01, 0.3, 0.001),
+    color: control('uColor', d.color),
+    intensity: control('uIntensity', d.intensity, 1, 10, 0.01),
   });
 
   const particles = useMemo(() => {
@@ -311,20 +214,12 @@ const DeathParticles = () => {
 
   useEffect(() => () => particles.material.dispose(), [particles]);
 
-  // Registered in the store so the death sequence (CharacterController) and
-  // the debug helpers can position and play the burst
+  // The death cycle positions and plays the burst
   useEffect(() => {
-    useStore.setState({
-      deathParticlesMesh: particles,
-      deathParticlesUniforms: uniforms,
-    });
-
+    const unregister = registerDeathParticles({ mesh: particles, uniforms });
     return () => {
       gsap.killTweensOf(uniforms.uProgress);
-      useStore.setState({
-        deathParticlesMesh: null,
-        deathParticlesUniforms: null,
-      });
+      unregister();
     };
   }, [particles, uniforms]);
 

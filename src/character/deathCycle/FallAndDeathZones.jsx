@@ -13,23 +13,23 @@ const ISLAND_SCALE = 0.45;
 const ISLAND_POSITION = [-1.35, 2.25, -15];
 
 // Two trimesh sensor zones stretched under the island edges (same GLB):
-// - fallingZone (just below the walkable surface, ~y 0.38): crossing it
-//   means the character fell off the world, which triggers the falling
-//   animation
-// - deathZone (same plane, deathZoneHeight lower): crossing it kills the
-//   character (a height check remains as fallback). Its GLB node translation
-//   is ignored — the drop below the falling zone is the debug-tunable
-//   world-space offset instead (moving the slider re-bakes the tiny mesh).
-export default function FallingZoneSensor({ onEnter, onDeathEnter }) {
+// - falling zone (just below the walkable surface, ~y 0.38): crossing it
+//   means the character fell off an island, which starts the fall
+// - death zone (same plane, deathZoneHeight lower): crossing it causes
+//   death (the controller keeps a height check as fallback). Its GLB node
+//   translation is ignored — the drop below the falling zone is the
+//   debug-tunable world-space offset instead (moving the slider re-bakes the
+//   tiny mesh).
+const FallAndDeathZones = ({ onFallingZoneEnter, onDeathZoneEnter }) => {
   const { nodes } = useGLTF(FallingZoneModel);
 
   // Keep the latest callbacks without re-registering the sensors
-  const onEnterRef = useRef();
-  const onDeathEnterRef = useRef();
-  onEnterRef.current = onEnter;
-  onDeathEnterRef.current = onDeathEnter;
+  const onFallingZoneEnterRef = useRef();
+  const onDeathZoneEnterRef = useRef();
+  onFallingZoneEnterRef.current = onFallingZoneEnter;
+  onDeathZoneEnterRef.current = onDeathZoneEnter;
 
-  const { deathZoneHeight } = useControls('Falling', {
+  const { deathZoneHeight } = useControls('Player Death', {
     deathZoneHeight: { value: -1, min: -10, max: 0, step: 0.1 },
   });
 
@@ -40,7 +40,7 @@ export default function FallingZoneSensor({ onEnter, onDeathEnter }) {
     });
     const handle = physicsWorld.addSensor({
       bvh,
-      onEnter: event => onEnterRef.current?.(event),
+      onEnter: event => onFallingZoneEnterRef.current?.(event),
     });
     return () => handle.remove();
   }, [nodes]);
@@ -56,12 +56,14 @@ export default function FallingZoneSensor({ onEnter, onDeathEnter }) {
     });
     const handle = physicsWorld.addSensor({
       bvh,
-      onEnter: event => onDeathEnterRef.current?.(event),
+      onEnter: event => onDeathZoneEnterRef.current?.(event),
     });
     return () => handle.remove();
   }, [nodes, deathZoneHeight]);
 
   return null;
-}
+};
 
 useGLTF.preload(FallingZoneModel);
+
+export { FallAndDeathZones };

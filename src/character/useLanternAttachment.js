@@ -48,7 +48,12 @@ const wrapAngle = value => Math.atan2(Math.sin(value), Math.cos(value));
 // measured in Blender apply verbatim and every rig scale oddity cancels.
 // A swing group at the lantern's top-loop origin adds damped pendulum motion
 // driven by the body's acceleration and turn rate.
-const useLanternAttachment = ({ scene, characterBody, characterMesh }) => {
+const useLanternAttachment = ({
+  scene,
+  characterBody,
+  characterMesh,
+  dissolve,
+}) => {
   const { scene: lanternScene } = useGLTF(LanternModel);
 
   const offsetGroupRef = useRef(null);
@@ -158,7 +163,7 @@ const useLanternAttachment = ({ scene, characterBody, characterMesh }) => {
     };
   }, [scene, lanternScene]);
 
-  useLanternMaterial(scene, lanternMeshRef);
+  useLanternMaterial(scene, lanternMeshRef, dissolve);
 
   useControls('LanternTransform', {
     position: {

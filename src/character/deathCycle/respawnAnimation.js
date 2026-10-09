@@ -1,6 +1,7 @@
 import gsap from 'gsap';
 
-import { useStore } from '#store';
+import { targets } from './targets.js';
+import { createScrubbableTimeline } from './scrubbableTimeline.js';
 import { pointLights } from '#islands/world/pointLights/pointLights.js';
 
 // Single source of truth for the whole respawn animation (character voronoi
@@ -32,26 +33,10 @@ export const RESPAWN_DEFAULTS = {
 // Live, mutable copy the controls edit and the timeline reads at build time
 export const respawnConfig = { ...RESPAWN_DEFAULTS };
 
-let masterTimeline = null;
-let lastProgress = 1; // last scrubbed frame (1 = resting/formed)
-
-const getTargets = () => {
-  const { characterRespawnUniforms, spiralRespawnUniforms, spiralRespawnMesh } =
-    useStore.getState();
-  return {
-    character: characterRespawnUniforms,
-    spiral: spiralRespawnUniforms,
-    spiralMesh: spiralRespawnMesh,
-  };
-};
-
-// Build (but don't necessarily play) the combined timeline
-export const buildRespawnTimeline = ({
-  onStart,
-  onComplete,
-  paused = false,
-} = {}) => {
-  const { character, spiral, spiralMesh } = getTargets();
+const buildRespawnTimeline = ({ onStart, onComplete, paused = false } = {}) => {
+  const character = targets.dissolve;
+  const spiral = targets.spiral?.uniforms;
+  const spiralMesh = targets.spiral?.mesh;
   const c = respawnConfig;
 
   // Character timing; the spiral is timed independently (see its block below)
@@ -145,46 +130,27 @@ export const buildRespawnTimeline = ({
   return tl;
 };
 
-// Play the full animation from the start (used by the real respawn + Play btn)
-export const playRespawnAnimation = (callbacks = {}) => {
-  masterTimeline?.kill();
-  masterTimeline = buildRespawnTimeline({ ...callbacks, paused: false });
-  return masterTimeline;
-};
+// 1 = respawned (formed character, no spiral), the resting frame
+const timeline = createScrubbableTimeline(buildRespawnTimeline, 1);
 
-// Seek the animation to an arbitrary [0, 1] moment (progress scrubber)
-export const scrubRespawnAnimation = progress => {
-  lastProgress = progress;
-  masterTimeline?.kill();
-  masterTimeline = buildRespawnTimeline({ paused: true });
-  masterTimeline.progress(progress).pause();
-};
-
-// Rebuild the paused preview at the current frame — call after editing a
-// build-time value (durations, delays, offsets, thickness) so the change is
-// visible immediately while scrubbing. Never interrupts an active Play.
-export const refreshRespawnAnimation = () => {
-  if (masterTimeline && masterTimeline.isActive()) return;
-  scrubRespawnAnimation(lastProgress);
-};
+export const playRespawnAnimation = timeline.play;
+export const scrubRespawnAnimation = timeline.scrub;
+export const refreshRespawnAnimation = timeline.refresh;
 
 // Stop the animation and return to the resting state (formed character, no
 // spiral) — the normal in-game look
 export const resetRespawnAnimation = () => {
-  masterTimeline?.kill();
-  masterTimeline = null;
-  lastProgress = 1;
+  timeline.stop();
 
-  const { character, spiral, spiralMesh } = getTargets();
+  const character = targets.dissolve;
+  const spiral = targets.spiral;
   if (character) {
     character.uProgress.value = 0;
     character.uCharFormProgress.value = 1;
   }
   if (spiral) {
-    spiral.uUvOffsetX.value = respawnConfig.spiralStartX;
-  }
-  if (spiralMesh) {
-    spiralMesh.visible = false;
+    spiral.uniforms.uUvOffsetX.value = respawnConfig.spiralStartX;
+    spiral.mesh.visible = false;
   }
   pointLights.spawn.intensity.value = 0;
 };

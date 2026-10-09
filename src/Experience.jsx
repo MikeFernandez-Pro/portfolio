@@ -9,7 +9,7 @@ import { DebugInspector } from './debug/DebugInspector.jsx';
 import { PhysicsDebug } from './debug/PhysicsDebug.jsx';
 import Joystick from '#character/Joystick.jsx';
 import CharacterController from '#character/CharacterController.jsx';
-import RespawnControls from '#character/deathCycle/RespawnControls.jsx';
+import { DeathCycleControls } from '#character/deathCycle/DeathCycleControls.jsx';
 import Stars from '#environment/Stars.jsx';
 import Lights from '#environment/Lights.jsx';
 import Clouds from '#environment/Clouds.jsx';
@@ -170,10 +170,7 @@ const Experience = () => {
       {freeCamera && <OrbitControls />}
       {DEBUG_ENABLED && <DebugInspector />}
       {DEBUG_ENABLED && <PhysicsDebug />}
-      {/* Stays mounted with debug off: its initial onChange calls set up the
-          respawn/spiral shader uniforms the real death animation uses; the
-          headless useControls renders no UI for it */}
-      <RespawnControls />
+      {DEBUG_ENABLED && <DeathCycleControls />}
       <Joystick />
       <Clouds />
       <Stars />

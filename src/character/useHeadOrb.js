@@ -2,7 +2,6 @@ import { useLayoutEffect, useRef } from 'react';
 import * as THREE from 'three/webgpu';
 import { useFrame } from '@react-three/fiber';
 
-import { useStore } from '#store';
 import { useControls } from '#debug/useControls.jsx';
 
 const ORB_GROUP_NAME = 'headOrbGroup';
@@ -19,7 +18,7 @@ const ORB_DEFAULTS = {
 // helmet openings). Same attachment trick as the belt lantern: a group under
 // the head bone whose local matrix (boneInverse * bindMatrix) reproduces the
 // character glb root frame, so the controls work in character units.
-const useHeadOrb = scene => {
+const useHeadOrb = (scene, dissolve) => {
   const orbRef = useRef(null);
   const groupRef = useRef(null);
   // Head bone origin at bind pose, in character root space
@@ -142,10 +141,7 @@ const useHeadOrb = scene => {
   useFrame(() => {
     const orb = orbRef.current;
     if (!orb) return;
-    const uniforms = useStore.getState().characterRespawnUniforms;
-    orb.material.opacity = uniforms?.uCharFormProgress
-      ? uniforms.uCharFormProgress.value
-      : 1;
+    orb.material.opacity = dissolve.uCharFormProgress.value;
   });
 };
 

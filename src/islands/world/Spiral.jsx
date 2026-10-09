@@ -6,11 +6,14 @@ import { max, texture, uniform, uv, vec2 } from 'three/tsl';
 import spiralModel from '#assets/models/island/Spiral.glb?url';
 import { useSpiralGrassHeightTexture } from '#utils/packedTextures.js';
 
-import { useStore } from '#store';
 import { RESPAWN_DEFAULTS } from '#character/deathCycle/respawnAnimation.js';
+import {
+  SPAWN_POINT,
+  registerSpiral,
+} from '#character/deathCycle/deathCycle.js';
 
-// Character spawn position (see CharacterController respawn)
-const SPAWN_POSITION = [0.0, 0.55, 0];
+// Decal on the ground under the spawn point
+const SPIRAL_POSITION = [SPAWN_POINT.x, 0.55, SPAWN_POINT.z];
 
 const Spiral = () => {
   const meshRef = useRef(null);
@@ -47,22 +50,11 @@ const Spiral = () => {
 
   useEffect(() => () => material.dispose(), [material]);
 
-  // Expose the uniforms + mesh so the shared respawn timeline can drive the
-  // uv.x sweep and toggle visibility (hidden at rest)
+  // The respawn timeline drives the uv.x sweep and toggles visibility
+  // (hidden at rest)
   useEffect(() => {
     if (!meshRef.current) return;
-
-    useStore.setState({
-      spiralRespawnUniforms: uniforms,
-      spiralRespawnMesh: meshRef.current,
-    });
-
-    return () => {
-      useStore.setState({
-        spiralRespawnUniforms: null,
-        spiralRespawnMesh: null,
-      });
-    };
+    return registerSpiral({ uniforms, mesh: meshRef.current });
   }, [uniforms]);
 
   return (
@@ -70,7 +62,7 @@ const Spiral = () => {
       ref={meshRef}
       geometry={nodes.Spiral.geometry}
       material={material}
-      position={SPAWN_POSITION}
+      position={SPIRAL_POSITION}
       scale={0.2}
       rotation-y={0.8}
       renderOrder={1}

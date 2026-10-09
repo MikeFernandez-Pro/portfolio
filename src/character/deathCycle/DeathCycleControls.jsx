@@ -1,5 +1,4 @@
 import { useControls } from '#debug/useControls.jsx';
-import { useStore } from '#store';
 import {
   RESPAWN_DEFAULTS,
   respawnConfig,
@@ -7,32 +6,89 @@ import {
   scrubRespawnAnimation,
   resetRespawnAnimation,
   refreshRespawnAnimation,
-} from '#character/deathCycle/respawnAnimation.js';
+} from './respawnAnimation.js';
+import {
+  DEATH_DEFAULTS,
+  deathConfig,
+  scrubDeathAnimation,
+  refreshDeathAnimation,
+  resetDeathAnimation,
+} from './deathAnimation.js';
+import { resetDeathParticles, scrubDeathParticles } from './DeathParticles.jsx';
+import { playDeathPreview } from './deathCycle.js';
+import { targets } from './targets.js';
 
-// Uniforms are registered asynchronously (after the models load), so every
-// setter guards against them being missing yet
+// Targets register once their models load, so every setter guards against
+// them being missing yet
 const withChar = updater => {
-  const uniforms = useStore.getState().characterRespawnUniforms;
-  if (uniforms) updater(uniforms);
+  if (targets.dissolve) updater(targets.dissolve);
 };
 const withSpiral = updater => {
-  const uniforms = useStore.getState().spiralRespawnUniforms;
-  if (uniforms) updater(uniforms);
+  if (targets.spiral) updater(targets.spiral.uniforms);
 };
 
-// Build-time values are baked into the timeline; after changing one, re-apply
-// the current scrub frame so the tweak is visible immediately
-const setBuildConfig = (key, value) => {
+// Build-time values are baked into the timelines; after changing one,
+// re-apply the current scrub frame so the tweak is visible immediately
+const setRespawnConfig = (key, value) => {
   respawnConfig[key] = value;
   refreshRespawnAnimation();
 };
+const setDeathConfig = (key, value) => {
+  deathConfig[key] = value;
+  refreshDeathAnimation();
+};
 
 /**
- * Debug folder driving the whole respawn animation (character voronoi dissolve
- * + spawn spiral): Play / Reset buttons, a progress scrubber, and live
- * durations, colors and intensities. Renders nothing.
+ * Debug folders previewing the death cycle: Play / Reset buttons, progress
+ * scrubbers, durations and the dissolve and spiral look. Debug only: the
+ * values here are the defaults the targets are created with. Renders
+ * nothing.
  */
-const RespawnControls = () => {
+const DeathCycleControls = () => {
+  useControls('Player Death', {
+    // Death at the character's current position, formed back in place
+    Play: () => playDeathPreview(),
+    'Reset Animation': () => {
+      resetDeathParticles();
+      resetDeathAnimation();
+    },
+    // Freeze the dissolve and the particles at any moment (0 = alive,
+    // 1 = fully gone)
+    progress: {
+      value: 0,
+      min: 0,
+      max: 1,
+      step: 0.001,
+      onChange: v => {
+        scrubDeathParticles(v);
+        scrubDeathAnimation(v);
+      },
+    },
+    // The lava look (color, intensity, noise) is shared with the respawn
+    // and lives in the Respawn Animation folder
+    deathDissolve: {
+      value: DEATH_DEFAULTS.dissolveDuration,
+      min: 0.1,
+      max: 4,
+      step: 0.01,
+      onChange: v => setDeathConfig('dissolveDuration', v),
+    },
+    deathFade: {
+      value: DEATH_DEFAULTS.fadeDuration,
+      min: 0.1,
+      max: 4,
+      step: 0.01,
+      onChange: v => setDeathConfig('fadeDuration', v),
+    },
+    deathThickness: {
+      value: DEATH_DEFAULTS.thickness,
+      min: 0.01,
+      max: 1,
+      step: 0.01,
+      onChange: v => setDeathConfig('thickness', v),
+    },
+  });
+
   useControls('Respawn Animation', {
     Play: () => playRespawnAnimation(),
     'Reset Animation': () => resetRespawnAnimation(),
@@ -51,21 +107,21 @@ const RespawnControls = () => {
       min: 0,
       max: 2,
       step: 0.01,
-      onChange: value => setBuildConfig('charDelay', value),
+      onChange: value => setRespawnConfig('charDelay', value),
     },
     charDissolveDuration: {
       value: RESPAWN_DEFAULTS.charProgressDuration,
       min: 0.1,
       max: 4,
       step: 0.01,
-      onChange: value => setBuildConfig('charProgressDuration', value),
+      onChange: value => setRespawnConfig('charProgressDuration', value),
     },
     charFormDuration: {
       value: RESPAWN_DEFAULTS.charRespawnDuration,
       min: 0.1,
       max: 4,
       step: 0.01,
-      onChange: value => setBuildConfig('charRespawnDuration', value),
+      onChange: value => setRespawnConfig('charRespawnDuration', value),
     },
     // Spiral timing — fully independent of the character
     spiralDelay: {
@@ -73,28 +129,28 @@ const RespawnControls = () => {
       min: 0,
       max: 2,
       step: 0.01,
-      onChange: value => setBuildConfig('spiralDelay', value),
+      onChange: value => setRespawnConfig('spiralDelay', value),
     },
     spiralDuration: {
       value: RESPAWN_DEFAULTS.spiralDuration,
       min: 0.1,
       max: 4,
       step: 0.01,
-      onChange: value => setBuildConfig('spiralDuration', value),
+      onChange: value => setRespawnConfig('spiralDuration', value),
     },
     spiralStartX: {
       value: RESPAWN_DEFAULTS.spiralStartX,
       min: -2,
       max: 2,
       step: 0.01,
-      onChange: value => setBuildConfig('spiralStartX', value),
+      onChange: value => setRespawnConfig('spiralStartX', value),
     },
     spiralEndX: {
       value: RESPAWN_DEFAULTS.spiralEndX,
       min: -2,
       max: 2,
       step: 0.01,
-      onChange: value => setBuildConfig('spiralEndX', value),
+      onChange: value => setRespawnConfig('spiralEndX', value),
     },
 
     // Character look (only visible during the dissolve)
@@ -158,7 +214,7 @@ const RespawnControls = () => {
       min: 0.01,
       max: 1,
       step: 0.01,
-      onChange: value => setBuildConfig('charThickness', value),
+      onChange: value => setRespawnConfig('charThickness', value),
     },
     // Fragments below this alpha are discarded (don't write depth), which
     // removes the silhouette of the still-invisible character
@@ -217,4 +273,4 @@ const RespawnControls = () => {
   return null;
 };
 
-export default RespawnControls;
+export { DeathCycleControls };

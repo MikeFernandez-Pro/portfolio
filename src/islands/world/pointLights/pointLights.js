@@ -135,7 +135,7 @@ const cauldron = {
 };
 
 const spawn = {
-  // Glow under the spawn point (Spiral SPAWN_POSITION x/z, world)
+  // Glow under the spawn point (SPAWN_POINT x/z, world)
   color: '#44fca3',
   intensity: 8.5,
   decay: 0.435,

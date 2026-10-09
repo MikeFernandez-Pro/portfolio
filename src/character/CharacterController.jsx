@@ -7,7 +7,6 @@ import {
 } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF, useAnimations } from '@react-three/drei/webgpu';
-import gsap from 'gsap';
 import * as THREE from 'three/webgpu';
 
 import { CharacterBody } from '#physics/CharacterBody.js';
@@ -26,17 +25,13 @@ import { directionOffset } from '#character/CharacterControllerUtils.js';
 import { useCharacterMaterial } from '#character/useCharacterMaterial.js';
 import { useLanternAttachment } from '#character/useLanternAttachment.js';
 import { useHeadOrb } from '#character/useHeadOrb.js';
-import { playRespawnAnimation } from '#character/deathCycle/respawnAnimation.js';
 import { useKeyboardControls } from '#character/hooks/useKeyboardControls.js';
 import { useThirdPersonCamera } from '#character/hooks/useThirdPersonCamera.js';
-import {
-  DeathParticles,
-  playDeathParticles,
-} from '#character/deathCycle/DeathParticles.jsx';
-import { playDespawnAnimation } from '#character/deathCycle/despawnAnimation.js';
+import { DeathParticles } from '#character/deathCycle/DeathParticles.jsx';
+import { die, SPAWN_POINT } from '#character/deathCycle/deathCycle.js';
 import { useCharacterAnimation } from '#character/hooks/useCharacterAnimation.js';
 import { updateMovement } from '#character/updateMovement.js';
-import FallingZoneSensor from '#character/deathCycle/FallingZoneSensor.jsx';
+import { FallAndDeathZones } from '#character/deathCycle/FallAndDeathZones.jsx';
 import {
   BODY_TYPE_DYNAMIC as DYNAMIC,
   BODY_TYPE_FIXED as FIXED,
@@ -62,7 +57,6 @@ let characterJumping = false;
 let characterFalling = false;
 let characterSprinting = false;
 let characterRespawning = false;
-let deathTimeline = null;
 
 // Body pitch during the falling animation. The clip's hips rotation track is
 // stripped (it made the character dive) and replaced with a single static
@@ -95,16 +89,9 @@ const bakeFallingBodyAngle = ({ track, rest, chain }) => {
 // animation can be watched and tuned in place
 let fallingPreviewActive = false;
 
-// Fallback kill height: the death-zone sensor is the primary death trigger;
-// dropping below this despawns the character even if the sensor
-// intersection was missed
+// Fallback death height: the death zone is the primary trigger; dropping
+// below this causes death even if the sensor intersection was missed
 const DEATH_HEIGHT = -3;
-
-// Death sequence timing (seconds from the death). Character despawn and dust
-// burst fire the instant the character dies; then the character teleports to
-// spawn and the respawn dissolve reforms it.
-const DEATH_TELEPORT_AT = 0.9;
-const DEATH_RESPAWN_AT = DEATH_TELEPORT_AT + 0.6;
 
 const CharacterController = () => {
   // Mobile
@@ -189,14 +176,15 @@ const CharacterController = () => {
   const characterAnimations = useAnimations(mergedAnimations, scene);
   const animation = useCharacterAnimation(characterAnimations);
 
-  // Character material and respawn effect
-  useCharacterMaterial(scene);
+  // Character material and its dissolve, followed by the lantern and the
+  // head orb
+  const dissolve = useCharacterMaterial(scene);
 
-  // Belt lantern (attached to the hips bone, swings with movement)
-  useLanternAttachment({ scene, characterBody, characterMesh });
+  // Character lantern (attached to the hips bone, swings with movement)
+  useLanternAttachment({ scene, characterBody, characterMesh, dissolve });
 
   // Glowing orb inside the head
-  useHeadOrb(scene);
+  useHeadOrb(scene, dissolve);
 
   // Adapter: route to animation helper while keeping local state
   const updateCharacterAnimation = useCallback(
@@ -254,11 +242,9 @@ const CharacterController = () => {
     },
   });
 
-  // Full death sequence, fired by the death-zone sensor (or the fallback
-  // DEATH_HEIGHT check): the character freezes and disintegrates mid-air in
-  // the falling pose (formed -> voronoi lava -> gone, the respawn dissolve
-  // reversed) while the death particles rise from where it died; then the
-  // character teleports to spawn and the respawn dissolve reforms it
+  // Death, from the death zone (or the fallback DEATH_HEIGHT check): the
+  // character freezes in the falling pose while the death cycle dissolves
+  // it away, teleports it to the spawn point and forms it back
   const killCharacter = useCallback(() => {
     if (characterRespawning) return;
     characterRespawning = true;
@@ -267,38 +253,23 @@ const CharacterController = () => {
     characterJumping = false;
     characterSprinting = false;
     updateCharacterAnimation(FALLING);
-    playDespawnAnimation();
-    playDeathParticles(characterBody.current.translation());
 
-    const startRespawn = () =>
-      playRespawnAnimation({
-        onComplete: () => {
-          characterRespawning = false;
-          characterBody.current.setBodyType(DYNAMIC);
-        },
-      });
-
-    deathTimeline?.kill();
-    deathTimeline = gsap.timeline();
-    // Teleport the character back to spawn while it's fully dissolved
-    deathTimeline.call(
-      () => {
-        // Settled resting height (the body is held FIXED during the
-        // respawn, so this must be the height it rests at, not the initial
-        // pre-settle 0.7)
-        characterBody.current.setTranslation({ x: 0, y: 0.62, z: 0 }, true);
+    die(characterBody.current.translation(), {
+      onTeleport: () => {
+        characterBody.current.setTranslation(SPAWN_POINT, true);
         // Reset visual orientation to default
         if (characterMesh.current) {
           characterMesh.current.rotation.set(0, Math.PI, 0);
         }
-        // Back on solid ground: reform in idle, not the falling pose
+        // Back on solid ground: form back in idle, not the falling pose
         characterFalling = false;
         updateCharacterAnimation(IDLE);
       },
-      undefined,
-      DEATH_TELEPORT_AT
-    );
-    deathTimeline.call(startRespawn, undefined, DEATH_RESPAWN_AT);
+      onRespawned: () => {
+        characterRespawning = false;
+        characterBody.current.setBodyType(DYNAMIC);
+      },
+    });
   }, [updateCharacterAnimation]);
 
   // Character jump event. Falling and respawning own the animation: no jump
@@ -530,15 +501,14 @@ const CharacterController = () => {
 
   return (
     <>
-      {/* Death disintegration burst (positioned + played by the death
-          sequence above; outside the rigid body so the teleport to spawn
-          never drags it along) */}
+      {/* Positioned and played by the death cycle; outside the body group so
+          the teleport to the spawn point never drags it along */}
       <DeathParticles />
-      {/* Fell off the world: the falling animation plays the moment the
-          character crosses the zone under the island edges, then the death
-          zone below (or the DEATH_HEIGHT fallback) kills it */}
-      <FallingZoneSensor
-        onEnter={state => {
+      {/* Fell off an island: the fall starts the moment the character
+          crosses the falling zone under the island edges, then the death
+          zone below (or the DEATH_HEIGHT fallback) causes death */}
+      <FallAndDeathZones
+        onFallingZoneEnter={state => {
           if (state.other.rigidBody !== characterBody.current) return;
           if (characterRespawning || characterFalling) return;
           characterFalling = true;
@@ -551,7 +521,7 @@ const CharacterController = () => {
           runningSoundEffect.stop();
           updateCharacterAnimation(FALLING);
         }}
-        onDeathEnter={state => {
+        onDeathZoneEnter={state => {
           if (state.other.rigidBody !== characterBody.current) return;
           killCharacter();
         }}

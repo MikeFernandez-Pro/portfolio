@@ -18,7 +18,6 @@ import {
 import { dissolveLava } from '#shaders/dissolve.js';
 import { patchPointLights } from '#islands/world/pointLights/pointLights.js';
 import { patchCloudShadows } from '#shaders/cloudShadows.js';
-import { useStore } from '#store';
 import { useControls } from '#debug/useControls.jsx';
 
 // Lantern geometry bounds (origin at the top attachment loop)
@@ -40,16 +39,13 @@ const COLOR_DEFAULTS = {
 // (dissolve + cloud shadow / island point light patches) on the knight's
 // dissolve uniform nodes: the respawn timeline tweens those, so the lantern
 // dissolves/reforms in sync with the character for free.
-const useLanternMaterial = (characterScene, lanternMeshRef) => {
+const useLanternMaterial = (characterScene, lanternMeshRef, shared) => {
   const materialRef = useRef(null);
   const colorUniformsRef = useRef(null);
 
   useEffect(() => {
     const lanternMesh = lanternMeshRef.current;
-    // Set up by useCharacterMaterial, which runs first (hook call order)
-    const shared = useStore.getState().characterRespawnUniforms;
-
-    if (!lanternMesh || !shared) {
+    if (!lanternMesh) {
       return;
     }
 
@@ -133,7 +129,7 @@ const useLanternMaterial = (characterScene, lanternMeshRef) => {
       colorUniformsRef.current = null;
       material.dispose();
     };
-  }, [characterScene]);
+  }, [characterScene, shared]);
 
   useControls('LanternColors', {
     blackColor: {
