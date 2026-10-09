@@ -30,18 +30,17 @@ const INITIAL_PROGRESS = -0.1;
 // Fully open past this progress: the mask is skipped
 const REVEALED_PROGRESS = 1.5;
 
-/**
- * Noisy iris mask over the final image. `progress` is the iris radius (the
- * intro tweens it); `aspectRatio` is width / height.
- */
-const createIris = () => {
-  const uniforms = {
-    progress: uniform(INITIAL_PROGRESS),
-    size: uniform(15),
-    aspectRatio: uniform(1),
-  };
+// Created once and shared by every pipeline build. `progress` is the iris
+// radius (the intro tweens it); `aspectRatio` is width / height
+const createIrisUniforms = () => ({
+  progress: uniform(INITIAL_PROGRESS),
+  size: uniform(15),
+  aspectRatio: uniform(1),
+});
 
-  const apply = Fn(([inputColor]) => {
+// Noisy iris mask over the final image: iris(uniforms)(color)
+const iris = uniforms =>
+  Fn(([inputColor]) => {
     const outputColor = vec4(inputColor).toVar();
 
     // Uniform branch: free once the scene is fully revealed
@@ -74,24 +73,21 @@ const createIris = () => {
     return outputColor;
   });
 
-  return { apply, uniforms };
-};
-
-const useIris = (revealer, aspectRatio) => {
-  const { uniforms } = revealer;
-
+// The loading peek, and the aspect ratio
+const useIris = (uniforms, aspectRatio) => {
   useEffect(() => {
-    // A pipeline rebuild (MSAA switch) carries the progress over: no replay
+    // Already past the peek: a hot reload re-runs this effect, which must
+    // not close the iris back to it
     if (uniforms.progress.value !== INITIAL_PROGRESS) return;
 
     // The peek opens once every pipeline is built (sceneReady): before that
     // the first frames stall on shader compilation and the animation would
     // jump instead of play
-    let sceneRevealerAnimation = null;
+    let peekAnimation = null;
     const unsubSceneReady = useStore.subscribe(
       state => state.sceneReady,
       sceneReady => {
-        if (!sceneReady || sceneRevealerAnimation) return;
+        if (!sceneReady || peekAnimation) return;
 
         // Reduced motion: open the loading peek without the iris animation
         if (prefersReducedMotion()) {
@@ -99,7 +95,7 @@ const useIris = (revealer, aspectRatio) => {
           return;
         }
 
-        sceneRevealerAnimation = gsap.to(uniforms.progress, {
+        peekAnimation = gsap.to(uniforms.progress, {
           value: 0.35,
           duration: 1,
           ease: 'circ.out',
@@ -110,7 +106,7 @@ const useIris = (revealer, aspectRatio) => {
 
     return () => {
       unsubSceneReady();
-      sceneRevealerAnimation?.kill();
+      peekAnimation?.kill();
     };
   }, [uniforms]);
 
@@ -120,4 +116,4 @@ const useIris = (revealer, aspectRatio) => {
   }, [uniforms, aspectRatio]);
 };
 
-export { createIris, useIris };
+export { createIrisUniforms, iris, useIris };

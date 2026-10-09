@@ -20,12 +20,11 @@ import {
   vec4,
 } from 'three/tsl';
 import { hash12 } from '#shaders/includes/hash.js';
-import { useControls } from '#debug/useControls.jsx';
 
 // Cheap single-pass depth of field: circle of confusion computed from the
 // depth buffer around a focus distance, blurred with a Vogel-disk kernel —
 // in-focus pixels early-out
-const CHEAP_DOF_DEFAULTS = {
+export const CHEAP_DOF_DEFAULTS = {
   focusDistance: 0,
   focusRange: 41,
   bokehRadius: 0.003,
@@ -35,20 +34,28 @@ const CHEAP_DOF_DEFAULTS = {
 
 const GOLDEN_ANGLE = 2.399963229728653;
 
+// Created once and shared by every pipeline build
+export const createCheapDofUniforms = () => ({
+  enabled: uniform(1),
+  focusDistance: uniform(CHEAP_DOF_DEFAULTS.focusDistance),
+  focusRange: uniform(CHEAP_DOF_DEFAULTS.focusRange),
+  bokehRadius: uniform(CHEAP_DOF_DEFAULTS.bokehRadius),
+  samples: uniform(CHEAP_DOF_DEFAULTS.samples),
+  debugFocus: uniform(0),
+});
+
 /**
  * Builds the DoF node. `colorNode` / `depthNode` are texture nodes (the scene
  * pass outputs), sampled around each pixel; `resolution` is the drawing
  * buffer size in pixels.
  */
-const createCheapDof = ({ colorNode, depthNode, camera, resolution }) => {
-  const uniforms = {
-    enabled: uniform(1),
-    focusDistance: uniform(CHEAP_DOF_DEFAULTS.focusDistance),
-    focusRange: uniform(CHEAP_DOF_DEFAULTS.focusRange),
-    bokehRadius: uniform(CHEAP_DOF_DEFAULTS.bokehRadius),
-    samples: uniform(CHEAP_DOF_DEFAULTS.samples),
-    debugFocus: uniform(0),
-  };
+export const cheapDof = ({
+  colorNode,
+  depthNode,
+  camera,
+  resolution,
+  uniforms,
+}) => {
   const cameraNear = uniform(camera.near).onRenderUpdate(() => camera.near);
   const cameraFar = uniform(camera.far).onRenderUpdate(() => camera.far);
 
@@ -121,42 +128,5 @@ const createCheapDof = ({ colorNode, depthNode, camera, resolution }) => {
     return outputColor;
   })();
 
-  return { node, uniforms };
+  return node;
 };
-
-/**
- * Debug folder for the DoF. `bind(name)` returns the onChange handler
- * that writes uniform `name` (EffectComposer keeps the values so they survive
- * a pipeline rebuild).
- */
-const useCheapDofControls = bind => {
-  const d = CHEAP_DOF_DEFAULTS;
-
-  const numberControl = (uniform, value, min, max, step) => ({
-    value,
-    min,
-    max,
-    step,
-    onChange: bind(uniform),
-  });
-
-  const setDebugFocus = bind('debugFocus');
-
-  useControls('depthOfField', {
-    // World units from the camera to the focal plane, and how far from it
-    // the blur reaches full strength
-    focusDistance: numberControl('focusDistance', d.focusDistance, 0, 100, 0.1),
-    focusRange: numberControl('focusRange', d.focusRange, 1, 60, 0.5),
-    // Max blur radius as a fraction of screen height
-    bokehRadius: numberControl('bokehRadius', d.bokehRadius, 0, 0.03, 0.0005),
-    // Taps per pixel: more = smoother, less noisy
-    samples: numberControl('samples', d.samples, 4, 48, 1),
-    // Green = in focus, red = fully blurred
-    debugFocus: {
-      value: d.debugFocus,
-      onChange: v => setDebugFocus(v ? 1 : 0),
-    },
-  });
-};
-
-export { createCheapDof, useCheapDofControls };

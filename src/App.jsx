@@ -15,7 +15,7 @@ import { CAMERA_INITIAL_OFFSET } from '#character/hooks/useThirdPersonCamera.js'
 
 import soundOnIcon from '/icons/sound-on.svg';
 import soundOffIcon from '/icons/sound-off.svg';
-import { EffectComposer } from './postprocessing/EffectComposer.jsx';
+import { PostProcessing } from './postprocessing/PostProcessing.jsx';
 import { PrecompileScene } from './PrecompileScene.jsx';
 import { AdaptiveDpr } from './workarounds/AdaptiveDpr.jsx';
 
@@ -70,7 +70,7 @@ const SoundToggle = ({ onIconRef }) => {
 let hoverAnimation = undefined;
 
 const App = () => {
-  const sceneRevealerRef = useRef();
+  const irisRef = useRef();
   const soundOnIconRef = useRef();
   const startExperienceRef = useRef();
 
@@ -98,7 +98,7 @@ const App = () => {
       delay: 0,
     });
 
-    gsap.to(sceneRevealerRef.current?.progress, {
+    gsap.to(irisRef.current?.progress, {
       value: 1.5,
       // Reduced motion: quick reveal instead of the 5s sweep (the opacity
       // fades above are fine — reduced motion targets movement, not fades)
@@ -184,14 +184,11 @@ const App = () => {
                     // One hover tween at a time: a quick leave/enter would
                     // otherwise stack a new tween on the reversing one
                     hoverAnimation?.kill();
-                    hoverAnimation = gsap.to(
-                      sceneRevealerRef.current?.progress,
-                      {
-                        value: 0.45,
-                        duration: 0.5,
-                        ease: 'power2.out',
-                      }
-                    );
+                    hoverAnimation = gsap.to(irisRef.current?.progress, {
+                      value: 0.45,
+                      duration: 0.5,
+                      ease: 'power2.out',
+                    });
                   }}
                   onMouseLeave={() => hoverAnimation?.reverse()}
                 >
@@ -200,7 +197,7 @@ const App = () => {
               </div>
             </ui.In>
           )}
-          <EffectComposer sceneRevealerRef={sceneRevealerRef} />
+          <PostProcessing irisRef={irisRef} />
 
           <Bvh firstHitOnly>
             <Experience />
