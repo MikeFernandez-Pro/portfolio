@@ -8,6 +8,7 @@ import {
   mix,
   smoothstep,
   texture,
+  time,
   uniform,
   uv,
   vec4,
@@ -60,7 +61,6 @@ const ForgeLavaPlane = ({ blowerMesh }) => {
 
   const lavaMaterial = useMemo(() => {
     const uniforms = {
-      uTime: uniform(0),
       uSize: uniform(LAVA_DEFAULTS.size),
       uSpeed: uniform(LAVA_DEFAULTS.speed),
       uCrustColor: uniform(new THREE.Color(LAVA_DEFAULTS.crustColor)),
@@ -75,7 +75,7 @@ const ForgeLavaPlane = ({ blowerMesh }) => {
 
     // Voronoi (R) and perlin (G) share one packed texture: the perlin
     // scrolls and warps the voronoi crust
-    const t = uniforms.uTime.mul(uniforms.uSpeed);
+    const t = time.mul(uniforms.uSpeed);
     const lavaUv = uv().mul(uniforms.uSize);
     const perlin = texture(noiseTexture, lavaUv.add(t)).g.mul(
       uniforms.uPerlinNoiseStrength
@@ -231,10 +231,8 @@ const ForgeLavaPlane = ({ blowerMesh }) => {
     }
   );
 
-  useFrame((_, delta) => {
+  useFrame(() => {
     if (!uniformsRef.current) return;
-
-    uniformsRef.current.uTime.value += delta;
 
     const influences = blowerMesh?.morphTargetInfluences;
     const gasp =

@@ -8,7 +8,7 @@ import {
   createSmokeMaterial,
   createSmokeUniforms,
   smokeColumnTimeOffset,
-} from '#shaders/smoke/smoke.js';
+} from '#shaders/smoke.js';
 
 /**
  * Group of smoke columns reusing the bonfire smoke shader: one shared

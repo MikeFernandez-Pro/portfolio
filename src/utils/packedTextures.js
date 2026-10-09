@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 import { useLoader } from '@react-three/fiber';
 import { useKTX2 } from '@react-three/drei/webgpu';
 
@@ -28,70 +28,59 @@ const useConfiguredKtx2 = (url, configure) => {
   return texture;
 };
 
-// spiral-grassHeight — linear data, no repeat (clamp is the default).
-// R: spiral sweep mask, G: grass height map, B: 64x64 star sprite sitting at
-// UV origin (sample with uv * 0.125).
-const configureSpiralGrassHeight = texture => {
+// Linear data, no repeat (clamp is the default)
+const configureData = texture => {
   texture.colorSpace = THREE.NoColorSpace;
   texture.needsUpdate = true;
 };
 
-// voronoi-perlin — linear data, repeating (every consumer scrolls or tiles
-// its UVs). R: voronoi cells, G: perlin noise.
-const configureVoronoiPerlin = texture => {
+// Linear data, repeating (every consumer scrolls or tiles its UVs)
+const configureRepeatingData = texture => {
   texture.colorSpace = THREE.NoColorSpace;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
   texture.needsUpdate = true;
 };
+
+// sRGB-authored color
+const configureColor = texture => {
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+};
+
+// spiral-grassHeight. R: spiral sweep mask, G: grass height map, B: 64x64
+// star sprite sitting at UV origin (sample with uv * 0.125).
+const useSpiralGrassHeightTexture = () =>
+  useConfiguredKtx2(spiralGrassHeightUrl, configureData);
+
+// voronoi-perlin. R: voronoi cells, G: perlin noise.
+const useVoronoiPerlinTexture = () =>
+  useConfiguredKtx2(voronoiPerlinUrl, configureRepeatingData);
 
 // perlin-clouds — standalone 512 lossless webp for the cloud shadows only:
 // they magnify the noise far beyond the 128 packed copy, and both KTX2
 // variants lost the A/B (UASTC bands on the thresholded gradients, raw R8
 // arrives as a NEAREST-filtered DataTexture).
-const configurePerlinClouds = texture => {
-  texture.colorSpace = THREE.NoColorSpace;
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.needsUpdate = true;
-};
-
-// screens-atlas — sRGB-authored images shown on screen (project portal
-// screenshots, interactive link, X logo), flattened over black. No alpha
-// channel: cutout consumers use the green channel as mask instead.
-const configureScreensAtlas = texture => {
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.needsUpdate = true;
-};
-
-// islandTexture2k — sRGB baseColor atlas for the island.glb materials (the
-// GLB carries no texture, Islands.jsx assigns this map in code). Baked
-// UNFLIPPED, unlike the files above: GLB UVs follow the glTF convention
-// (flipY=false), which is also how compressed textures upload.
-const configureIslandTexture = texture => {
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.needsUpdate = true;
-};
-
-const useSpiralGrassHeightTexture = () =>
-  useConfiguredKtx2(spiralGrassHeightUrl, configureSpiralGrassHeight);
-
-const useVoronoiPerlinTexture = () =>
-  useConfiguredKtx2(voronoiPerlinUrl, configureVoronoiPerlin);
-
 // useLoader caches by URL like useKTX2, so consumers share one instance.
 // Not drei's useTexture: drei 11 reads state.gl, null under R3F 10 WebGPU
 const usePerlinCloudsTexture = () => {
   const texture = useLoader(THREE.TextureLoader, perlinCloudsUrl);
-  useMemo(() => configurePerlinClouds(texture), [texture]);
+  useMemo(() => configureRepeatingData(texture), [texture]);
   return texture;
 };
 
+// screens-atlas — images shown on screen (project portal screenshots,
+// interactive link, X logo), flattened over black. No alpha channel: cutout
+// consumers use the green channel as mask instead.
 const useScreensAtlasTexture = () =>
-  useConfiguredKtx2(screensAtlasUrl, configureScreensAtlas);
+  useConfiguredKtx2(screensAtlasUrl, configureColor);
 
+// islandTexture2k — baseColor atlas for the island.glb materials (the GLB
+// carries no texture, Islands.jsx assigns this map in code). Baked
+// UNFLIPPED, unlike the files above: GLB UVs follow the glTF convention
+// (flipY=false), which is also how compressed textures upload.
 const useIslandTexture = () =>
-  useConfiguredKtx2(islandTextureUrl, configureIslandTexture);
+  useConfiguredKtx2(islandTextureUrl, configureColor);
 
 const ATLAS_SIZE = 1024;
 

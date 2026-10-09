@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import { useLoader } from '@react-three/fiber';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 
 import grassPlacementUrl from '#assets/textures/grass-placement.png';
+import { mulberry32 } from '#utils/random.js';
 
 // Blades are spawned only where the placement mask says there is grass. The
 // mask is a 128x128 CPU-readable copy of the height map (the KTX2 the shader
@@ -23,13 +24,6 @@ const SORT_GRID = 32;
 
 // Fixed seed: identical layout on every load
 const SEED = 0x9e3779b9;
-
-const mulberry32 = seed => () => {
-  seed = (seed + 0x6d2b79f5) | 0;
-  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-};
 
 const readMask = image => {
   const canvas = document.createElement('canvas');

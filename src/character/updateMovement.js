@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 
 // Reuse math objects to avoid per-frame allocations
 const ROTATION_AXIS = new THREE.Vector3(0, 1, 0);

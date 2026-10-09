@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import gsap from 'gsap';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 
 import { useStore } from '#store';
 import { IS_MOBILE_DEVICE } from '#utils/device.js';

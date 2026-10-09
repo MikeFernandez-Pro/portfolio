@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
-import { Mesh } from 'three';
+import { Mesh } from 'three/webgpu';
 import {
   SAH,
   acceleratedRaycast,

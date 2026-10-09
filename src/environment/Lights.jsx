@@ -3,7 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { PerspectiveCamera } from '@react-three/drei/webgpu';
 import { OrbitControls as OrbitControlsImpl } from 'three/examples/jsm/controls/OrbitControls.js';
 import { useControls } from '#debug/useControls.jsx';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 
 import { useStore } from '#store';
 import { IS_MOBILE_DEVICE } from '#utils/device.js';

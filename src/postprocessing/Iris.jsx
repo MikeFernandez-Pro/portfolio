@@ -1,16 +1,16 @@
 import { useEffect } from 'react';
-import { useFrame } from '@react-three/fiber';
 import {
-  Fn,
-  If,
-  PI,
   abs,
   float,
+  Fn,
   fwidth,
+  If,
   length,
   max,
+  PI,
   sin,
   smoothstep,
+  time,
   uniform,
   uv,
   vec2,
@@ -39,7 +39,6 @@ const createIris = () => {
     progress: uniform(INITIAL_PROGRESS),
     size: uniform(15),
     aspectRatio: uniform(1),
-    time: uniform(0),
   };
 
   const apply = Fn(([inputColor]) => {
@@ -58,7 +57,7 @@ const createIris = () => {
       );
 
       const perlinNoise = snoise(
-        vec3(rotatedUv.mul(uniforms.size), uniforms.time.mul(0.15))
+        vec3(rotatedUv.mul(uniforms.size), time.mul(0.15))
       );
 
       // Pixel-width AA on the radial field only — fwidth(noise) is unstable
@@ -119,11 +118,6 @@ const useIris = (revealer, aspectRatio) => {
   useEffect(() => {
     uniforms.aspectRatio.value = aspectRatio;
   }, [uniforms, aspectRatio]);
-
-  useFrame(({ elapsed }) => {
-    if (uniforms.progress.value >= REVEALED_PROGRESS) return;
-    uniforms.time.value = elapsed;
-  });
 };
 
 export { createIris, useIris };

@@ -1,20 +1,28 @@
 import { useEffect } from 'react';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 import { Discard, Fn, If, materialColor, mix, uniform, vec4 } from 'three/tsl';
 
 import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
 import { toNodeMaterial } from '#utils/nodeMaterials.js';
-import {
-  createDissolveUniforms,
-  dissolveLava,
-} from '#shaders/character/dissolve.js';
+import { createDissolveUniforms, dissolveLava } from '#shaders/dissolve.js';
 import { patchIslandPointLights } from '#islands/world/pointLights/islandPointLights.js';
-import { patchCloudShadows } from '#environment/CloudShadows.jsx';
+import { patchCloudShadows } from '#shaders/cloudShadows.js';
 import { useStore } from '#store';
+import { RESPAWN_DEFAULTS } from '#character/deathCycle/respawnAnimation.js';
 
 const CHARACTER_MATERIAL_NAME = 'knight';
 const BOUNDS_MIN = new THREE.Vector3(-3.34, 0, -2.41);
 const BOUNDS_MAX = new THREE.Vector3(3.34, 5.94, 0.73);
+
+const CHARACTER_DISSOLVE = {
+  color: RESPAWN_DEFAULTS.charColor,
+  intensity: RESPAWN_DEFAULTS.charIntensity,
+  repeat: RESPAWN_DEFAULTS.charRepeat,
+  perlinScale: RESPAWN_DEFAULTS.charPerlinScale,
+  perlinStrength: RESPAWN_DEFAULTS.charPerlinStrength,
+  perlinSpeed: RESPAWN_DEFAULTS.charPerlinSpeed,
+  thickness: RESPAWN_DEFAULTS.charThickness,
+};
 
 const useCharacterMaterial = characterScene => {
   // Voronoi (R) and perlin (G) share one packed texture (the lantern
@@ -34,7 +42,15 @@ const useCharacterMaterial = characterScene => {
       return;
     }
 
-    const uniforms = createDissolveUniforms(noiseTexture);
+    // Shared by the knight and its lantern: the death and respawn timelines
+    // tween these, so both dissolve in sync
+    const uniforms = {
+      ...createDissolveUniforms(noiseTexture, CHARACTER_DISSOLVE),
+      // 0 = only lava, 1 = formed character
+      uCharFormProgress: uniform(1),
+      // discard fragments below this alpha (no depth write)
+      uAlphaClip: uniform(RESPAWN_DEFAULTS.alphaClip),
+    };
 
     const material = toNodeMaterial(characterMesh.material);
     material.transparent = true;

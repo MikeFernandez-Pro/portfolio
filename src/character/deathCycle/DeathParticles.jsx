@@ -5,6 +5,7 @@ import {
   cos,
   distance,
   float,
+  PI2,
   sin,
   smoothstep,
   uniform,
@@ -272,7 +273,7 @@ const DeathParticles = () => {
 
     // Rise, with a gentle sway scaled by life so the burst starts tight on
     // the character silhouette and loosens as the dust climbs
-    const phase = aRandom.z.mul(6.2831853);
+    const phase = aRandom.z.mul(PI2);
     material.positionNode = position.add(
       vec3(
         sin(life.mul(9).add(phase)).mul(0.05).mul(life),

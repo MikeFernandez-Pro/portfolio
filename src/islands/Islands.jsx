@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useGLTF, useAnimations } from '@react-three/drei/webgpu';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 
 import { IS_MOBILE_DEVICE } from '#utils/device.js';
 
-import { patchCloudShadows } from '#environment/CloudShadows.jsx';
+import { patchCloudShadows } from '#shaders/cloudShadows.js';
 import {
   patchIslandPointLights,
   setCandleLightPositions,

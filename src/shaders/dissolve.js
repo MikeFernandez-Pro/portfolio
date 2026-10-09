@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 import {
   Fn,
   abs,
@@ -12,6 +12,7 @@ import {
   pow,
   smoothstep,
   texture,
+  time,
   uniform,
   varying,
   vec2,
@@ -19,36 +20,24 @@ import {
   vec4,
 } from 'three/tsl';
 
-import { RESPAWN_DEFAULTS } from '#character/deathCycle/respawnAnimation.js';
-
 /**
- * Respawn dissolve uniforms, shared by the knight and its lantern (the
- * respawn timeline tweens these, so both dissolve in sync). TSL uniform
- * nodes: `.value` reads/writes like the old `{ value }` objects.
+ * Uniforms of the lava dissolve pattern (dissolveLava), tweened by the
+ * caller's timelines. `defaults`: color, intensity, repeat, perlinScale,
+ * perlinStrength, perlinSpeed, thickness.
  */
-const createDissolveUniforms = noiseTexture => {
+const createDissolveUniforms = (noiseTexture, defaults) => ({
   // Voronoi (R) and perlin (G) share one packed texture
-  const noise = texture(noiseTexture);
-
-  return {
-    uVoronoiTexture: noise,
-    uPerlinTexture: noise,
-    uColor: uniform(new THREE.Color(RESPAWN_DEFAULTS.charColor)),
-    uIntensity: uniform(RESPAWN_DEFAULTS.charIntensity),
-    uRepeat: uniform(RESPAWN_DEFAULTS.charRepeat),
-    uPerlinScale: uniform(RESPAWN_DEFAULTS.charPerlinScale),
-    uPerlinStrength: uniform(RESPAWN_DEFAULTS.charPerlinStrength),
-    uPerlinSpeed: uniform(RESPAWN_DEFAULTS.charPerlinSpeed),
-    uTime: uniform(0),
-    uThickness: uniform(RESPAWN_DEFAULTS.charThickness),
-    // voronoi reveal: 0 = none, 1 = full lava pattern
-    uProgress: uniform(0),
-    // 0 = only lava, 1 = formed character
-    uCharFormProgress: uniform(1),
-    // discard fragments below this alpha (no depth write)
-    uAlphaClip: uniform(RESPAWN_DEFAULTS.alphaClip),
-  };
-};
+  uNoise: texture(noiseTexture),
+  uColor: uniform(new THREE.Color(defaults.color)),
+  uIntensity: uniform(defaults.intensity),
+  uRepeat: uniform(defaults.repeat),
+  uPerlinScale: uniform(defaults.perlinScale),
+  uPerlinStrength: uniform(defaults.perlinStrength),
+  uPerlinSpeed: uniform(defaults.perlinSpeed),
+  uThickness: uniform(defaults.thickness),
+  // voronoi reveal: 0 = none, 1 = full lava pattern
+  uProgress: uniform(0),
+});
 
 const triplanar = (tex, p01, n, repeat, uvOffset) => {
   // interpolated normals can cancel to ~zero length, and normalize() of a
@@ -79,12 +68,12 @@ const dissolveLava = (u, boundsMin, boundsMax) =>
 
     const perlinScroll = vec2(
       u.uPerlinSpeed,
-      u.uTime.negate().mul(u.uPerlinSpeed).mul(0.5)
+      time.negate().mul(u.uPerlinSpeed).mul(0.5)
     );
 
     // perlin = green channel of the packed voronoi/perlin texture
     const perlin = triplanar(
-      u.uPerlinTexture,
+      u.uNoise,
       clampedPos,
       normal,
       u.uPerlinScale,
@@ -93,7 +82,7 @@ const dissolveLava = (u, boundsMin, boundsMax) =>
     const deform = vec2(perlin.sub(0.5)).mul(u.uPerlinStrength);
 
     const voronoi = triplanar(
-      u.uVoronoiTexture,
+      u.uNoise,
       clampedPos,
       normal,
       u.uRepeat,

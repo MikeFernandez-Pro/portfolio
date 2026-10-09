@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useControls } from '#debug/useControls.jsx';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 import gsap from 'gsap';
 import { Howl } from 'howler';
 

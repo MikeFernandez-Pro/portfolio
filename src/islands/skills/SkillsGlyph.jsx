@@ -4,7 +4,7 @@ import { useControls } from '#debug/useControls.jsx';
 import { uniformControls } from '#debug/uniformControls.js';
 import { Howl } from 'howler';
 import gsap from 'gsap';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 
 import { useStore } from '#store';
 import { SOUND_VOLUMES } from '#utils/soundVolumes.js';

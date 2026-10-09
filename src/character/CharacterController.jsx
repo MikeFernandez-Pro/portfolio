@@ -8,7 +8,7 @@ import {
 import { useFrame } from '@react-three/fiber';
 import { useGLTF, useAnimations } from '@react-three/drei/webgpu';
 import gsap from 'gsap';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 
 import { CharacterBody } from '#physics/CharacterBody.js';
 import { physicsWorld } from '#physics/world.js';
@@ -378,11 +378,6 @@ const CharacterController = () => {
   let characterPosition;
 
   useFrame((state, delta) => {
-    const dissolveUniforms = useStore.getState().characterRespawnUniforms;
-    if (dissolveUniforms?.uTime) {
-      dissolveUniforms.uTime.value = state.elapsed;
-    }
-
     // Debug falling preview: whole controller suspended while tweaking
     if (fallingPreviewActive) return;
 

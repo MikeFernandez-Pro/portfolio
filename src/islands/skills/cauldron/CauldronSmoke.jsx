@@ -5,9 +5,7 @@ import { uniformControls } from '#debug/uniformControls.js';
 import * as THREE from 'three/webgpu';
 import {
   If,
-  dot,
   float,
-  fract,
   max,
   min,
   modelWorldMatrix,
@@ -23,6 +21,7 @@ import {
   vec3,
   Fn,
 } from 'three/tsl';
+import { hash12 } from '#shaders/includes/hash.js';
 
 import smokeUrl from '#assets/textures/smoke.webp';
 
@@ -72,9 +71,7 @@ const CauldronSmoke = props => {
     // Single column drawn as a plain mesh: its world position hashes into a
     // time offset so it doesn't sway in sync with other smoke
     const columnXZ = modelWorldMatrix.element(3).xz;
-    const timeOffset = fract(
-      sin(dot(columnXZ, vec2(12.9898, 78.233))).mul(43758.5453)
-    ).mul(100);
+    const timeOffset = hash12(columnXZ).mul(100);
     const columnTime = time.add(timeOffset.mul(uniforms.uTimeOffsetStrength));
 
     // Sway grows with height (uv.y: 0 at the base, 1 at the top), so the

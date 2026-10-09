@@ -1,15 +1,16 @@
 import * as THREE from 'three/webgpu';
 import {
-  Discard,
-  Fn,
-  If,
   abs,
   atan,
+  Discard,
   float,
+  Fn,
   fract,
+  If,
   length,
   min,
   mix,
+  PI2,
   positionGeometry,
   pow,
   saturate,
@@ -24,8 +25,6 @@ import {
 } from 'three/tsl';
 
 import { rotate2d } from '#shaders/includes/rotate2d.js';
-
-const TWO_PI = 6.28318530718;
 
 /** Uniform nodes of the cauldron portal, from its defaults. */
 const createCauldronPortalUniforms = (defaults, bounds) => {
@@ -136,7 +135,7 @@ const createCauldronPortalMaterial = (u, noiseTexture) => {
     // Layer 2: broad broken spirals, the painted vortex body
     const ribbonPhase = radius
       .mul(u.uRibbonCount)
-      .sub(angle.mul(u.uRibbonTwist).div(TWO_PI))
+      .sub(angle.mul(u.uRibbonTwist).div(PI2))
       .sub(time.mul(u.uRibbonSpeed))
       .add(broadNoise.sub(0.5).mul(0.9));
     const ribbonBreakup = smoothstep(
@@ -157,7 +156,7 @@ const createCauldronPortalMaterial = (u, noiseTexture) => {
     // Layer 3: sparse thin lines laid over the broad brush strokes
     const filamentPhase = radius
       .mul(u.uFilamentCount)
-      .sub(angle.mul(u.uFilamentTwist).div(TWO_PI))
+      .sub(angle.mul(u.uFilamentTwist).div(PI2))
       .add(time.mul(u.uFilamentSpeed))
       .add(broadNoise.sub(0.5).mul(1.7));
     const sparseSections = smoothstep(
@@ -175,7 +174,7 @@ const createCauldronPortalMaterial = (u, noiseTexture) => {
 
     // Layer 4: a hot center disc plus a wider soft halo
     const pulse = float(1).add(
-      sin(time.mul(u.uCorePulseSpeed).mul(TWO_PI)).mul(u.uCorePulseAmount)
+      sin(time.mul(u.uCorePulseSpeed).mul(PI2)).mul(u.uCorePulseAmount)
     );
     const coreRadius = u.uCoreRadius.mul(pulse).toVar();
     const coreDisc = smoothstep(

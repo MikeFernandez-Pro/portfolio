@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Howl } from 'howler';
 import gsap from 'gsap';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 
 import { ForgeSparks } from './ForgeSparks.jsx';
 import { useStore } from '#store';

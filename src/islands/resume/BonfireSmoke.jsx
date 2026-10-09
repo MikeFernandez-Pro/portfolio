@@ -5,7 +5,7 @@ import {
   createSmokeMaterial,
   createSmokeUniforms,
   smokeColumnTimeOffset,
-} from '#shaders/smoke/smoke.js';
+} from '#shaders/smoke.js';
 
 const POSITION = [-1.55, 6.8, -55.89];
 

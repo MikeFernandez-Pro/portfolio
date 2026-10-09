@@ -5,9 +5,7 @@ import {
   PI2,
   abs,
   cos,
-  dot,
   float,
-  fract,
   int,
   max,
   mix,
@@ -21,6 +19,7 @@ import {
   vec2,
   vec4,
 } from 'three/tsl';
+import { hash12 } from '#shaders/includes/hash.js';
 import { useControls } from '#debug/useControls.jsx';
 
 // Cheap single-pass depth of field: circle of confusion computed from the
@@ -35,9 +34,6 @@ const CHEAP_DOF_DEFAULTS = {
 };
 
 const GOLDEN_ANGLE = 2.399963229728653;
-
-const random = seed =>
-  fract(sin(dot(seed, vec2(12.9898, 78.233))).mul(43758.5453));
 
 /**
  * Builds the DoF node. `colorNode` / `depthNode` are texture nodes (the scene
@@ -86,7 +82,7 @@ const createCheapDof = ({ colorNode, depthNode, camera, resolution }) => {
         // spiral pattern; radius in fractions of screen height
         const radius = centerCoC.mul(uniforms.bokehRadius);
         const aspectCorrection = vec2(resolution.y.div(resolution.x), 1);
-        const phi = random(uvNode.mul(resolution)).mul(PI2);
+        const phi = hash12(uvNode.mul(resolution)).mul(PI2);
 
         const acc = vec4(inputColor).toVar();
         const weightSum = float(1).toVar();

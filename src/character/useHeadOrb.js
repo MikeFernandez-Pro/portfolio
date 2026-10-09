@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from 'react';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 import { useFrame } from '@react-three/fiber';
 
 import { useStore } from '#store';

@@ -1,24 +1,13 @@
 import { useMemo, useEffect, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
 import gsap from 'gsap';
-import * as THREE from 'three/webgpu';
-import {
-  Discard,
-  Fn,
-  If,
-  materialColor,
-  max,
-  texture,
-  uniform,
-  vec4,
-} from 'three/tsl';
+import { Discard, Fn, If, materialColor, max, uniform, vec4 } from 'three/tsl';
 
 import { useStore } from '#store';
 import { useControls } from '#debug/useControls.jsx';
 import { uniformControls } from '#debug/uniformControls.js';
 import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
 import { toNodeMaterial } from '#utils/nodeMaterials.js';
-import { dissolveLava } from '#shaders/character/dissolve.js';
+import { createDissolveUniforms, dissolveLava } from '#shaders/dissolve.js';
 
 // Same voronoi lava dissolve as the character respawn (respawnAnimation.js),
 // scoped to the books: hidden at rest, the glyph activation grows the lava in
@@ -47,8 +36,8 @@ const booksDissolveConfig = { ...BOOKS_DISSOLVE_DEFAULTS };
 const MagicBooks = props => {
   const { island } = props;
 
-  // Voronoi (R) and perlin (G) share one packed texture; both sampler
-  // uniforms point at it (same texture the character respawn uses)
+  // Packed voronoi (R) / perlin (G), the same texture the character
+  // dissolve uses
   const noiseTexture = useVoronoiPerlinTexture();
 
   const { magicBooksMaterial, uniforms } = useMemo(() => {
@@ -57,22 +46,13 @@ const MagicBooks = props => {
     const geometry = island.nodes.island_10.geometry;
     if (!geometry.boundingBox) geometry.computeBoundingBox();
 
-    // TSL uniform nodes (the timeline tweens their .value). Voronoi (R) and
-    // perlin (G) share one packed texture
-    const noise = texture(noiseTexture);
+    // The timeline tweens these. Hidden at rest (no lava, no books) until
+    // the glyphs activate; the edge thickness animates up from 0
     const uniforms = {
-      uVoronoiTexture: noise,
-      uPerlinTexture: noise,
-      uColor: uniform(new THREE.Color(BOOKS_DISSOLVE_DEFAULTS.color)),
-      uIntensity: uniform(BOOKS_DISSOLVE_DEFAULTS.intensity),
-      uRepeat: uniform(BOOKS_DISSOLVE_DEFAULTS.repeat),
-      uPerlinScale: uniform(BOOKS_DISSOLVE_DEFAULTS.perlinScale),
-      uPerlinStrength: uniform(BOOKS_DISSOLVE_DEFAULTS.perlinStrength),
-      uPerlinSpeed: uniform(BOOKS_DISSOLVE_DEFAULTS.perlinSpeed),
-      uTime: uniform(0),
-      uThickness: uniform(0),
-      // Hidden at rest: no lava, no books, until the glyphs activate
-      uProgress: uniform(0),
+      ...createDissolveUniforms(noiseTexture, {
+        ...BOOKS_DISSOLVE_DEFAULTS,
+        thickness: 0,
+      }),
       // Book opacity: 0 = hidden, 1 = fully formed
       uFormProgress: uniform(0),
       // Lava layer fade: 1 = full, 0 = invisible
@@ -237,15 +217,6 @@ const MagicBooks = props => {
       unsubMagicPlateActivation();
     };
   }, []);
-
-  // The perlin scroll only shows while lava is visible — skip the uniform
-  // write the rest of the time (per-frame discipline)
-  useFrame(state => {
-    const u = uniforms;
-    if (u.uProgress.value > 0 && u.uLavaOpacity.value > 0) {
-      u.uTime.value = state.elapsed;
-    }
-  });
 
   return (
     <skinnedMesh

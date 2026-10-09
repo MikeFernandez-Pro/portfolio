@@ -3,7 +3,7 @@ import { useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei/webgpu';
 import { Howl } from 'howler';
 import { useControls } from '#debug/useControls.jsx';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 
 import { DebugInspector } from './debug/DebugInspector.jsx';
 import { PhysicsDebug } from './debug/PhysicsDebug.jsx';

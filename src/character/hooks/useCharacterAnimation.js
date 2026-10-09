@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 import {
   ANIMATION_IDLE as IDLE,
   ANIMATION_RUN as RUN,

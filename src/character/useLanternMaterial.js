@@ -15,9 +15,9 @@ import {
   vec4,
 } from 'three/tsl';
 
-import { dissolveLava } from '#shaders/character/dissolve.js';
+import { dissolveLava } from '#shaders/dissolve.js';
 import { patchIslandPointLights } from '#islands/world/pointLights/islandPointLights.js';
-import { patchCloudShadows } from '#environment/CloudShadows.jsx';
+import { patchCloudShadows } from '#shaders/cloudShadows.js';
 import { useStore } from '#store';
 import { useControls } from '#debug/useControls.jsx';
 

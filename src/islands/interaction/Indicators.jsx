@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Merged } from '@react-three/drei/webgpu';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 
 import { IS_MOBILE_DEVICE } from '#utils/device.js';
 

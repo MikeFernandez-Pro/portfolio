@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useControls } from '#debug/useControls.jsx';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 
 import { useStore } from '#store';
 import { IS_MOBILE_DEVICE } from '#utils/device.js';
@@ -10,10 +10,7 @@ import { DEFAULT_CHARACTER_SPEED } from '#character/constants.js';
 
 import { useGrassPlacement } from './grassPlacement.js';
 
-import {
-  createGrassMaterial,
-  createGrassUniforms,
-} from '#shaders/grass/grass.js';
+import { createGrassMaterial, createGrassUniforms } from '#shaders/grass.js';
 
 import {
   useSpiralGrassHeightTexture,

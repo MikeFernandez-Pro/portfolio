@@ -5,12 +5,12 @@ import { uniformControls } from '#debug/uniformControls.js';
 import * as THREE from 'three/webgpu';
 import {
   cos,
-  dot,
   float,
   floor,
   fract,
   length,
   mix,
+  PI2,
   pow,
   sin,
   smoothstep,
@@ -22,11 +22,12 @@ import {
   vec3,
   vec4,
 } from 'three/tsl';
+import { hash12 } from '#shaders/includes/hash.js';
 
 import {
   createCauldronPortalMaterial,
   createCauldronPortalUniforms,
-} from '#shaders/cauldronPortal/cauldronPortal.js';
+} from '#shaders/cauldronPotion.js';
 import {
   createParticleSprite,
   particleAttribute,
@@ -104,11 +105,6 @@ const PORTAL_DEFAULTS = {
   corePulseSpeed: 0.66,
 };
 
-const TWO_PI = 6.28318530718;
-
-const hash = seed =>
-  fract(sin(dot(seed, vec2(12.9898, 78.233))).mul(43758.5453));
-
 // Boiling bubbles: each loops on its own phase and respawns at a new random
 // spot of the surface every cycle, like water at a rolling boil: it stays in
 // place, swells, then bursts
@@ -128,8 +124,8 @@ const createBubblesMaterial = u => {
   const cycle = floor(progress);
 
   const seed = vec2(aPhase.mul(137.13), aSpeed.mul(91.7)).add(cycle);
-  const angle = hash(seed).mul(TWO_PI);
-  const radius = sqrt(hash(seed.add(17.31))).mul(u.uSpread);
+  const angle = hash12(seed).mul(PI2);
+  const radius = sqrt(hash12(seed.add(17.31))).mul(u.uSpread);
   material.positionNode = vec3(
     cos(angle).mul(radius).mul(u.uHalfSize.x),
     0,

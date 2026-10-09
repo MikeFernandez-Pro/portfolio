@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 
 import { buildWorldSpaceBvh } from '#physics/buildBvh.js';
 import { physicsWorld } from '#physics/world.js';

@@ -7,21 +7,22 @@ import { Howl } from 'howler';
 import gsap from 'gsap';
 import * as THREE from 'three/webgpu';
 import {
-  Discard,
-  Fn,
-  If,
   abs,
   cameraPosition,
   clamp,
   cos,
+  Discard,
   dot,
   float,
+  Fn,
   fract,
+  If,
   length,
   max,
   mix,
   modelWorldMatrix,
   normalize,
+  PI2,
   positionWorld,
   sin,
   smoothstep,
@@ -122,8 +123,6 @@ for (let i = 0; i < SPARKS_COUNT; i++) {
   sparksSpeeds[i] = Math.random() * 0.8 + 0.6;
   sparksPhases[i] = Math.random();
 }
-
-const TWO_PI = 6.28318530718;
 
 // Project disc: noise-deformed edge, fake window-interior parallax on the
 // project image (from the shared sRGB screens atlas), a noise flow field
@@ -270,7 +269,7 @@ const createPortalSparksMaterial = u => {
   const ease = t.mul(t).mul(float(3).sub(t.mul(2)));
 
   const radius = mix(u.uSpawnRadius, 0.06, ease).mul(u.uOpenFactor);
-  const angle = aAngle.add(t.mul(u.uSwirlTurns).mul(TWO_PI));
+  const angle = aAngle.add(t.mul(u.uSwirlTurns).mul(PI2));
   material.positionNode = vec3(
     cos(angle).mul(radius),
     sin(angle).mul(radius),

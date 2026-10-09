@@ -39,7 +39,7 @@ import {
   attribute,
 } from 'three/tsl';
 
-import { cloudShadowFactor } from '#environment/CloudShadows.jsx';
+import { cloudShadowFactor } from '#shaders/cloudShadows.js';
 
 // Blades are built in the vertex stage from the vertex and instance ids;
 // aBladePosition is the CPU-placed root in patch space ([-1, 1] on x/z, see
