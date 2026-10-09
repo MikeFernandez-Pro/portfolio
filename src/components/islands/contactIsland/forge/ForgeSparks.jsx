@@ -1,62 +1,109 @@
-import { useMemo } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useEffect, useMemo } from 'react';
 import { useControls } from '#utils/useControls.jsx';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
+import {
+  cos,
+  distance,
+  float,
+  max,
+  min,
+  select,
+  sin,
+  step,
+  uniform,
+  vec2,
+  vec3,
+  vec4,
+} from 'three/tsl';
 
-import forgeSparksVertexShader from '#shaders/forgeSparks/vertex.glsl';
-import forgeSparksFragmentShader from '#shaders/forgeSparks/fragment.glsl';
+import {
+  createParticleSprite,
+  particleAttribute,
+  pointCoord,
+} from '#utils/pointSprites.js';
 
 const COUNT = 100;
 const FORGE_SPARKS_COLOR = '#ff8080';
 const FORGE_SPARKS_INTENSITY = 2;
 const FORGE_SPARKS_SIZE = 0.091;
+const RADIUS = 0.44;
+const HEIGHT = 0.66;
 
-const positions = new Float32Array(COUNT * 3);
 const sizes = new Float32Array(COUNT);
 const angles = new Float32Array(COUNT);
 const speed = new Float32Array(COUNT);
 
 for (let i = 0; i < COUNT; i++) {
-  const i3 = i * 3;
-
-  positions[i3] = 0;
-  positions[i3 + 1] = 0;
-  positions[i3 + 2] = 0;
-
   sizes[i] = Math.random();
   angles[i] = Math.random() * Math.PI * 2;
   speed[i] = Math.random() * 0.5 + 0.5;
 }
 
+/**
+ * Burst of sparks off the anvil at each hammer strike. Forge.jsx tweens
+ * uProgress (0 -> 1) through forgeSparksRef, which holds the uniforms.
+ */
 const ForgeSparks = props => {
   const { forgeSparksRef } = props;
 
-  const { width, height, pixelRatio } = useThree(state => ({
-    width: state.size.width,
-    height: state.size.height,
-    pixelRatio: state.viewport.dpr,
-  }));
+  const { sparks, uniforms } = useMemo(() => {
+    const uniforms = {
+      uSize: uniform(FORGE_SPARKS_SIZE),
+      uProgress: uniform(0),
+      uColor: uniform(new THREE.Color(FORGE_SPARKS_COLOR)),
+      uIntensity: uniform(FORGE_SPARKS_INTENSITY),
+    };
 
-  const forgeSparksMaterial = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        uniforms: {
-          uSize: { value: FORGE_SPARKS_SIZE },
-          uResolution: {
-            value: new THREE.Vector2(width * pixelRatio, height * pixelRatio),
-          },
-          uProgress: { value: 0 },
-          uColor: { value: new THREE.Color(FORGE_SPARKS_COLOR) },
-          uIntensity: { value: FORGE_SPARKS_INTENSITY },
-        },
-        vertexShader: forgeSparksVertexShader,
-        fragmentShader: forgeSparksFragmentShader,
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-      }),
-    []
-  );
+    const aSize = particleAttribute(sizes, 1);
+    const aAngle = particleAttribute(angles, 1);
+    const aSpeed = particleAttribute(speed, 1);
+
+    const material = new THREE.PointsNodeMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+
+    // Explodes outward over the first 40% of the strike, then holds; a
+    // finished strike (progress 1) collapses back to the anvil
+    const elevation = select(
+      uniforms.uProgress.equal(1),
+      float(0),
+      uniforms.uProgress
+    );
+    const explodingProgress = elevation.div(0.4);
+    const sparkPosition = vec3(
+      cos(aAngle).mul(RADIUS),
+      aSpeed.mul(HEIGHT),
+      sin(aAngle).mul(RADIUS)
+    ).mul(explodingProgress);
+    material.positionNode = sparkPosition;
+
+    // gl_PointSize = uSize * uResolution.y * aSize, shrunk as the spark
+    // climbs: min(s, s / (y * 4.5)) with a floor where y reaches 0
+    material.sizeNode = uniforms.uSize
+      .mul(aSize)
+      .mul(min(1, max(sparkPosition.y.mul(4.5), 1e-6).reciprocal()))
+      .mul(2);
+
+    // Round spark (alpha 0 outside the disc), dimming over the strike
+    const disc = step(distance(pointCoord, vec2(0.5)), 0.5);
+    material.colorNode = vec4(
+      uniforms.uColor
+        .mul(uniforms.uIntensity)
+        .mul(uniforms.uProgress.oneMinus()),
+      disc
+    );
+
+    const sparks = createParticleSprite(material, COUNT);
+    sparks.position.set(-9.93, -1.11, 9.16);
+
+    return { sparks, uniforms };
+  }, []);
+
+  useEffect(() => () => sparks.material.dispose(), [sparks]);
+
+  forgeSparksRef.current = uniforms;
 
   useControls(
     'ForgeSparks',
@@ -64,7 +111,7 @@ const ForgeSparks = props => {
       color: {
         value: FORGE_SPARKS_COLOR,
         onChange: value => {
-          forgeSparksMaterial.uniforms.uColor.value.set(value);
+          uniforms.uColor.value.set(value);
         },
       },
       intensity: {
@@ -73,7 +120,7 @@ const ForgeSparks = props => {
         max: 20,
         step: 0.01,
         onChange: value => {
-          forgeSparksMaterial.uniforms.uIntensity.value = value;
+          uniforms.uIntensity.value = value;
         },
       },
       size: {
@@ -82,54 +129,14 @@ const ForgeSparks = props => {
         max: 0.5,
         step: 0.001,
         onChange: value => {
-          forgeSparksMaterial.uniforms.uSize.value = value;
+          uniforms.uSize.value = value;
         },
       },
     },
     { collapsed: true }
   );
 
-  useFrame(() => {
-    forgeSparksMaterial.uniforms.uResolution.value.set(
-      width * pixelRatio,
-      height * pixelRatio
-    );
-  });
-
-  return (
-    <points
-      ref={forgeSparksRef}
-      position={[-9.93, -1.11, 9.16]}
-      material={forgeSparksMaterial}
-    >
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={COUNT}
-          array={positions}
-          itemSize={3}
-        />
-        <bufferAttribute
-          attach="attributes-aSize"
-          count={COUNT}
-          array={sizes}
-          itemSize={1}
-        />
-        <bufferAttribute
-          attach="attributes-aAngle"
-          count={COUNT}
-          array={angles}
-          itemSize={1}
-        />
-        <bufferAttribute
-          attach="attributes-aSpeed"
-          count={COUNT}
-          array={speed}
-          itemSize={1}
-        />
-      </bufferGeometry>
-    </points>
-  );
+  return <primitive object={sparks} />;
 };
 
 export { ForgeSparks };

@@ -1,12 +1,19 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useControls } from '#utils/useControls.jsx';
-import * as THREE from 'three';
-import CustomShaderMaterial from 'three-custom-shader-material/vanilla';
+import * as THREE from 'three/webgpu';
+import {
+  max,
+  min,
+  mix,
+  smoothstep,
+  texture,
+  uniform,
+  uv,
+  vec4,
+} from 'three/tsl';
 
 import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
-import vertexShader from '#shaders/forgeLava/vertex.glsl';
-import fragmentShader from '#shaders/forgeLava/fragment.glsl';
 import {
   forgeLavaLightSettings,
   forgeLavaLightUniforms,
@@ -20,7 +27,7 @@ const LAVA_DEFAULTS = {
   scaleX: 0.9,
   scaleY: 0.7,
   size: 1.75,
-  speed: 0.06,  
+  speed: 0.06,
   crustColor: '#290d07',
   glowColor: '#f47053',
   // Glow intensity range: min at rest, max when the bellows fully close
@@ -53,30 +60,54 @@ const ForgeLavaPlane = ({ blowerMesh }) => {
   const noiseTexture = useVoronoiPerlinTexture();
 
   const lavaMaterial = useMemo(() => {
-    const material = new CustomShaderMaterial({
-      baseMaterial: new THREE.MeshStandardMaterial(),
-      uniforms: {
-        uVoronoiTexture: { value: noiseTexture },
-        uPerlinNoise: { value: noiseTexture },
-        uTime: { value: 0 },
-        uSize: { value: LAVA_DEFAULTS.size },
-        uSpeed: { value: LAVA_DEFAULTS.speed },
-        uCrustColor: { value: new THREE.Color(LAVA_DEFAULTS.crustColor) },
-        uGlowColor: { value: new THREE.Color(LAVA_DEFAULTS.glowColor) },
-        uIntensity: { value: LAVA_DEFAULTS.minIntensity },
-        uContrast: { value: LAVA_DEFAULTS.contrast },
-        uBorderThicknessX: { value: LAVA_DEFAULTS.borderThicknessX },
-        uBorderThicknessY: { value: LAVA_DEFAULTS.borderThicknessY },
-        uPerlinNoiseStrength: { value: LAVA_DEFAULTS.perlinNoiseStrength },
-      },
-      vertexShader,
-      fragmentShader,
-    });
+    const uniforms = {
+      uTime: uniform(0),
+      uSize: uniform(LAVA_DEFAULTS.size),
+      uSpeed: uniform(LAVA_DEFAULTS.speed),
+      uCrustColor: uniform(new THREE.Color(LAVA_DEFAULTS.crustColor)),
+      uGlowColor: uniform(new THREE.Color(LAVA_DEFAULTS.glowColor)),
+      uIntensity: uniform(LAVA_DEFAULTS.minIntensity),
+      uContrast: uniform(LAVA_DEFAULTS.contrast),
+      uBorderThicknessX: uniform(LAVA_DEFAULTS.borderThicknessX),
+      uBorderThicknessY: uniform(LAVA_DEFAULTS.borderThicknessY),
+      uPerlinNoiseStrength: uniform(LAVA_DEFAULTS.perlinNoiseStrength),
+    };
 
-    uniformsRef.current = material.uniforms;
+    const material = new THREE.MeshStandardNodeMaterial();
+
+    // Voronoi (R) and perlin (G) share one packed texture: the perlin
+    // scrolls and warps the voronoi crust
+    const t = uniforms.uTime.mul(uniforms.uSpeed);
+    const lavaUv = uv().mul(uniforms.uSize);
+    const perlin = texture(noiseTexture, lavaUv.add(t)).g.mul(
+      uniforms.uPerlinNoiseStrength
+    );
+    const lavaPattern = texture(noiseTexture, lavaUv.add(perlin)).r;
+    const lava = mix(uniforms.uCrustColor, uniforms.uGlowColor, lavaPattern);
+
+    // Square border along the plane edges, slightly feathered
+    const edgeDist = min(uv(), uv().oneMinus());
+    const borderX = smoothstep(
+      uniforms.uBorderThicknessX,
+      uniforms.uBorderThicknessX.add(0.005),
+      edgeDist.x
+    ).oneMinus();
+    const borderY = smoothstep(
+      uniforms.uBorderThicknessY,
+      uniforms.uBorderThicknessY.add(0.005),
+      edgeDist.y
+    ).oneMinus();
+    const lavaColor = mix(lava, uniforms.uGlowColor, max(borderX, borderY));
+
+    material.colorNode = vec4(lavaColor, 1);
+    material.emissiveNode = lavaColor.mul(uniforms.uIntensity);
+
+    uniformsRef.current = uniforms;
 
     return material;
   }, [noiseTexture]);
+
+  useEffect(() => () => lavaMaterial.dispose(), [lavaMaterial]);
 
   const { posX, posY, posZ, rotationY, scaleX, scaleY } = useControls(
     'ForgeLava',
@@ -138,13 +169,15 @@ const ForgeLavaPlane = ({ blowerMesh }) => {
       crustColor: {
         value: LAVA_DEFAULTS.crustColor,
         onChange: value => {
-          if (uniformsRef.current) uniformsRef.current.uCrustColor.value.set(value);
+          if (uniformsRef.current)
+            uniformsRef.current.uCrustColor.value.set(value);
         },
       },
       glowColor: {
         value: LAVA_DEFAULTS.glowColor,
         onChange: value => {
-          if (uniformsRef.current) uniformsRef.current.uGlowColor.value.set(value);
+          if (uniformsRef.current)
+            uniformsRef.current.uGlowColor.value.set(value);
         },
       },
       // Resting glow intensity (bellows open)

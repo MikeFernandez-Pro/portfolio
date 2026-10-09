@@ -37,8 +37,12 @@ const createSmokeUniforms = defaults => ({
 /**
  * Bonfire / torch smoke column on a 1x10 plane (the profiles work in local
  * space). `timeOffset`: float node, the column's unscaled time offset.
+ * `place`: maps the swayed plane-local position to the mesh's local space
+ * (SmokeColumns scales and offsets each column there: a positionNode
+ * replaces the InstancedMesh transform in three r186, so the columns do
+ * their own instancing).
  */
-const createSmokeMaterial = (u, timeOffset) => {
+const createSmokeMaterial = (u, timeOffset, place = position => position) => {
   const material = new THREE.MeshBasicNodeMaterial({
     transparent: true,
     depthWrite: false,
@@ -52,7 +56,7 @@ const createSmokeMaterial = (u, timeOffset) => {
   const sway = sin(p.y.mul(u.uDisplacementUv).sub(columnTime))
     .mul(pow(max(p.y, 0), u.uDisplacementUvY))
     .mul(0.1);
-  material.positionNode = vec3(p.x.add(sway), p.y, p.z);
+  material.positionNode = place(vec3(p.x.add(sway), p.y, p.z));
 
   // Soft vertical borders, fading with height. MSAA can extrapolate the
   // height past its range at plane edges: floor the divisor and clamp so

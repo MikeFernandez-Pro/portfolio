@@ -76,7 +76,7 @@ const Forge = props => {
     const forgeHammerInterval = setInterval(() => {
       islandAnimations.actions['anvilAnimation'].reset().play();
       forgeHammerAnimationRef.current = gsap.fromTo(
-        forgeSparksRef.current.material.uniforms.uProgress,
+        forgeSparksRef.current.uProgress,
         { value: 0 },
         {
           value: 1,

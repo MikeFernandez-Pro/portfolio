@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three/webgpu';
-import { instancedBufferAttribute } from 'three/tsl';
+import { attribute, uniform, vec3 } from 'three/tsl';
 
 import {
   createSmokeMaterial,
@@ -13,38 +13,53 @@ import {
 // for groups without an offset control
 const NO_OFFSET = [0, 0, 0];
 
-const INSTANCE_MATRIX = new THREE.Matrix4();
-const INSTANCE_POSITION = new THREE.Vector3();
-const INSTANCE_QUATERNION = new THREE.Quaternion();
-const INSTANCE_SCALE = new THREE.Vector3();
-
 /**
  * Group of smoke columns reusing the bonfire smoke shader: one shared
- * material and a single InstancedMesh (one draw call per group), tuned
+ * material and a single instanced mesh (one draw call per group), tuned
  * from its own debug folder. The plane is 1x10 like the bonfire's (the
  * shader profiles work in local space), so `width`/`height` scale the
- * instances instead of the geometry.
+ * columns instead of the geometry. Instanced by hand: the plane is an
+ * InstancedBufferGeometry with a per-column offset and time offset.
  */
 const SmokeColumns = props => {
   const { folderName, positions, defaults } = props;
 
   const defaultsRef = useRef(defaults);
 
-  // Per-column time offsets (hashed from each column's world position in
-  // the matrices effect below), read by the shader as an instance attribute
-  const { smokeMaterial, uniforms, timeOffsets } = useMemo(() => {
-    const uniforms = createSmokeUniforms(defaultsRef.current);
-    const timeOffsets = new THREE.InstancedBufferAttribute(
-      new Float32Array(positions.length),
-      1
+  // One instance per column: world offset + time offset (hashed from the
+  // column's world position), filled by the effect below
+  const { geometry, smokeMaterial, uniforms, columnScale } = useMemo(() => {
+    const geometry = new THREE.InstancedBufferGeometry().copy(
+      new THREE.PlaneGeometry(1, 10, 4, 16)
     );
+    geometry.instanceCount = positions.length;
+    geometry.setAttribute(
+      'aColumnOffset',
+      new THREE.InstancedBufferAttribute(
+        new Float32Array(positions.length * 3),
+        3
+      )
+    );
+    geometry.setAttribute(
+      'aTimeOffset',
+      new THREE.InstancedBufferAttribute(new Float32Array(positions.length), 1)
+    );
+
+    const uniforms = createSmokeUniforms(defaultsRef.current);
+    // (width, height / 10): the plane is 10 tall
+    const columnScale = uniform(new THREE.Vector2(1, 1));
     const smokeMaterial = createSmokeMaterial(
       uniforms,
-      instancedBufferAttribute(timeOffsets)
+      attribute('aTimeOffset', 'float'),
+      position =>
+        position
+          .mul(vec3(columnScale.x, columnScale.y, 1))
+          .add(attribute('aColumnOffset', 'vec3'))
     );
-    return { smokeMaterial, uniforms, timeOffsets };
+    return { geometry, smokeMaterial, uniforms, columnScale };
   }, []);
 
+  useEffect(() => () => geometry.dispose(), [geometry]);
   useEffect(() => () => smokeMaterial.dispose(), [smokeMaterial]);
 
   const numberUniform = (uniform, value, min, max, step) => ({
@@ -98,42 +113,26 @@ const SmokeColumns = props => {
   const { width, height } = controls;
   const offset = controls.offset ?? NO_OFFSET;
 
-  const instancedMeshRef = useRef(null);
-
   useEffect(() => {
-    const instancedMesh = instancedMeshRef.current;
-
-    INSTANCE_QUATERNION.identity();
-    INSTANCE_SCALE.set(width, height / 10, 1);
+    const columnOffsets = geometry.attributes.aColumnOffset;
+    const timeOffsets = geometry.attributes.aTimeOffset;
 
     positions.forEach(([x, y, z], index) => {
-      INSTANCE_POSITION.set(x + offset[0], y + offset[1], z + offset[2]);
-      timeOffsets.array[index] = smokeColumnTimeOffset(
-        INSTANCE_POSITION.x,
-        INSTANCE_POSITION.z
-      );
-      INSTANCE_MATRIX.compose(
-        INSTANCE_POSITION,
-        INSTANCE_QUATERNION,
-        INSTANCE_SCALE
-      );
-      instancedMesh.setMatrixAt(index, INSTANCE_MATRIX);
+      const columnX = x + offset[0];
+      const columnZ = z + offset[2];
+      columnOffsets.setXYZ(index, columnX, y + offset[1], columnZ);
+      timeOffsets.setX(index, smokeColumnTimeOffset(columnX, columnZ));
     });
-    instancedMesh.instanceMatrix.needsUpdate = true;
+    columnOffsets.needsUpdate = true;
     timeOffsets.needsUpdate = true;
-  }, [positions, width, height, offset, timeOffsets]);
+
+    columnScale.value.set(width, height / 10);
+  }, [positions, width, height, offset, geometry, columnScale]);
 
   return (
-    // Instances are spread across the map while the mesh sits at the
-    // origin, so default culling would be wrong
-    <instancedMesh
-      ref={instancedMeshRef}
-      args={[undefined, undefined, positions.length]}
-      material={smokeMaterial}
-      frustumCulled={false}
-    >
-      <planeGeometry args={[1, 10, 4, 16]} />
-    </instancedMesh>
+    // Columns are spread across the map while the mesh sits at the origin,
+    // so default culling would be wrong
+    <mesh geometry={geometry} material={smokeMaterial} frustumCulled={false} />
   );
 };
 
