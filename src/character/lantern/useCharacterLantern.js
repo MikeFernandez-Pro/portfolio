@@ -7,11 +7,14 @@ import LanternModel from '#assets/models/character/lantern.glb';
 import { useControls } from '#debug/useControls.jsx';
 import { IS_MOBILE_DEVICE } from '#utils/device.js';
 import { BODY_TYPE_FIXED as FIXED } from '#physics/PhysicsWorld.js';
-import { useLanternMaterial } from '#character/useLanternMaterial.js';
+import { attachToBoneInRootFrame } from '#character/boneAttachment.js';
+import { useLanternMaterial } from './useLanternMaterial.js';
+import { createLanternSwing } from './lanternSwing.js';
 import { pointLights } from '#islands/world/pointLights/pointLights.js';
 import { pointLightControls } from '#islands/world/pointLights/pointLightControls.js';
 
 const ATTACH_GROUP_NAME = 'lanternAttachGroup';
+// The character lantern mesh, as named in Blender
 const LANTERN_MESH_NAME = 'Cube';
 
 // Offsets measured in Blender against the exported character (character glb
@@ -32,23 +35,14 @@ const SWING_DEFAULTS = {
   smoothing: 12,
 };
 
-// Anything above this is a teleport, not gameplay (run start/stop velocity
-// snaps peak around |Δv|/dt ≈ 700 at 165Hz)
-const MAX_ACCEL = 2000;
-
 // Scratch vector for the per-frame light offset (no allocations)
 const LIGHT_OFFSET = new THREE.Vector3();
 
-const clampAngle = (value, limit) => Math.min(Math.max(value, -limit), limit);
-const wrapAngle = value => Math.atan2(Math.sin(value), Math.cos(value));
-
-// Hangs the lantern from the character's belt: a group parented under the
-// hips bone whose local matrix (boneInverse * bindMatrix) makes its frame
-// coincide with the character glb root frame at bind pose — so the offsets
-// measured in Blender apply verbatim and every rig scale oddity cancels.
-// A swing group at the lantern's top-loop origin adds damped pendulum motion
-// driven by the body's acceleration and turn rate.
-const useLanternAttachment = ({
+// Hangs the character lantern from the belt: a group welded to the hips in
+// the character root frame (attachToBoneInRootFrame), so the offsets
+// measured in Blender apply verbatim. A swing group at the lantern's
+// top-loop origin adds damped pendulum motion (createLanternSwing).
+const useCharacterLantern = ({
   scene,
   characterBody,
   characterMesh,
@@ -67,22 +61,9 @@ const useLanternAttachment = ({
     scale: TRANSFORM_DEFAULTS.scale,
   }).current;
   const swing = useRef({ ...SWING_DEFAULTS }).current;
-
-  // Pendulum state (scalars only, no per-frame allocations)
-  const sim = useRef({
-    initialized: false,
-    prevVelX: 0,
-    prevVelY: 0,
-    prevVelZ: 0,
-    accX: 0,
-    accY: 0,
-    accZ: 0,
-    prevYaw: 0,
-    angX: 0,
-    angZ: 0,
-    velX: 0,
-    velZ: 0,
-  }).current;
+  const pendulumRef = useRef(null);
+  if (!pendulumRef.current) pendulumRef.current = createLanternSwing(swing);
+  const pendulum = pendulumRef.current;
 
   const applyTransform = () => {
     const offsetGroup = offsetGroupRef.current;
@@ -96,39 +77,20 @@ const useLanternAttachment = ({
   };
 
   useLayoutEffect(() => {
-    const knight = scene.getObjectByName('knight');
-    // GLTFLoader strips ':' from node names: mixamorig:Hips -> mixamorigHips
-    let hips = scene.getObjectByName('mixamorigHips');
-    if (!hips) {
-      scene.traverse(object => {
-        if (!hips && object.isBone && /Hips$/.test(object.name)) hips = object;
-      });
-    }
-    if (!knight?.skeleton || !hips) return;
-
-    const boneIndex = knight.skeleton.bones.indexOf(hips);
-    if (boneIndex === -1) return;
-
-    // The mesh may still hang under a previous attach group (HMR remount)
+    // Look the mesh up first: it may still hang under a previous attach
+    // group (HMR remount), which attaching removes
     const mesh =
       lanternScene.getObjectByName(LANTERN_MESH_NAME) ??
       scene.getObjectByName(LANTERN_MESH_NAME);
     if (!mesh) return;
-    hips.getObjectByName(ATTACH_GROUP_NAME)?.removeFromParent();
 
-    // At bind pose hipsWorld * boneInverse * bindMatrix = character root, so
-    // this local matrix pins the root frame rigidly to the hips
-    const bindLocal = new THREE.Matrix4()
-      .copy(knight.skeleton.boneInverses[boneIndex])
-      .multiply(knight.bindMatrix);
-
-    const attachGroup = new THREE.Group();
-    attachGroup.name = ATTACH_GROUP_NAME;
-    bindLocal.decompose(
-      attachGroup.position,
-      attachGroup.quaternion,
-      attachGroup.scale
+    const attachment = attachToBoneInRootFrame(
+      scene,
+      'Hips',
+      ATTACH_GROUP_NAME
     );
+    if (!attachment) return;
+    const attachGroup = attachment.group;
 
     // The glb node ships with the Blender placement baked in; zero it out and
     // let the transform controls own it instead
@@ -145,12 +107,11 @@ const useLanternAttachment = ({
     swingGroup.add(mesh);
     offsetGroup.add(swingGroup);
     attachGroup.add(offsetGroup);
-    hips.add(attachGroup);
 
     offsetGroupRef.current = offsetGroup;
     swingGroupRef.current = swingGroup;
     lanternMeshRef.current = mesh;
-    sim.initialized = false;
+    pendulum.reset();
     applyTransform();
 
     return () => {
@@ -246,10 +207,10 @@ const useLanternAttachment = ({
     },
   });
 
-  // Fake point light following the lantern (BeltLanternLight debug folder)
+  // Point light following the lantern
   const light = pointLights.characterLantern;
   useControls(
-    'BeltLanternLight',
+    'CharacterLanternLight',
     pointLightControls(light, {
       offset: {
         value: light.defaults.offset,
@@ -269,7 +230,7 @@ const useLanternAttachment = ({
     const mesh = characterMesh.current;
     if (!swingGroup || !body || !mesh) return;
 
-    // Pin the fake light onto the lantern (world space). The offset control
+    // Pin the point light onto the lantern (world space). The offset control
     // is expressed in character space: rotated by the mesh yaw so "in front
     // of the belt" stays in front whichever way the character faces
     const lightPosition = pointLights.characterLantern.position;
@@ -282,75 +243,20 @@ const useLanternAttachment = ({
     const dt = Math.min(delta, 1 / 30);
     if (dt <= 0) return;
 
-    const velocity = body.linvel();
     // The mesh only ever yaws; euler.y folds past 90° so read the quaternion
     const q = mesh.quaternion;
     const yaw = 2 * Math.atan2(q.y, q.w);
-    const paused = body.bodyType() === FIXED;
+    const { angX, angZ } = pendulum.step(
+      dt,
+      body.linvel(),
+      yaw,
+      body.bodyType() === FIXED
+    );
 
-    if (paused || !sim.initialized) {
-      // Respawn teleports and pauses must not read as huge accelerations
-      sim.prevVelX = velocity.x;
-      sim.prevVelY = velocity.y;
-      sim.prevVelZ = velocity.z;
-      sim.accX = sim.accY = sim.accZ = 0;
-      sim.prevYaw = yaw;
-      sim.initialized = true;
-    }
-
-    let ax = (velocity.x - sim.prevVelX) / dt;
-    let ay = (velocity.y - sim.prevVelY) / dt;
-    let az = (velocity.z - sim.prevVelZ) / dt;
-    sim.prevVelX = velocity.x;
-    sim.prevVelY = velocity.y;
-    sim.prevVelZ = velocity.z;
-    if (ax * ax + ay * ay + az * az > MAX_ACCEL * MAX_ACCEL) {
-      ax = ay = az = 0;
-    }
-
-    // One-frame velocity snaps smooth into a frame-rate independent pulse
-    // (peak ≈ Δv * smoothing)
-    const blend = 1 - Math.exp(-swing.smoothing * dt);
-    sim.accX += (ax - sim.accX) * blend;
-    sim.accY += (ay - sim.accY) * blend;
-    sim.accZ += (az - sim.accZ) * blend;
-
-    const yawRate = wrapAngle(yaw - sim.prevYaw) / dt;
-    sim.prevYaw = yaw;
-
-    // World acceleration into the character's local frame
-    const cos = Math.cos(yaw);
-    const sin = Math.sin(yaw);
-    const localAX = cos * sim.accX - sin * sim.accZ;
-    const localAZ = sin * sim.accX + cos * sim.accZ;
-
-    // The lantern bottom lags opposite the acceleration; turning flings it
-    // sideways, vertical acceleration (jump/land) bobs it fore/aft
-    let targetX = 0;
-    let targetZ = 0;
-    if (!paused) {
-      targetX = clampAngle(
-        swing.influence * localAZ - swing.verticalInfluence * sim.accY,
-        swing.maxAngle
-      );
-      targetZ = clampAngle(
-        -swing.influence * localAX + swing.yawInfluence * yawRate,
-        swing.maxAngle
-      );
-    }
-
-    // Semi-implicit Euler damped spring
-    sim.velX +=
-      (swing.stiffness * (targetX - sim.angX) - swing.damping * sim.velX) * dt;
-    sim.velZ +=
-      (swing.stiffness * (targetZ - sim.angZ) - swing.damping * sim.velZ) * dt;
-    sim.angX = clampAngle(sim.angX + sim.velX * dt, swing.maxAngle);
-    sim.angZ = clampAngle(sim.angZ + sim.velZ * dt, swing.maxAngle);
-
-    swingGroup.rotation.set(sim.angX, 0, sim.angZ);
+    swingGroup.rotation.set(angX, 0, angZ);
   });
 };
 
 useGLTF.preload(LanternModel);
 
-export { useLanternAttachment };
+export { useCharacterLantern };

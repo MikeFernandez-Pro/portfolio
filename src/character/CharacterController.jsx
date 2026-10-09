@@ -16,7 +16,7 @@ import CharacterModel from '#assets/models/character/character.glb';
 import runningSoundEffect from '#character/runningSound.js';
 
 import { useCharacterMaterial } from '#character/useCharacterMaterial.js';
-import { useLanternAttachment } from '#character/useLanternAttachment.js';
+import { useCharacterLantern } from '#character/lantern/useCharacterLantern.js';
 import { useHeadOrb } from '#character/useHeadOrb.js';
 import { useCharacterBody } from '#character/hooks/useCharacterBody.js';
 import { useFallingClip } from '#character/hooks/useFallingClip.js';
@@ -83,7 +83,7 @@ const CharacterController = () => {
   const dissolve = useCharacterMaterial(scene);
 
   // Character lantern (attached to the hips bone, swings with movement)
-  useLanternAttachment({ scene, characterBody, characterMesh, dissolve });
+  useCharacterLantern({ scene, characterBody, characterMesh, dissolve });
 
   // Glowing orb inside the head
   useHeadOrb(scene, dissolve);

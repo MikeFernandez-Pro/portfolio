@@ -66,11 +66,11 @@ const FOLDER_TREE = {
   Character: {
     HeadOrb: null,
     Falling: null,
-    BeltLantern: {
+    CharacterLantern: {
       LanternTransform: null,
       LanternSwing: null,
       LanternColors: null,
-      BeltLanternLight: null,
+      CharacterLanternLight: null,
     },
   },
   Torches: {

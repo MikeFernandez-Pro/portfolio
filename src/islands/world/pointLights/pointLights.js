@@ -248,7 +248,7 @@ const pointLights = {
     decayPower: 2.55,
     specularPower: 1,
   }),
-  // Follows the character lantern: useLanternAttachment writes the position
+  // Follows the character lantern: useCharacterLantern writes the position
   // every frame from the lantern mesh, plus the offset setting
   characterLantern: createPointLight(characterLantern, {
     position: uniform(new THREE.Vector3()),

@@ -3,6 +3,7 @@ import * as THREE from 'three/webgpu';
 import { useFrame } from '@react-three/fiber';
 
 import { useControls } from '#debug/useControls.jsx';
+import { attachToBoneInRootFrame } from '#character/boneAttachment.js';
 
 const ORB_GROUP_NAME = 'headOrbGroup';
 
@@ -15,9 +16,8 @@ const ORB_DEFAULTS = {
 };
 
 // Glowing orb floating inside the character's head (visible through the
-// helmet openings). Same attachment trick as the belt lantern: a group under
-// the head bone whose local matrix (boneInverse * bindMatrix) reproduces the
-// character glb root frame, so the controls work in character units.
+// helmet openings). Welded to the head bone in the character root frame
+// (attachToBoneInRootFrame), so the controls work in character units.
 const useHeadOrb = (scene, dissolve) => {
   const orbRef = useRef(null);
   const groupRef = useRef(null);
@@ -37,35 +37,10 @@ const useHeadOrb = (scene, dissolve) => {
   };
 
   useLayoutEffect(() => {
-    const knight = scene.getObjectByName('knight');
-    // GLTFLoader strips ':' from node names: mixamorig:Head -> mixamorigHead
-    let head = scene.getObjectByName('mixamorigHead');
-    if (!head) {
-      scene.traverse(object => {
-        if (!head && object.isBone && /Head$/.test(object.name)) head = object;
-      });
-    }
-    if (!knight?.skeleton || !head) return;
-
-    const boneIndex = knight.skeleton.bones.indexOf(head);
-    if (boneIndex === -1) return;
-    head.getObjectByName(ORB_GROUP_NAME)?.removeFromParent();
-
-    // Character root frame welded to the head bone (see useLanternAttachment)
-    const bindLocal = new THREE.Matrix4()
-      .copy(knight.skeleton.boneInverses[boneIndex])
-      .multiply(knight.bindMatrix);
-
-    const attachGroup = new THREE.Group();
-    attachGroup.name = ORB_GROUP_NAME;
-    bindLocal.decompose(
-      attachGroup.position,
-      attachGroup.quaternion,
-      attachGroup.scale
-    );
-
-    // The head bone origin in root space is the inverse bind translation
-    baseRef.current.setFromMatrixPosition(bindLocal.clone().invert());
+    const attachment = attachToBoneInRootFrame(scene, 'Head', ORB_GROUP_NAME);
+    if (!attachment) return;
+    const attachGroup = attachment.group;
+    baseRef.current.copy(attachment.boneOrigin);
 
     const orb = new THREE.Mesh(
       new THREE.SphereGeometry(1, 24, 16, 0, Math.PI),
@@ -81,7 +56,6 @@ const useHeadOrb = (scene, dissolve) => {
     const group = new THREE.Group();
     group.add(orb);
     attachGroup.add(group);
-    head.add(attachGroup);
 
     orbRef.current = orb;
     groupRef.current = group;

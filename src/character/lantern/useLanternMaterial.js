@@ -36,7 +36,7 @@ const COLOR_DEFAULTS = {
 };
 
 // The lantern glb ships without a material. Build one mirroring the knight
-// (dissolve + cloud shadow / island point light patches) on the knight's
+// (dissolve + cloud shadow / point light patches) on the knight's
 // dissolve uniform nodes: the respawn timeline tweens those, so the lantern
 // dissolves/reforms in sync with the character for free.
 const useLanternMaterial = (characterScene, lanternMeshRef, shared) => {
