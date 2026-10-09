@@ -10,6 +10,7 @@ import { Howler } from 'howler';
 import * as THREE from 'three/webgpu';
 
 import { IS_MOBILE_DEVICE, IS_PHOTO_MODE, MAX_DPR } from '#utils/utils.js';
+import { DEBUG_ENABLED } from '#utils/debug.js';
 import { prefersReducedMotion } from '#utils/reducedMotion.js';
 
 import soundOnIcon from '/icons/sound-on.svg';
@@ -140,6 +141,8 @@ const App = () => {
           antialias: false,
           toneMapping: THREE.NoToneMapping,
           shadows: IS_MOBILE_DEVICE ? false : 'variance',
+          // GPU timing for the debug perf panel (timestamp queries)
+          trackTimestamp: DEBUG_ENABLED && !IS_PHOTO_MODE,
         }}
         // R3F 10 canary leaves state.gl null under WebGPU (its getter is
         // flattened by the first store update), and drei 11 still reads it

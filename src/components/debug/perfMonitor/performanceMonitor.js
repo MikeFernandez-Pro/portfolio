@@ -1,4 +1,4 @@
-import { GpuTimer } from './gpuTimer.js';
+import { GpuTimer, WebGpuTimer } from './gpuTimer.js';
 import { RingBuffer } from './ringBuffer.js';
 
 const DEFAULT_GPU_POOL_SIZE = 5;
@@ -11,9 +11,10 @@ const FPS_SMOOTHING = 0.1;
  * frame with begin()/end(); read the latest values with getSample() and
  * per-frame graph history with getHistory().
  *
- * Depends only on a `THREE.WebGLRenderer` plus optionally-present WebGL
- * extensions — never on the host app. GPU timing degrades to
- * `available: false` when the timer-query extension is absent.
+ * Depends only on a three.js renderer — never on the host app. GPU timing
+ * comes from the timer-query extension on a WebGLRenderer, or the timestamp
+ * queries of a WebGPURenderer created with `trackTimestamp: true`; it
+ * degrades to `available: false` otherwise.
  */
 export class PerformanceMonitor {
   constructor(options) {
@@ -45,8 +46,11 @@ export class PerformanceMonitor {
       this.originalRender.call(renderer, scene, camera);
     };
 
-    const gl = renderer.getContext();
-    this.gpuTimer = trackGPU ? GpuTimer.create(gl, gpuQueryPoolSize) : null;
+    this.gpuTimer = !trackGPU
+      ? null
+      : renderer.isWebGPURenderer
+        ? WebGpuTimer.create(renderer)
+        : GpuTimer.create(renderer.getContext(), gpuQueryPoolSize);
 
     this.fpsHistory = new RingBuffer(historySize);
     this.cpuHistory = new RingBuffer(historySize);
@@ -102,7 +106,8 @@ export class PerformanceMonitor {
       cpu,
       gpu: { ms: gpuMs, available: this.gpuTimer !== null },
       render: {
-        calls: info.render.calls,
+        // WebGPURenderer: drawCalls is per frame (calls is cumulative)
+        calls: info.render.drawCalls ?? info.render.calls,
         triangles: info.render.triangles,
         lines: info.render.lines,
         points: info.render.points,
@@ -111,7 +116,7 @@ export class PerformanceMonitor {
       resources: {
         geometries: info.memory.geometries,
         textures: info.memory.textures,
-        programs: info.programs?.length ?? 0,
+        programs: info.memory.programs ?? info.programs?.length ?? 0,
       },
     });
   }

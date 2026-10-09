@@ -140,3 +140,61 @@ export class GpuTimer {
     this.pending.length = 0;
   }
 }
+
+/**
+ * GPU frame timing for three's WebGPURenderer (either backend), through its
+ * timestamp queries: the renderer must be created with
+ * `trackTimestamp: true`. `resolveTimestampsAsync()` returns the GPU time of
+ * every render pass since the previous resolve, a few frames late; while one
+ * resolve is in flight the frames keep accumulating, so the result is
+ * divided by the number of frames it covers.
+ */
+export class WebGpuTimer {
+  constructor(renderer) {
+    this.renderer = renderer;
+    this.resolving = false;
+    this.framesSinceResolve = 0;
+    this.lastMs = 0;
+  }
+
+  /** Timer for a WebGPURenderer tracking timestamps, else null. */
+  static create(renderer) {
+    return renderer.isWebGPURenderer && renderer.backend?.trackTimestamp
+      ? new WebGpuTimer(renderer)
+      : null;
+  }
+
+  // The render passes are timed by the renderer itself
+  begin() {}
+
+  end() {
+    this.framesSinceResolve++;
+  }
+
+  /** Kicks a resolve when none is in flight. */
+  poll() {
+    if (this.resolving || !this.renderer) return;
+
+    const frames = this.framesSinceResolve;
+    this.framesSinceResolve = 0;
+    this.resolving = true;
+
+    this.renderer
+      .resolveTimestampsAsync('render')
+      .then(ms => {
+        if (typeof ms === 'number' && frames > 0) this.lastMs = ms / frames;
+      })
+      .finally(() => {
+        this.resolving = false;
+      });
+  }
+
+  /** Last resolved GPU frame time in ms. */
+  getMs() {
+    return this.lastMs;
+  }
+
+  dispose() {
+    this.renderer = null;
+  }
+}
