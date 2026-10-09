@@ -1,12 +1,13 @@
 import React from 'react';
-import { Cloud, Clouds as CloudsGroup } from '@react-three/drei';
-import * as THREE from 'three';
+import { Cloud, Clouds as CloudsGroup } from '@react-three/drei/webgpu';
+import * as THREE from 'three/webgpu';
 
 // drei 10 keeps volume at 6 (puff thickness) but defaults growth to 4 and
 // MeshLambertMaterial. Combined with this scene's lighting/ACES that reads
 // thicker than drei 9: growth is cut to 3.5 and the puffs use
 // MeshStandardMaterial (softer response to the directional light) so they
-// stay sprite-like.
+// stay sprite-like. Node material: drei 11's cloud factory multiplies the
+// per-puff opacity into opacityNode, which a classic material ignores.
 const CLOUD = {
   speed: 0.1,
   volume: 6,
@@ -15,7 +16,7 @@ const CLOUD = {
 
 const Clouds = () => {
   return (
-    <CloudsGroup position-z={6.5} material={THREE.MeshStandardMaterial}>
+    <CloudsGroup position-z={6.5} material={THREE.MeshStandardNodeMaterial}>
       <Cloud
         {...CLOUD}
         position={[10, 13, 1]}

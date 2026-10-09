@@ -84,10 +84,10 @@ diffuseColor.rgb *= uFlagTint;`
     return material;
   }, [baseMaterial, country]);
 
-  useFrame(({ clock }) => {
+  useFrame(({ elapsed }) => {
     // Reduced motion: frozen time = a fixed billow instead of the flutter
     if (REDUCED_MOTION_AT_LOAD) return;
-    countryFlagShaderMaterial.uniforms.uTime.value = clock.elapsedTime;
+    countryFlagShaderMaterial.uniforms.uTime.value = elapsed;
   });
 
   return (

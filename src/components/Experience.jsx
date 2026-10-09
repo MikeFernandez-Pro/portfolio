@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
-import { GradientTexture, OrbitControls, StatsGl } from '@react-three/drei';
+import { OrbitControls, StatsGl } from '@react-three/drei/webgpu';
 import { Howl } from 'howler';
 import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
@@ -13,6 +13,7 @@ import RespawnControls from '#controller/RespawnControls.jsx';
 import Sky from '#environment/Sky.jsx';
 import Lights from '#environment/Lights.jsx';
 import Clouds from '#environment/Clouds.jsx';
+import { SkyGradient } from '#environment/SkyGradient.jsx';
 import { CloudShadows } from '#environment/CloudShadows.jsx';
 import { WindLines } from '#environment/WindLines.jsx';
 import Islands from '#islands/Islands.jsx';
@@ -202,16 +203,10 @@ const Experience = () => {
       <Grass />
       <Spiral />
       <Islands />
-      <mesh>
-        <sphereGeometry args={[125]} />
-        <meshBasicMaterial side={THREE.BackSide}>
-          <GradientTexture
-            stops={skyStops}
-            colors={[controls.bottomColor, controls.topColor]}
-            size={1024}
-          />
-        </meshBasicMaterial>
-      </mesh>
+      <SkyGradient
+        stops={skyStops}
+        colors={[controls.bottomColor, controls.topColor]}
+      />
       {/* Custom capsule-vs-BVH physics (src/physics): these register the
           island collider, the sensor zones and the character body; the
           world steps from a useFrame inside CharacterController */}

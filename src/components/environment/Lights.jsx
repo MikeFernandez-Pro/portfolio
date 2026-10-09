@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { PerspectiveCamera } from '@react-three/drei';
+import { PerspectiveCamera } from '@react-three/drei/webgpu';
 import { OrbitControls as OrbitControlsImpl } from 'three/examples/jsm/controls/OrbitControls.js';
 import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
@@ -18,7 +18,7 @@ const ShadowDebugView = ({ lightRef, enabled }) => {
   const helpersRef = useRef([]);
   const mainCamera = useThree(state => state.camera);
   const scene = useThree(state => state.scene);
-  const gl = useThree(state => state.gl);
+  const gl = useThree(state => state.renderer);
 
   useLayoutEffect(() => {
     if (!enabled || !debugCameraRef.current) return;
@@ -79,8 +79,9 @@ const ShadowDebugView = ({ lightRef, enabled }) => {
     helpersRef.current.forEach(helper => helper.update?.());
   });
 
-  // Draw the scene from the debug camera after R3F/postprocessing use the main cam
-  useFrame(({ gl: renderer, scene: world, size }) => {
+  // Draw the scene from the debug camera after the post-processing used the
+  // main cam
+  useFrame(({ renderer, scene: world, size }) => {
     if (!enabled || !debugCameraRef.current) return;
 
     orbitControlsRef.current?.update();
@@ -90,7 +91,7 @@ const ShadowDebugView = ({ lightRef, enabled }) => {
     renderer.setScissorTest(false);
     renderer.clear(true, true, true);
     renderer.render(world, debugCameraRef.current);
-  }, 1);
+  }, { phase: 'render', after: 'postProcessing' });
 
   if (!enabled) return null;
 

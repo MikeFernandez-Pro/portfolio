@@ -350,14 +350,14 @@ const Cauldron = props => {
     { collapsed: true }
   );
 
-  useFrame(({ clock, size, viewport }, delta) => {
+  useFrame(({ elapsed, size, viewport }, delta) => {
     island.nodes.pot.rotation.y += delta * SPEED;
 
     if (portalMaterialRef.current?.uniforms) {
-      portalMaterialRef.current.uniforms.uTime.value = clock.elapsedTime;
+      portalMaterialRef.current.uniforms.uTime.value = elapsed;
     }
 
-    bubblesMaterial.uniforms.uTime.value = clock.elapsedTime;
+    bubblesMaterial.uniforms.uTime.value = elapsed;
     bubblesMaterial.uniforms.uResolution.value.set(
       size.width * viewport.dpr,
       size.height * viewport.dpr

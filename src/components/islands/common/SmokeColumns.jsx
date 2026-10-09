@@ -102,8 +102,8 @@ const SmokeColumns = props => {
   const { width, height } = controls;
   const offset = controls.offset ?? NO_OFFSET;
 
-  useFrame(({ clock }) => {
-    smokeMaterial.uniforms.uTime.value = clock.elapsedTime;
+  useFrame(({ elapsed }) => {
+    smokeMaterial.uniforms.uTime.value = elapsed;
   });
 
   const instancedMeshRef = useRef(null);

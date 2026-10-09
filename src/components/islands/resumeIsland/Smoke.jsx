@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { extend, useFrame } from '@react-three/fiber';
-import { shaderMaterial } from '@react-three/drei';
+import { shaderMaterial } from '@react-three/drei/legacy';
 import * as THREE from 'three';
 
 import smokeVertexShader from '#shaders/smoke/vertex.glsl';
@@ -27,8 +27,8 @@ const Smoke = () => {
 
   extend({ SmokeShaderMaterial });
 
-  useFrame(({ clock }) => {
-    smokeRef.current.uniforms.uTime.value = clock.elapsedTime;
+  useFrame(({ elapsed }) => {
+    smokeRef.current.uniforms.uTime.value = elapsed;
   });
 
   return (

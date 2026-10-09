@@ -1,6 +1,6 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useGLTF, Instances, Instance } from '@react-three/drei';
+import { useGLTF, Instances, Instance } from '@react-three/drei/webgpu';
 import CustomShaderMaterial from 'three-custom-shader-material';
 import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
@@ -253,32 +253,32 @@ const Well = () => {
     []
   );
 
-  useFrame(({ clock }) => {
+  useFrame(({ elapsed }) => {
     // Well
-    wellShaderMaterialRef.current.uniforms.uTime.value = clock.elapsedTime;
+    wellShaderMaterialRef.current.uniforms.uTime.value = elapsed;
 
     // Fish tail wiggle
-    fishShaderMaterialRef.current.uniforms.uTime.value = clock.elapsedTime;
+    fishShaderMaterialRef.current.uniforms.uTime.value = elapsed;
 
     // Big fish
     const bigAmplitude = BIG_FISH_AMPLITUDE * controls.fishMovementStrength;
     bigFishRef.current.rotation.y =
-      -clock.elapsedTime * FISHES_SPEED - Math.PI / 2;
+      -elapsed * FISHES_SPEED - Math.PI / 2;
     bigFishRef.current.position.x =
-      Math.sin(-clock.elapsedTime * FISHES_SPEED) * bigAmplitude;
+      Math.sin(-elapsed * FISHES_SPEED) * bigAmplitude;
     bigFishRef.current.position.z =
-      Math.cos(-clock.elapsedTime * FISHES_SPEED) * bigAmplitude;
+      Math.cos(-elapsed * FISHES_SPEED) * bigAmplitude;
 
     // Small fish
     const smallAmplitude = SMALL_FISH_AMPLITUDE * controls.fishMovementStrength;
     smallFishRef.current.rotation.y =
-      -clock.elapsedTime * FISHES_SPEED + SMALL_FISH_OFFSET - Math.PI / 2;
+      -elapsed * FISHES_SPEED + SMALL_FISH_OFFSET - Math.PI / 2;
 
     smallFishRef.current.position.x =
-      Math.sin(-clock.elapsedTime * FISHES_SPEED + SMALL_FISH_OFFSET) *
+      Math.sin(-elapsed * FISHES_SPEED + SMALL_FISH_OFFSET) *
       smallAmplitude;
     smallFishRef.current.position.z =
-      Math.cos(-clock.elapsedTime * FISHES_SPEED + SMALL_FISH_OFFSET) *
+      Math.cos(-elapsed * FISHES_SPEED + SMALL_FISH_OFFSET) *
       smallAmplitude;
   });
 

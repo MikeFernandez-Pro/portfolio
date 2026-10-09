@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { extend } from '@react-three/fiber';
-import { shaderMaterial } from '@react-three/drei';
+import { shaderMaterial } from '@react-three/drei/legacy';
 import * as THREE from 'three';
 
 import sparksVertexShader from '#shaders/sparks/vertex.glsl';

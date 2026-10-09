@@ -43,13 +43,11 @@ export const IS_PHOTO_MODE = window.location.hash === "#photo";
 // sweet spot. Slow machines drop to 1 through <PerformanceMonitor> (App.jsx)
 export const MAX_DPR = 1.5;
 
-// Antialiasing: SMAA only (ULTRA, depth predication, after tone mapping).
-// Desktop used to add 4x MSAA on the HDR composer buffer for sub-pixel
-// geometry (grass blades, lantern struts), but WebGL's persistent-contents
-// semantics keep ANGLE Metal from resolving MSAA in tile memory: it spills
-// and reloads the full multisampled RGBA16F attachment around every pass
-// that touches it — measured ~120ms/frame on an M3 Max. The Tweakpane
-// "Antialiasing" msaa control still switches it live for A/B. If MSAA comes
-// back: varyings on thin geometry must be `centroid` or MSAA extrapolates
-// them past their vertex range (see characterLantern and grass shaders).
-export const COMPOSER_MSAA = 0;
+// Antialiasing: 4x MSAA on the scene pass (desktop) + SMAA after tone
+// mapping. Under WebGL, MSAA was dropped: its persistent-contents semantics
+// kept ANGLE Metal from resolving in tile memory (~120ms/frame spill/reload on
+// an M3 Max). WebGPU resolves in the render pass, so it is cheap again.
+// Mobile stays SMAA-only. The Tweakpane "Antialiasing" msaa control rebuilds
+// the pipeline for A/B. Varyings on thin geometry must be centroid-sampled or
+// MSAA extrapolates them past their vertex range (lantern, grass).
+export const COMPOSER_MSAA = IS_MOBILE_DEVICE ? 0 : 4;

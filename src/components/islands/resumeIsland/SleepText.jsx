@@ -192,7 +192,7 @@ const SleepText = () => {
         letter.position.x =
           BASE_POSITION[0] +
           swayAmplitude *
-            Math.sin(swayFrequency * state.clock.elapsedTime + i * 3);
+            Math.sin(swayFrequency * state.elapsed + i * 3);
       }
     }
   });

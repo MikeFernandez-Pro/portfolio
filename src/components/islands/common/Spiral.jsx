@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { useGLTF } from '@react-three/drei';
+import { useGLTF } from '@react-three/drei/webgpu';
 import * as THREE from 'three';
 
 import spiralVertexShader from '#shaders/spiral/vertex.glsl';

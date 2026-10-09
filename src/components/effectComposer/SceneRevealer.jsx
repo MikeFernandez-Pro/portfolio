@@ -1,81 +1,116 @@
-import { useEffect, useMemo } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
-import { Effect } from 'postprocessing';
+import { useEffect } from 'react';
+import { useFrame } from '@react-three/fiber';
+import {
+  Fn,
+  If,
+  PI,
+  abs,
+  float,
+  fwidth,
+  length,
+  max,
+  sin,
+  smoothstep,
+  uniform,
+  uv,
+  vec2,
+  vec3,
+  vec4,
+} from 'three/tsl';
 import gsap from 'gsap';
-import * as THREE from 'three';
 
-import sceneRevealerFragmentShader from '#shaders/sceneRevealer/fragment.glsl';
+import { snoise } from '#shaders/includes/simplexNoise3d.js';
+import { rotate2d } from '#shaders/includes/rotate2d.js';
 
 import { IS_PHOTO_MODE } from '#utils/utils.js';
 import { prefersReducedMotion } from '#utils/reducedMotion.js';
 
-class sceneRevealerEffect extends Effect {
-  constructor(aspectRatio) {
-    super('sceneRevealerEffect', sceneRevealerFragmentShader, {
-      uniforms: new Map([
-        ['progress', new THREE.Uniform(-0.1)],
-        ['size', new THREE.Uniform(15)],
-        ['aspectRatio', new THREE.Uniform(aspectRatio)],
-        ['uTime', new THREE.Uniform(0)],
-      ]),
+// Closed iris before the loading peek
+const INITIAL_PROGRESS = -0.1;
+// Fully open past this progress: the mask is skipped
+const REVEALED_PROGRESS = 1.5;
+
+/**
+ * Noisy iris mask over the final image. `progress` is the iris radius (the
+ * intro tweens it); `aspectRatio` is width / height.
+ */
+const createSceneRevealer = () => {
+  const uniforms = {
+    progress: uniform(IS_PHOTO_MODE ? REVEALED_PROGRESS : INITIAL_PROGRESS),
+    size: uniform(15),
+    aspectRatio: uniform(1),
+    time: uniform(0),
+  };
+
+  const apply = Fn(([inputColor]) => {
+    const outputColor = vec4(inputColor).toVar();
+
+    // Uniform branch: free once the scene is fully revealed
+    If(uniforms.progress.lessThan(REVEALED_PROGRESS), () => {
+      const centered = uv().sub(0.5);
+      const centeredUv = vec2(centered.x, centered.y.div(uniforms.aspectRatio));
+
+      const safeProgress = max(abs(uniforms.progress), 1e-5);
+      const distanceToCenter = length(centeredUv.div(safeProgress));
+
+      const rotatedUv = rotate2d(sin(uniforms.progress).mul(PI)).mul(centeredUv);
+
+      const perlinNoise = snoise(
+        vec3(rotatedUv.mul(uniforms.size), uniforms.time.mul(0.15))
+      );
+
+      // Pixel-width AA on the radial field only — fwidth(noise) is unstable
+      // and turns the contour into stairs
+      const shape = distanceToCenter.sub(uniforms.progress);
+      const w = max(fwidth(shape), 1e-5);
+      const mask = float(1).sub(
+        smoothstep(w.negate(), w, shape.sub(perlinNoise.mul(0.1)))
+      );
+
+      outputColor.assign(vec4(max(inputColor.rgb, 0), inputColor.a).mul(mask));
     });
-  }
-}
-const SceneRevealer = props => {
-  const { sceneRevealerRef } = props;
 
-  const aspectRatio = useThree(state => state.viewport.aspect);
+    return outputColor;
+  });
 
-  const effect = useMemo(() => new sceneRevealerEffect(aspectRatio), []);
+  return { apply, uniforms };
+};
+
+const useSceneRevealer = (revealer, aspectRatio) => {
+  const { uniforms } = revealer;
 
   useEffect(() => {
-    // Photo mode: no intro sequence — the scene starts fully revealed
-    if (IS_PHOTO_MODE) {
-      effect.uniforms.get('progress').value = 1.5;
-      effect.enabled = false;
-      return;
-    }
+    // Photo mode: no intro sequence — the scene starts fully revealed.
+    // A pipeline rebuild (MSAA switch) carries the progress over: no replay
+    if (IS_PHOTO_MODE || uniforms.progress.value !== INITIAL_PROGRESS) return;
 
     // Reduced motion: open the loading peek without the iris animation
     if (prefersReducedMotion()) {
-      effect.uniforms.get('progress').value = 0.35;
+      uniforms.progress.value = 0.35;
       return;
     }
 
-    let sceneRevealerAnimation = gsap.to(
-      sceneRevealerRef.current?.uniforms.get('progress'),
-      {
-        value: 0.35,
-        duration: 1,
-        delay: 0.5,
-        ease: 'circ.out',
-      }
-    );
+    const sceneRevealerAnimation = gsap.to(uniforms.progress, {
+      value: 0.35,
+      duration: 1,
+      delay: 0.5,
+      ease: 'circ.out',
+    });
 
     return () => {
       sceneRevealerAnimation.kill();
-      sceneRevealerAnimation = null;
     };
-  }, []);
+  }, [uniforms]);
 
-  // The useThree selector re-renders on resize; no need to write the aspect
-  // ratio per frame
+  // Resize-only uniform
   useEffect(() => {
-    effect.uniforms.get('aspectRatio').value = aspectRatio;
-  }, [effect, aspectRatio]);
+    uniforms.aspectRatio.value = aspectRatio;
+  }, [uniforms, aspectRatio]);
 
-  useFrame(({ clock }) => {
-    const fx = sceneRevealerRef.current;
-    if (!fx?.enabled) return;
-    // Fully open: the pass is a no-op, drop it
-    if (fx.uniforms.get('progress').value >= 1.5) {
-      fx.enabled = false;
-      return;
-    }
-    fx.uniforms.get('uTime').value = clock.elapsedTime;
+  useFrame(({ elapsed }) => {
+    if (uniforms.progress.value >= REVEALED_PROGRESS) return;
+    uniforms.time.value = elapsed;
   });
-
-  return <primitive ref={sceneRevealerRef} object={effect} />;
 };
 
-export { SceneRevealer };
+export { createSceneRevealer, useSceneRevealer };

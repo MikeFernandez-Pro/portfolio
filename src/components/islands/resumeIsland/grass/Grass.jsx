@@ -516,8 +516,8 @@ const Grass = () => {
     grassMaterial,
   ]);
 
-  useFrame(({ clock }, delta) => {
-    grassMaterial.uniforms.uTime.value = clock.elapsedTime;
+  useFrame(({ elapsed }, delta) => {
+    grassMaterial.uniforms.uTime.value = elapsed;
 
     // The whole trample pipeline (simulation + texture upload) is off on
     // mobile, where the shader compiles without USE_TRAMPLE anyway

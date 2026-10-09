@@ -357,7 +357,7 @@ const FloatingSkillsTextPrototype = props => {
   });
 
   useFrame(state => {
-    material.uniforms.uTime.value = state.clock.elapsedTime;
+    material.uniforms.uTime.value = state.elapsed;
   });
 
   return (

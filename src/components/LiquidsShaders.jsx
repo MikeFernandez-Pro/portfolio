@@ -42,9 +42,9 @@ const LiquidsShaders = ({ well, cauldron }) => {
     cauldron.material = cauldronShaderMaterial;
   }, []);
 
-  useFrame(({ clock }) => {
-    well.material.uniforms.uTime.value = clock.elapsedTime;
-    cauldron.material.uniforms.uTime.value = clock.elapsedTime;
+  useFrame(({ elapsed }) => {
+    well.material.uniforms.uTime.value = elapsed;
+    cauldron.material.uniforms.uTime.value = elapsed;
   });
 };
 

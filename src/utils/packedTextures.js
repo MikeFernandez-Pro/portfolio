@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
-import { useKTX2, useTexture } from '@react-three/drei';
+import { useLoader } from '@react-three/fiber';
+import { useKTX2 } from '@react-three/drei/webgpu';
 
 import spiralGrassHeightUrl from '#assets/textures/spiral-grassHeight.ktx2';
 import voronoiPerlinUrl from '#assets/textures/voronoi-perlin.ktx2';
@@ -78,9 +79,10 @@ const useSpiralGrassHeightTexture = () =>
 const useVoronoiPerlinTexture = () =>
   useConfiguredKtx2(voronoiPerlinUrl, configureVoronoiPerlin);
 
-// useTexture caches by URL like useKTX2, so consumers share one instance
+// useLoader caches by URL like useKTX2, so consumers share one instance.
+// Not drei's useTexture: drei 11 reads state.gl, null under R3F 10 WebGPU
 const usePerlinCloudsTexture = () => {
-  const texture = useTexture(perlinCloudsUrl);
+  const texture = useLoader(THREE.TextureLoader, perlinCloudsUrl);
   useMemo(() => configurePerlinClouds(texture), [texture]);
   return texture;
 };

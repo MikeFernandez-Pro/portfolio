@@ -91,7 +91,7 @@ const FloatingSkills = props => {
   useFrame(
     state =>
       (floatingSkillsShaderMaterial.uniforms.uTime.value =
-        state.clock.elapsedTime)
+        state.elapsed)
   );
 
   return (

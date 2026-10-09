@@ -1,6 +1,5 @@
 import { useMemo, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { useTexture } from '@react-three/drei';
+import { useFrame, useLoader } from '@react-three/fiber';
 import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
 
@@ -19,7 +18,7 @@ const CauldronSmoke = props => {
 
   const defaultsRef = useRef(defaults);
 
-  const smokeTexture = useTexture(smokeUrl);
+  const smokeTexture = useLoader(THREE.TextureLoader, smokeUrl);
   useMemo(() => {
     smokeTexture.colorSpace = THREE.NoColorSpace;
     smokeTexture.wrapS = THREE.RepeatWrapping;
@@ -135,8 +134,8 @@ const CauldronSmoke = props => {
     { collapsed: true, reset: true }
   );
 
-  useFrame(({ clock }) => {
-    smokeMaterial.uniforms.uTime.value = clock.elapsedTime;
+  useFrame(({ elapsed }) => {
+    smokeMaterial.uniforms.uTime.value = elapsed;
   });
 
   return (

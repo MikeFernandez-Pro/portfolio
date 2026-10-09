@@ -1,6 +1,6 @@
 import { useMemo, useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Circle } from '@react-three/drei';
+import { Circle } from '@react-three/drei/webgpu';
 import { useControls } from '#utils/useControls.jsx';
 import { Howl } from 'howler';
 import gsap from 'gsap';
@@ -505,14 +505,14 @@ const ProjectsPortals = props => {
     };
   }, [portalShaderMaterial, portalSoundEffect]);
 
-  useFrame(({ clock, size, viewport }, delta) => {
+  useFrame(({ elapsed, size, viewport }, delta) => {
     // Hidden until the first plate press (the activePlate subscription flips
     // the visibility): skip the rotation and the whole uniform feed. The
     // portal light is initialized off, so it waits too.
     if (!portal.visible) return;
 
     portal.rotation.y += delta * 0.15;
-    portalShaderMaterial.uniforms.uTime.value = clock.elapsedTime;
+    portalShaderMaterial.uniforms.uTime.value = elapsed;
 
     // Sparks grow in with the very first portal opening, then the ratchet
     // keeps them at full strength: re-pressing a plate replays the disc
@@ -526,7 +526,7 @@ const ProjectsPortals = props => {
       )
     );
 
-    portalSparksMaterial.uniforms.uTime.value = clock.elapsedTime;
+    portalSparksMaterial.uniforms.uTime.value = elapsed;
     portalSparksMaterial.uniforms.uOpenFactor.value = openFactor;
     // The island point light follows the same ratchet: off until the first
     // opening, full strength forever after

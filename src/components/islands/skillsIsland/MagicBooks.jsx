@@ -214,7 +214,7 @@ const MagicBooks = props => {
   useFrame(state => {
     const u = magicBooksShaderMaterial.uniforms;
     if (u.uProgress.value > 0 && u.uLavaOpacity.value > 0) {
-      u.uTime.value = state.clock.elapsedTime;
+      u.uTime.value = state.elapsed;
     }
   });
 

@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react';
-import { useGLTF } from '@react-three/drei';
+import { useGLTF } from '@react-three/drei/webgpu';
 import * as THREE from 'three';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 

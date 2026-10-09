@@ -174,12 +174,12 @@ const CloudShadows = () => {
     { collapsed: true }
   );
 
-  useFrame(({ clock }) => {
+  useFrame(({ elapsed }) => {
     // The shader ignores everything when disabled; skip the feed too.
     // Reduced motion: freeze the time - static dapples instead of drift
     if (REDUCED_MOTION_AT_LOAD) return;
     if (cloudShadowUniforms.uCloudShadowEnabled.value === 0) return;
-    cloudShadowUniforms.uCloudShadowTime.value = clock.elapsedTime;
+    cloudShadowUniforms.uCloudShadowTime.value = elapsed;
   });
 
   return null;

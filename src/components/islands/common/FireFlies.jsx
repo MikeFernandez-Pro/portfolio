@@ -1,6 +1,6 @@
 import { useEffect, useRef, useMemo } from 'react';
 import { extend, useFrame, useThree } from '@react-three/fiber';
-import { shaderMaterial } from '@react-three/drei';
+import { shaderMaterial } from '@react-three/drei/legacy';
 import { useControls } from '#utils/useControls.jsx';
 import * as THREE from 'three';
 
@@ -117,9 +117,9 @@ const FireFlies = () => {
     );
   }, [width, height, pixelRatio]);
 
-  useFrame(({ clock }) => {
+  useFrame(({ elapsed }) => {
     firefliesRef.current.uniforms.uTime.value =
-      clock.elapsedTime * FIREFLIES_TIME_SCALE;
+      elapsed * FIREFLIES_TIME_SCALE;
   });
 
   return (

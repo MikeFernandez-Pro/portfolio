@@ -333,10 +333,10 @@ const WindLines = () => {
   // The streaks are pure drifting motion - off entirely under reduced motion
   const enabled = controls.enabled && !REDUCED_MOTION_AT_LOAD;
 
-  useFrame(({ clock }) => {
+  useFrame(({ elapsed }) => {
     // The mesh is hidden when disabled; no point animating it
     if (!enabled) return;
-    uniforms.uTime.value = clock.elapsedTime;
+    uniforms.uTime.value = elapsed;
   });
 
   return (

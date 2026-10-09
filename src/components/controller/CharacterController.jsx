@@ -1,6 +1,6 @@
 import { useRef, useCallback, useEffect, useLayoutEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useGLTF, useAnimations } from '@react-three/drei';
+import { useGLTF, useAnimations } from '@react-three/drei/webgpu';
 import gsap from 'gsap';
 import * as THREE from 'three';
 
@@ -381,7 +381,7 @@ const CharacterController = () => {
   useFrame((state, delta) => {
     const dissolveUniforms = useStore.getState().characterRespawnUniforms;
     if (dissolveUniforms?.uTime) {
-      dissolveUniforms.uTime.value = state.clock.elapsedTime;
+      dissolveUniforms.uTime.value = state.elapsed;
     }
 
     // Debug falling preview: whole controller suspended while tweaking

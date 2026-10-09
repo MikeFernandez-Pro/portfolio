@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useGLTF } from '@react-three/drei';
+import { useGLTF } from '@react-three/drei/webgpu';
 
 import { buildWorldSpaceBvh } from '#physics/buildBvh.js';
 import { physicsWorld } from '#physics/world.js';

@@ -136,10 +136,10 @@ const Experience = () => {
     []
   );
 
-  useFrame(({ clock }) => {
+  useFrame(({ elapsed }) => {
     // Reduced motion: frozen time = static star sizes, no twinkle
     if (REDUCED_MOTION_AT_LOAD) return;
-    fireworksMaterial.uniforms.uTime.value = clock.elapsedTime;
+    fireworksMaterial.uniforms.uTime.value = elapsed;
   });
 
   return (

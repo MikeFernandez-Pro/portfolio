@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useAnimations, useGLTF } from '@react-three/drei';
+import { useAnimations, useGLTF } from '@react-three/drei/webgpu';
 import * as THREE from 'three';
 
 import butterflyModel from '#assets/models/island/butterfly.glb?url';
@@ -16,11 +16,11 @@ const Butterfly = props => {
     actions.Fly?.play();
   }, [actions.Fly]);
 
-  useFrame(({ clock }) => {
+  useFrame(({ elapsed }) => {
     if (group.current) {
       // Reduced motion: hold the t=0 pose - it hovers (wings still flap)
       // instead of circling the island
-      const t = REDUCED_MOTION_AT_LOAD ? 0 : clock.getElapsedTime();
+      const t = REDUCED_MOTION_AT_LOAD ? 0 : elapsed;
       group.current.position.x = Math.sin(t) + position[0];
       group.current.position.z = Math.cos(t) + position[2];
       group.current.position.y = Math.sin(t) * 0.5 + position[1];

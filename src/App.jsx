@@ -1,18 +1,13 @@
 import { useState, Suspense, useRef, useEffect, useCallback } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber/webgpu';
 import Experience from './components/Experience.jsx';
-import {
-  AdaptiveDpr,
-  Bvh,
-  PerformanceMonitor,
-  Preload,
-  useProgress,
-} from '@react-three/drei';
+import { PerformanceMonitor, useProgress } from '@react-three/drei/webgpu';
+import { Bvh } from '@react-three/drei/external';
 import gsap from 'gsap';
 import { useStore } from './store/ZustandStorage.jsx';
 import tunnel from 'tunnel-rat';
 import { Howler } from 'howler';
-import * as THREE from 'three';
+import * as THREE from 'three/webgpu';
 
 import { IS_MOBILE_DEVICE, IS_PHOTO_MODE, MAX_DPR } from '#utils/utils.js';
 import { prefersReducedMotion } from '#utils/reducedMotion.js';
@@ -20,6 +15,8 @@ import { prefersReducedMotion } from '#utils/reducedMotion.js';
 import soundOnIcon from '/icons/sound-on.svg';
 import soundOffIcon from '/icons/sound-off.svg';
 import { EffectComposer } from './components/effectComposer/EffectComposer.jsx';
+import { PrecompileScene } from './components/PrecompileScene.jsx';
+import { AdaptiveDpr } from './components/AdaptiveDpr.jsx';
 
 /* Tunnel */
 const ui = tunnel();
@@ -39,7 +36,6 @@ let hoverAnimation = undefined;
 
 const App = () => {
   const sceneRevealerRef = useRef();
-  const cheapDofPassRef = useRef();
   const soundOnIconRef = useRef();
   const soundOffIconRef = useRef();
   const startExperienceRef = useRef();
@@ -65,7 +61,7 @@ const App = () => {
       delay: 0,
     });
 
-    gsap.to(sceneRevealerRef.current?.uniforms.get('progress'), {
+    gsap.to(sceneRevealerRef.current?.progress, {
       value: 1.5,
       // Reduced motion: quick reveal instead of the 5s sweep (the opacity
       // fades above are fine — reduced motion targets movement, not fades)
@@ -128,7 +124,6 @@ const App = () => {
       </>
       )}
       <Canvas
-        shadows={IS_MOBILE_DEVICE ? false : THREE.VSMShadowMap}
         dpr={dpr}
         performance={{ min: 0.5 }}
         camera={{
@@ -138,17 +133,24 @@ const App = () => {
           near: 0.5,
           far: 200,
         }}
-        gl={{
+        // WebGPU, falling back to its WebGL2 backend where WebGPU is missing.
+        // Tone mapping is done in the post-processing graph
+        renderer={{
           powerPreference: 'high-performance',
           antialias: false,
-          toneMapping: THREE.LinearToneMapping,
+          toneMapping: THREE.NoToneMapping,
+          shadows: IS_MOBILE_DEVICE ? false : 'variance',
         }}
+        // R3F 10 canary leaves state.gl null under WebGPU (its getter is
+        // flattened by the first store update), and drei 11 still reads it
+        // (Clouds, useTexture...). Point it at the renderer once created.
+        onCreated={({ set, renderer }) => set({ gl: renderer })}
       >
         <PerformanceMonitor
           onIncline={() => setDpr(MAX_DPR)}
           onDecline={() => setDpr(1)}
         />
-        <AdaptiveDpr pixelated />
+        <AdaptiveDpr />
         <Suspense
           fallback={
             IS_PHOTO_MODE ? null : (
@@ -172,7 +174,7 @@ const App = () => {
                 onClick={initiateExperience}
                 onMouseEnter={() =>
                   (hoverAnimation = gsap.to(
-                    sceneRevealerRef.current?.uniforms.get('progress'),
+                    sceneRevealerRef.current?.progress,
                     {
                       value: 0.45,
                       duration: 0.5,
@@ -187,16 +189,13 @@ const App = () => {
             </div>
           </ui.In>
           )}
-          <EffectComposer
-            sceneRevealerRef={sceneRevealerRef}
-            cheapDofPassRef={cheapDofPassRef}
-          />
+          <EffectComposer sceneRevealerRef={sceneRevealerRef} />
 
           <Bvh firstHitOnly>
             <Experience />
           </Bvh>
+          <PrecompileScene />
         </Suspense>
-        <Preload all />
       </Canvas>
     </>
   );
