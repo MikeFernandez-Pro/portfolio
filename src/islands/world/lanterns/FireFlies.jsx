@@ -14,6 +14,7 @@ import {
 } from 'three/tsl';
 
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
+import { LANTERN_POSITIONS } from './lanternPositions.js';
 import {
   createParticleSprite,
   particleAttribute,
@@ -23,48 +24,31 @@ import {
 // Reduced motion: the fireflies drift at a third of their usual pace
 const FIREFLIES_TIME_SCALE = REDUCED_MOTION_AT_LOAD ? 0.3 : 1;
 
-const FIREFLIES_POSITIONS = [
-  [-0.7, 2.3, -3.8],
-  [0.7, 2.3, -3.8],
-  [2.9, 2.3, -17.8],
-  [4.2, 2.3, -17.6],
-  [4, 4.3, -24.1],
-  [5.25, 4.3, -23.9],
-  [-0.25, 4.3, -29.15],
-  [-0.1, 4.3, -30.5],
-  [-6.6, 6.4, -29.9],
-  [-6.4, 6.4, -31.2],
-  [-9.2, 6.35, -35.6],
-  [-10.5, 6.35, -35.6],
-  [-10.5, 8.45, -41.9],
-  [-9.15, 8.45, -41.9],
-];
-
-const FIREFLIES_PER_LAMP = 20;
+const FIREFLIES_PER_LANTERN = 20;
 const FIREFLIES_COLOR = '#d58e6b';
 const FIREFLIES_INTENSITY = 8.34;
 const FIREFLIES_SIZE = 0.03;
 const FIREFLIES_VELOCITY = 0.17;
-const TOTAL_FIREFLIES_COUNT = FIREFLIES_POSITIONS.length * FIREFLIES_PER_LAMP;
+const TOTAL_FIREFLIES_COUNT = LANTERN_POSITIONS.length * FIREFLIES_PER_LANTERN;
 
 const POSITIONS_ARRAY = new Float32Array(TOTAL_FIREFLIES_COUNT * 3);
 const SCALES_ARRAY = new Float32Array(TOTAL_FIREFLIES_COUNT);
 
-let currrentLampCount = 1;
+let currentLanternCount = 1;
 for (let i = 0; i < TOTAL_FIREFLIES_COUNT; i++) {
   if (
     i >
-    (TOTAL_FIREFLIES_COUNT / FIREFLIES_POSITIONS.length) * currrentLampCount
+    (TOTAL_FIREFLIES_COUNT / LANTERN_POSITIONS.length) * currentLanternCount
   ) {
-    currrentLampCount++;
+    currentLanternCount++;
   }
 
   POSITIONS_ARRAY[i * 3 + 0] =
-    (Math.random() - 0.5) * 0.6 + FIREFLIES_POSITIONS[currrentLampCount - 1][0];
+    (Math.random() - 0.5) * 0.6 + LANTERN_POSITIONS[currentLanternCount - 1][0];
   POSITIONS_ARRAY[i * 3 + 1] =
-    (Math.random() - 0.5) * 0.3 + FIREFLIES_POSITIONS[currrentLampCount - 1][1];
+    (Math.random() - 0.5) * 0.3 + LANTERN_POSITIONS[currentLanternCount - 1][1];
   POSITIONS_ARRAY[i * 3 + 2] =
-    (Math.random() - 0.5) * 0.6 + FIREFLIES_POSITIONS[currrentLampCount - 1][2];
+    (Math.random() - 0.5) * 0.6 + LANTERN_POSITIONS[currentLanternCount - 1][2];
   SCALES_ARRAY[i] = Math.random() * 0.5 + 0.5;
 }
 

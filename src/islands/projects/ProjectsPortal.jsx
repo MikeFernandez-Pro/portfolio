@@ -37,11 +37,8 @@ import {
 
 import { useStore } from '#store';
 import { SOUND_VOLUMES } from '#utils/soundVolumes.js';
-import {
-  PORTAL_LIGHT_DEFAULTS,
-  portalLightSettings,
-  portalLightUniforms,
-} from '#islands/world/pointLights/islandPointLights.js';
+import { pointLights } from '#islands/world/pointLights/pointLights.js';
+import { pointLightControls } from '#islands/world/pointLights/pointLightControls.js';
 import {
   createParticleSprite,
   particleAttribute,
@@ -535,40 +532,21 @@ const ProjectsPortal = props => {
     ),
   });
 
-  const portalLightControl = uniformControls(portalLightUniforms);
-  useControls('PortalLight', {
-    color: portalLightControl('uPortalLightColor', PORTAL_LIGHT_DEFAULTS.color),
-    intensity: {
-      value: PORTAL_LIGHT_DEFAULTS.intensity,
-      min: 0,
-      max: 10,
-      step: 0.05,
-      onChange: v => {
-        portalLightSettings.intensity = v;
+  useControls(
+    'PortalLight',
+    pointLightControls(pointLights.portal, {
+      // Scaled by the open factor every frame (see below)
+      intensity: {
+        value: pointLights.portal.defaults.intensity,
+        min: 0,
+        max: 10,
+        step: 0.05,
+        onChange: v => {
+          pointLights.portal.settings.intensity = v;
+        },
       },
-    },
-    decay: portalLightControl(
-      'uPortalLightDecay',
-      PORTAL_LIGHT_DEFAULTS.decay,
-      0,
-      1,
-      0.005
-    ),
-    decayPower: portalLightControl(
-      'uPortalLightDecayPower',
-      PORTAL_LIGHT_DEFAULTS.decayPower,
-      0.1,
-      8,
-      0.05
-    ),
-    specularPower: portalLightControl(
-      'uPortalLightSpecularPower',
-      PORTAL_LIGHT_DEFAULTS.specularPower,
-      1,
-      64,
-      1
-    ),
-  });
+    })
+  );
 
   // Animation
 
@@ -664,8 +642,8 @@ const ProjectsPortal = props => {
     sparksUniforms.uOpenFactor.value = openFactor;
     // The island point light follows the same ratchet: off until the first
     // opening, full strength forever after
-    portalLightUniforms.uPortalLightIntensity.value =
-      portalLightSettings.intensity * openFactor;
+    pointLights.portal.intensity.value =
+      pointLights.portal.settings.intensity * openFactor;
   });
 
   return (

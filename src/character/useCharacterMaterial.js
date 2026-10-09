@@ -5,7 +5,7 @@ import { Discard, Fn, If, materialColor, mix, uniform, vec4 } from 'three/tsl';
 import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
 import { toNodeMaterial } from '#utils/nodeMaterials.js';
 import { createDissolveUniforms, dissolveLava } from '#shaders/dissolve.js';
-import { patchIslandPointLights } from '#islands/world/pointLights/islandPointLights.js';
+import { patchPointLights } from '#islands/world/pointLights/pointLights.js';
 import { patchCloudShadows } from '#shaders/cloudShadows.js';
 import { useStore } from '#store';
 import { RESPAWN_DEFAULTS } from '#character/deathCycle/respawnAnimation.js';
@@ -76,7 +76,7 @@ const useCharacterMaterial = characterScene => {
     })();
 
     patchCloudShadows(material);
-    patchIslandPointLights(material);
+    patchPointLights(material);
 
     const previousMaterial = characterMesh.material;
     characterMesh.material = material;

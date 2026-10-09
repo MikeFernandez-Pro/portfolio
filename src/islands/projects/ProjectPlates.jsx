@@ -7,9 +7,9 @@ import { Howl } from 'howler';
 import { useStore } from '#store';
 import { SOUND_VOLUMES } from '#utils/soundVolumes.js';
 import {
+  pointLights,
   PLATE_LIGHT_INDEX,
-  plateLightsUniforms,
-} from '#islands/world/pointLights/islandPointLights.js';
+} from '#islands/world/pointLights/pointLights.js';
 
 import PressurePlateAudio from '#assets/sounds/pressure-plate.mp3';
 
@@ -36,10 +36,7 @@ const createPlateAnimation = (
     onUpdate: () => {
       material.emissiveIntensity = progress.value * plateActiveIntensity;
       // The plate's fake point light follows the same press/release ramp
-      plateLightsUniforms.uPlateLightFactors.value.setComponent(
-        lightIndex,
-        progress.value
-      );
+      pointLights.plate.factors.value.setComponent(lightIndex, progress.value);
     },
   });
 };

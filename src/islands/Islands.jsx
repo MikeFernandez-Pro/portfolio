@@ -6,10 +6,10 @@ import { IS_MOBILE_DEVICE } from '#utils/device.js';
 
 import { patchCloudShadows } from '#shaders/cloudShadows.js';
 import {
-  patchIslandPointLights,
   setCandleLightPositions,
-} from '#islands/world/pointLights/islandPointLights.js';
-import { IslandPointLightsControls } from '#islands/world/pointLights/IslandPointLightsControls.jsx';
+  patchPointLights,
+} from '#islands/world/pointLights/pointLights.js';
+import { PointLightsControls } from '#islands/world/pointLights/PointLightsControls.jsx';
 import { TorchSmoke } from '#islands/world/torches/TorchSmoke.jsx';
 import { CauldronSmoke } from '#islands/skills/cauldron/CauldronSmoke.jsx';
 import { LanternsAndHome } from '#islands/world/lanterns/LanternsAndHome';
@@ -88,7 +88,7 @@ const Islands = () => {
     const terrain = toNodeMaterial(materials.islandTexture);
     terrain.roughness = 1;
     patchCloudShadows(terrain);
-    patchIslandPointLights(terrain);
+    patchPointLights(terrain);
     materials.islandTexture = terrain;
   }, [materials, islandTexture]);
 
@@ -328,7 +328,7 @@ const Islands = () => {
       </group>
       <LanternsAndHome island={island} />
       <IslandMaterialsControls materials={materials} />
-      <IslandPointLightsControls />
+      <PointLightsControls />
       <CauldronSmoke
         folderName="CauldronSmoke"
         position={CAULDRON_SMOKE_POSITION}

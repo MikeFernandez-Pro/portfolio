@@ -16,7 +16,7 @@ import {
 } from 'three/tsl';
 
 import { dissolveLava } from '#shaders/dissolve.js';
-import { patchIslandPointLights } from '#islands/world/pointLights/islandPointLights.js';
+import { patchPointLights } from '#islands/world/pointLights/pointLights.js';
 import { patchCloudShadows } from '#shaders/cloudShadows.js';
 import { useStore } from '#store';
 import { useControls } from '#debug/useControls.jsx';
@@ -108,7 +108,7 @@ const useLanternMaterial = (characterScene, lanternMeshRef) => {
     })();
 
     patchCloudShadows(material);
-    patchIslandPointLights(material);
+    patchPointLights(material);
 
     // The white-marked part is unlit, like the head orb: constant color *
     // intensity, immune to lights and cloud shadows. Applied over the final

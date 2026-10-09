@@ -1,10 +1,7 @@
 import gsap from 'gsap';
 
 import { useStore } from '#store';
-import {
-  spawnLightUniforms,
-  spawnLightSettings,
-} from '#islands/world/pointLights/islandPointLights.js';
+import { pointLights } from '#islands/world/pointLights/pointLights.js';
 
 // Single source of truth for the whole respawn animation (character voronoi
 // dissolve + spawn spiral). Both the real gameplay respawn and the debug
@@ -108,18 +105,18 @@ export const buildRespawnTimeline = ({
   // Spawn light: fades in over the first half of the respawn and out over the
   // second (off at rest). Independent of the character/spiral targets.
   const spawnHalf = charTotal / 2;
-  tl.set(spawnLightUniforms.uSpawnLightIntensity, { value: 0 }, charStart);
+  tl.set(pointLights.spawn.intensity, { value: 0 }, charStart);
   tl.to(
-    spawnLightUniforms.uSpawnLightIntensity,
+    pointLights.spawn.intensity,
     {
-      value: spawnLightSettings.intensity,
+      value: pointLights.spawn.settings.intensity,
       duration: spawnHalf,
       ease: 'sine.in',
     },
     charStart
   );
   tl.to(
-    spawnLightUniforms.uSpawnLightIntensity,
+    pointLights.spawn.intensity,
     { value: 0, duration: spawnHalf, ease: 'sine.out' },
     charStart + spawnHalf
   );
@@ -189,5 +186,5 @@ export const resetRespawnAnimation = () => {
   if (spiralMesh) {
     spiralMesh.visible = false;
   }
-  spawnLightUniforms.uSpawnLightIntensity.value = 0;
+  pointLights.spawn.intensity.value = 0;
 };

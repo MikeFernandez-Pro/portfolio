@@ -15,10 +15,7 @@ import {
 } from 'three/tsl';
 
 import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
-import {
-  forgeLavaLightSettings,
-  forgeLavaLightUniforms,
-} from '#islands/world/pointLights/islandPointLights.js';
+import { pointLights } from '#islands/world/pointLights/pointLights.js';
 
 const LAVA_DEFAULTS = {
   posX: -7.59,
@@ -243,8 +240,8 @@ const ForgeLavaPlane = ({ blowerMesh }) => {
 
     // The fake point light gasps along the same bellows factor, sweeping
     // its own min/max intensity range
-    const { minIntensity, maxIntensity } = forgeLavaLightSettings;
-    forgeLavaLightUniforms.uForgeLavaLightIntensity.value =
+    const { minIntensity, maxIntensity } = pointLights.forgeLava.settings;
+    pointLights.forgeLava.intensity.value =
       minIntensity + (maxIntensity - minIntensity) * gasp;
   });
 

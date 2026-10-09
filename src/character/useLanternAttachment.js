@@ -5,15 +5,11 @@ import { useGLTF } from '@react-three/drei/webgpu';
 
 import LanternModel from '#assets/models/character/lantern.glb';
 import { useControls } from '#debug/useControls.jsx';
-import { uniformControls } from '#debug/uniformControls.js';
 import { IS_MOBILE_DEVICE } from '#utils/device.js';
 import { BODY_TYPE_FIXED as FIXED } from '#character/constants.js';
 import { useLanternMaterial } from '#character/useLanternMaterial.js';
-import {
-  BELT_LANTERN_LIGHT_DEFAULTS,
-  beltLanternLightUniforms,
-  beltLanternLightSettings,
-} from '#islands/world/pointLights/islandPointLights.js';
+import { pointLights } from '#islands/world/pointLights/pointLights.js';
+import { pointLightControls } from '#islands/world/pointLights/pointLightControls.js';
 
 const ATTACH_GROUP_NAME = 'lanternAttachGroup';
 const LANTERN_MESH_NAME = 'Cube';
@@ -246,50 +242,21 @@ const useLanternAttachment = ({ scene, characterBody, characterMesh }) => {
   });
 
   // Fake point light following the lantern (BeltLanternLight debug folder)
-  const beltLanternLightControl = uniformControls(beltLanternLightUniforms);
-  useControls('BeltLanternLight', {
-    color: beltLanternLightControl(
-      'uBeltLanternLightColor',
-      BELT_LANTERN_LIGHT_DEFAULTS.color
-    ),
-    intensity: beltLanternLightControl(
-      'uBeltLanternLightIntensity',
-      BELT_LANTERN_LIGHT_DEFAULTS.intensity,
-      0,
-      10,
-      0.05
-    ),
-    decay: beltLanternLightControl(
-      'uBeltLanternLightDecay',
-      BELT_LANTERN_LIGHT_DEFAULTS.decay,
-      0,
-      1,
-      0.005
-    ),
-    decayPower: beltLanternLightControl(
-      'uBeltLanternLightDecayPower',
-      BELT_LANTERN_LIGHT_DEFAULTS.decayPower,
-      0.1,
-      8,
-      0.05
-    ),
-    specularPower: beltLanternLightControl(
-      'uBeltLanternLightSpecularPower',
-      BELT_LANTERN_LIGHT_DEFAULTS.specularPower,
-      1,
-      64,
-      1
-    ),
-    offset: {
-      value: BELT_LANTERN_LIGHT_DEFAULTS.offset,
-      min: -1,
-      max: 1,
-      step: 0.01,
-      onChange: v => {
-        beltLanternLightSettings.offset = v;
+  const light = pointLights.characterLantern;
+  useControls(
+    'BeltLanternLight',
+    pointLightControls(light, {
+      offset: {
+        value: light.defaults.offset,
+        min: -1,
+        max: 1,
+        step: 0.01,
+        onChange: v => {
+          light.settings.offset = v;
+        },
       },
-    },
-  });
+    })
+  );
 
   useFrame((_, delta) => {
     const swingGroup = swingGroupRef.current;
@@ -300,11 +267,11 @@ const useLanternAttachment = ({ scene, characterBody, characterMesh }) => {
     // Pin the fake light onto the lantern (world space). The offset control
     // is expressed in character space: rotated by the mesh yaw so "in front
     // of the belt" stays in front whichever way the character faces
-    const lightPosition = beltLanternLightUniforms.uBeltLanternLightPosition;
+    const lightPosition = pointLights.characterLantern.position;
     lanternMeshRef.current.getWorldPosition(lightPosition.value);
-    LIGHT_OFFSET.set(...beltLanternLightSettings.offset).applyQuaternion(
-      mesh.quaternion
-    );
+    LIGHT_OFFSET.set(
+      ...pointLights.characterLantern.settings.offset
+    ).applyQuaternion(mesh.quaternion);
     lightPosition.value.add(LIGHT_OFFSET);
 
     const dt = Math.min(delta, 1 / 30);
