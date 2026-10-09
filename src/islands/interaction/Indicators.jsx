@@ -13,7 +13,7 @@ import {
 const INTERACTIVE_LINK_COLOR = new THREE.Color(10, 1.5, 1.0);
 
 const Indicators = props => {
-  const { interactiveElementsData, activePlateRef, interactionPromptRef } =
+  const { interactiveElementsData, selectedProjectRef, interactionPromptRef } =
     props;
 
   // "Enter" tile of the screens atlas. The atlas has no alpha channel
@@ -98,7 +98,9 @@ const Indicators = props => {
                         return;
                       }
 
-                      linkInstanceData.userData.activateLink(activePlateRef);
+                      linkInstanceData.userData.activateLink(
+                        selectedProjectRef
+                      );
                     }}
                   />
                 </group>

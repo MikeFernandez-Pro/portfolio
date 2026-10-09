@@ -11,11 +11,14 @@ import {
   PLATE_LIGHT_INDEX,
 } from '#islands/world/pointLights/pointLights.js';
 
+import { PROJECTS } from './projects.js';
+
 import PressurePlateAudio from '#assets/sounds/pressure-plate.mp3';
 
 // Shared by reference across all plate materials, so mutating it updates every plate
 const PLATE_EMISSIVE_COLOR = new THREE.Color('#68CFF2');
-let plateActiveIntensity = 3.56;
+// Glow of the selected project's plate, set by the debug control
+const plateSettings = { activeIntensity: 3.56 };
 
 const createPlateAnimation = (
   material,
@@ -34,7 +37,8 @@ const createPlateAnimation = (
       pressurePlateSoundEffect.play();
     },
     onUpdate: () => {
-      material.emissiveIntensity = progress.value * plateActiveIntensity;
+      material.emissiveIntensity =
+        progress.value * plateSettings.activeIntensity;
       // The plate's fake point light follows the same press/release ramp
       pointLights.plate.factors.value.setComponent(lightIndex, progress.value);
     },
@@ -62,29 +66,30 @@ const ProjectPlates = props => {
       },
     },
     activeIntensity: {
-      value: plateActiveIntensity,
+      value: plateSettings.activeIntensity,
       min: 0,
       max: 20,
       step: 0.01,
       onChange: value => {
-        plateActiveIntensity = value;
+        plateSettings.activeIntensity = value;
 
-        // Reflect the new intensity on the currently activated plate
-        const activePlate = useStore.getState().activePlate;
-        if (activePlate && island.materials[activePlate]) {
-          island.materials[activePlate].emissiveIntensity = value;
+        // Reflect the new intensity on the selected project's plate
+        const selectedProject = useStore.getState().selectedProject;
+        if (selectedProject) {
+          island.materials[
+            PROJECTS[selectedProject].plateMaterial
+          ].emissiveIntensity = value;
         }
       },
     },
   });
 
   useEffect(() => {
-    // Plate ids match the GLB material names
-    const plates = {
-      seaPlate: { material: island.materials.seaPlate },
-      halloweenPlate: { material: island.materials.halloweenPlate },
-      portalPlate: { material: island.materials.portalPlate },
-    };
+    // One plate per project, keyed by project id
+    const plates = {};
+    for (const [projectId, project] of Object.entries(PROJECTS)) {
+      plates[projectId] = { material: island.materials[project.plateMaterial] };
+    }
 
     for (const plate in plates) {
       plates[plate].material.emissive = PLATE_EMISSIVE_COLOR;
@@ -97,12 +102,12 @@ const ProjectPlates = props => {
       );
     }
 
-    const unsubActivePlate = useStore.subscribe(
-      state => state.activePlate,
-      (activePlate, prevPlate) => {
-        plates[activePlate].animation.play();
-        if (prevPlate) {
-          plates[prevPlate].animation.reverse();
+    const unsubSelectedProject = useStore.subscribe(
+      state => state.selectedProject,
+      (selectedProject, previousProject) => {
+        plates[selectedProject].animation.play();
+        if (previousProject) {
+          plates[previousProject].animation.reverse();
         }
       }
     );
@@ -112,7 +117,7 @@ const ProjectPlates = props => {
         plates[plate].animation.kill();
         delete plates[plate].animation;
       }
-      unsubActivePlate();
+      unsubSelectedProject();
     };
   }, [island]);
 

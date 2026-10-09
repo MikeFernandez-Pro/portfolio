@@ -3,9 +3,10 @@ import {
   untriggerInteractiveLink,
   activateInteractiveElementLink,
   activateMagicGlyph,
-  activatePortalPlate,
+  selectProject,
 } from './interactiveElementsUtils.js';
 import { useStore } from '#store';
+import { PROJECTS } from '#islands/projects/projects.js';
 
 const MAIL_BOX_ID = 'mailBox';
 const LINKEDIN_ID = 'linkedIn';
@@ -13,17 +14,11 @@ const VERCEL_ID = 'vercel';
 const PORTAL_ID = 'portal';
 const STATUE_ID = 'statue';
 const MAGIC_GLYPH_ID = 'magicGlyph';
-const PORTAL_PLATE_ID = 'portalPlate';
-const SEA_PLATE_ID = 'seaPlate';
-const HALLOWEEN_PLATE_ID = 'halloweenPlate';
 
 const MAIL_BOX_URL = 'mailto:contact@mike-fernandez.dev';
 const LINKEDIN_URL =
   'https://www.linkedin.com/in/mike-fernandez-front-end-dev/';
 const VERCEL_URL = 'https://x.com/Rahzell83';
-const PORTAL_URL = 'https://ho-ho-no.vercel.app/';
-const SEA_URL = 'https://doan-ten-con-vat.vercel.app/';
-const HALLOWEEN_URL = 'https://halloween-challenge.vercel.app/';
 const STATUE_URL = '/CV_Portfolio_Mike.pdf';
 
 const interactiveElementsData = {
@@ -80,22 +75,16 @@ const interactiveElementsData = {
       id: PORTAL_ID,
       interactiveLinkPosition: [-16.14, 5.9, -37.3],
       interactiveLinkRotationY: 0,
-      href: {
-        portalPlate: PORTAL_URL,
-        seaPlate: SEA_URL,
-        halloweenPlate: HALLOWEEN_URL,
-      },
       startInteraction: triggerInteractiveLink,
       closeInteraction: untriggerInteractiveLink,
-      activateLink: activePlateRef => {
+      // Opens the selected project
+      activateLink: selectedProjectRef => {
         const activatedInteractiveElement =
           useStore.getState().activatedInteractiveElement.current;
 
-        if (activatedInteractiveElement && activePlateRef.current) {
+        if (activatedInteractiveElement && selectedProjectRef.current) {
           activateInteractiveElementLink(
-            interactiveElementsData[activatedInteractiveElement].userData.href[
-              activePlateRef.current
-            ]
+            PROJECTS[selectedProjectRef.current].url
           );
         }
       },
@@ -129,28 +118,29 @@ const interactiveElementsData = {
     rotation: [0, -0.15, 0],
     scale: [2.85, 0.35, 2.85],
   },
-  [PORTAL_PLATE_ID]: {
+  // Project plates, keyed by the project they select
+  hoHoNo: {
     userData: {
-      id: PORTAL_PLATE_ID,
-      startInteraction: activatePortalPlate,
+      id: 'hoHoNo',
+      startInteraction: selectProject,
     },
     position: [-15.085, 4.4, -32.45],
     rotation: [0, 0, 0],
     scale: [1, 1, 1],
   },
-  [SEA_PLATE_ID]: {
+  doanTenConVat: {
     userData: {
-      id: SEA_PLATE_ID,
-      startInteraction: activatePortalPlate,
+      id: 'doanTenConVat',
+      startInteraction: selectProject,
     },
     position: [-15.085, 4.4, -34.495],
     rotation: [0, 0, 0],
     scale: [1, 1, 1],
   },
-  [HALLOWEEN_PLATE_ID]: {
+  halloweenChallenge: {
     userData: {
-      id: HALLOWEEN_PLATE_ID,
-      startInteraction: activatePortalPlate,
+      id: 'halloweenChallenge',
+      startInteraction: selectProject,
     },
     position: [-17.14, 4.4, -34.495],
     rotation: [0, 0, 0],

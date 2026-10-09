@@ -17,8 +17,9 @@ export const useStore = create(
     //Magic Glyph activation handler
     magicGlyphActivation: false,
 
-    // Portal activation handlers
-    activePlate: undefined,
+    // Project picked on the project plates (projects.js id); the projects
+    // portal shows and opens it
+    selectedProject: undefined,
 
     characterPosition: undefined,
     // Written by the controller from the contact solve; the grass trample

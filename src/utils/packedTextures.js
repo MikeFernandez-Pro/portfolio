@@ -97,9 +97,9 @@ const atlasRect = (left, top, width, height) => ({
 
 // Tile layout of the screens atlas (pixel boxes from scripts/pack-textures.mjs)
 const SCREENS_ATLAS_RECTS = {
-  halloweenScene: atlasRect(0, 0, 512, 342),
-  santaClousFighting: atlasRect(512, 0, 512, 342),
-  doanTenCon: atlasRect(0, 342, 512, 342),
+  halloweenChallenge: atlasRect(0, 0, 512, 342),
+  hoHoNo: atlasRect(512, 0, 512, 342),
+  doanTenConVat: atlasRect(0, 342, 512, 342),
   interactiveLink: atlasRect(512, 342, 256, 256),
   xLogo: atlasRect(768, 342, 256, 256),
 };

@@ -49,10 +49,14 @@ const createInteractionAnimation = child => {
   return tl;
 };
 
-const triggerInteractiveLink = (link, interactionPromptRef, activePlateRef) => {
+const triggerInteractiveLink = (
+  link,
+  interactionPromptRef,
+  selectedProjectRef
+) => {
   if (link && interactionPromptRef.current) {
-    // Do not activate portal if no plate is selected
-    if (link.userData.id === PORTAL_ID && !activePlateRef.current) return;
+    // No portal link until a project is selected
+    if (link.userData.id === PORTAL_ID && !selectedProjectRef.current) return;
 
     const child = interactionPromptRef.current.getObjectByName(
       link.userData.id
@@ -103,11 +107,12 @@ const activateMagicGlyph = () => {
   }
 };
 
-const activatePortalPlate = (interactiveElementData, activePlateRef) => {
-  const interactiveElementId = interactiveElementData.userData.id;
-  if (interactiveElementId === activePlateRef.current) return;
+// A project plate: its element id is the project it selects
+const selectProject = interactiveElementData => {
+  const projectId = interactiveElementData.userData.id;
+  if (projectId === useStore.getState().selectedProject) return;
 
-  useStore.setState({ activePlate: interactiveElementId });
+  useStore.setState({ selectedProject: projectId });
 };
 
 export {
@@ -115,5 +120,5 @@ export {
   untriggerInteractiveLink,
   activateInteractiveElementLink,
   activateMagicGlyph,
-  activatePortalPlate,
+  selectProject,
 };

@@ -6,7 +6,7 @@ import { interactiveElementsData } from './interactiveElementsData.js';
 import { useStore } from '#store';
 
 const InteractiveElements = () => {
-  const activePlateRef = useRef(useStore.getState().activePlate);
+  const selectedProjectRef = useRef(useStore.getState().selectedProject);
   const interactionPromptRef = useRef();
 
   useEffect(() => {
@@ -20,7 +20,7 @@ const InteractiveElements = () => {
 
           // Glyph and plates have no link to open
           activatedInteractiveElementData.userData?.activateLink?.(
-            activePlateRef
+            selectedProjectRef
           );
         }
       }
@@ -37,7 +37,7 @@ const InteractiveElements = () => {
           activatedInteractiveElementData.userData?.startInteraction(
             activatedInteractiveElementData,
             interactionPromptRef,
-            activePlateRef
+            selectedProjectRef
           );
         }
 
@@ -53,8 +53,8 @@ const InteractiveElements = () => {
       }
     );
 
-    const unsubActivaPlate = useStore.subscribe(
-      state => (activePlateRef.current = state.activePlate)
+    const unsubSelectedProject = useStore.subscribe(
+      state => (selectedProjectRef.current = state.selectedProject)
     );
 
     return () => {
@@ -67,7 +67,7 @@ const InteractiveElements = () => {
 
       window.removeEventListener('keydown', keyDownHandler);
       unsubActiveInteractiveElement();
-      unsubActivaPlate();
+      unsubSelectedProject();
     };
   }, []);
 
@@ -79,7 +79,7 @@ const InteractiveElements = () => {
 
       <Indicators
         interactiveElementsData={interactiveElementsData}
-        activePlateRef={activePlateRef}
+        selectedProjectRef={selectedProjectRef}
         interactionPromptRef={interactionPromptRef}
       />
     </>

@@ -59,15 +59,16 @@ const INDICATOR_POSITIONS = [
 // PLATE_LIGHT_INDEX: each plate's press animation drives its `factors`
 // component.
 const PLATE_POSITIONS = [
-  [-15.085, 4.4, -32.45], // portalPlate
-  [-15.085, 4.4, -34.495], // seaPlate
-  [-17.14, 4.4, -34.495], // halloweenPlate
+  [-15.085, 4.4, -32.45], // hoHoNo
+  [-15.085, 4.4, -34.495], // doanTenConVat
+  [-17.14, 4.4, -34.495], // halloweenChallenge
 ];
 
+// Project id -> its plate light
 const PLATE_LIGHT_INDEX = {
-  portalPlate: 0,
-  seaPlate: 1,
-  halloweenPlate: 2,
+  hoHoNo: 0,
+  doanTenConVat: 1,
+  halloweenChallenge: 2,
 };
 
 // The candle flames live in the GLB, so unlike the other grouped lights the
