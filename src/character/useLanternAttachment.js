@@ -6,7 +6,7 @@ import { useGLTF } from '@react-three/drei/webgpu';
 import LanternModel from '#assets/models/character/lantern.glb';
 import { useControls } from '#debug/useControls.jsx';
 import { IS_MOBILE_DEVICE } from '#utils/device.js';
-import { BODY_TYPE_FIXED as FIXED } from '#character/constants.js';
+import { BODY_TYPE_FIXED as FIXED } from '#physics/PhysicsWorld.js';
 import { useLanternMaterial } from '#character/useLanternMaterial.js';
 import { pointLights } from '#islands/world/pointLights/pointLights.js';
 import { pointLightControls } from '#islands/world/pointLights/pointLightControls.js';

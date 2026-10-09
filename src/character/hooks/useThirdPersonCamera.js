@@ -9,14 +9,18 @@ import {
   prefersReducedMotion,
   REDUCED_MOTION_AT_LOAD,
 } from '#utils/reducedMotion.js';
-import {
-  CAMERA_FOLLOW_HEIGHT,
-  CAMERA_FOLLOW_DISTANCE_MOBILE,
-  CAMERA_FOLLOW_DISTANCE_DESKTOP,
-  CAMERA_INITIAL_OFFSET,
-  CAMERA_INTRO_DURATION,
-  INTRO_CONTROLS_UNLOCK_AT,
-} from '#character/constants.js';
+
+const CAMERA_FOLLOW_HEIGHT = 5.2;
+const CAMERA_FOLLOW_DISTANCE_MOBILE = 7.5;
+const CAMERA_FOLLOW_DISTANCE_DESKTOP = 5.5;
+
+// Camera offset before the intro pan (also the Canvas camera's start)
+export const CAMERA_INITIAL_OFFSET = { x: -3.5, y: 17.4, z: 29.6 };
+
+// Intro camera pan length, and when the character controls unlock during it
+// (2s before the end; power3.out: the pan is ~94% done by then)
+const CAMERA_INTRO_DURATION = 5;
+const INTRO_CONTROLS_UNLOCK_AT = CAMERA_INTRO_DURATION - 2;
 
 const CAMERA_POSITION = new THREE.Vector3(0, 0, 0);
 const LERP_CAMERA_POSITION = new THREE.Vector3(

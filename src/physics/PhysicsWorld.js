@@ -129,14 +129,22 @@ const SENSOR_CAST = {
 const boundsOf = bvh =>
   bvh.geometry.boundingBox ?? bvh.getBoundingBox(new THREE.Box3());
 
+// Same payload shape the rapier event handlers consumed
+const sensorEvent = (body, sensor) => ({
+  other: { rigidBody: body },
+  target: { rigidBody: { userData: sensor.userData } },
+});
+
 /**
  * Minimal physics world replacing rapier: one dynamic capsule (the character)
  * against static world-space BVH trimeshes, plus BVH sensor zones with
  * enter/exit events. Solids and sensors are baked to world space up front so
- * the per-frame tests are matrix-free.
+ * the per-frame tests are matrix-free. The solver reads and writes the
+ * body's internal state (_position, _velocity, the grounded timer) directly:
+ * CharacterBody only exists for this world.
  */
 export class PhysicsWorld {
-  constructor({ gravityY = -29.43 } = {}) {
+  constructor({ gravityY }) {
     this.gravityY = gravityY;
     this.solids = new Set();
     this.sensors = new Set();
@@ -288,21 +296,14 @@ export class PhysicsWorld {
       if (!aabb.intersectsBox(sensor.bounds)) {
         if (sensor.overlapping) {
           sensor.overlapping = false;
-          sensor.onExit?.({
-            other: { rigidBody: body },
-            target: { rigidBody: { userData: sensor.userData } },
-          });
+          sensor.onExit?.(sensorEvent(body, sensor));
         }
         continue;
       }
       const overlapping = sensor.bvh.shapecast(SENSOR_CAST);
       if (overlapping === sensor.overlapping) continue;
       sensor.overlapping = overlapping;
-      // Same payload shape the rapier event handlers consumed
-      const event = {
-        other: { rigidBody: body },
-        target: { rigidBody: { userData: sensor.userData } },
-      };
+      const event = sensorEvent(body, sensor);
       if (overlapping) sensor.onEnter?.(event);
       else sensor.onExit?.(event);
     }

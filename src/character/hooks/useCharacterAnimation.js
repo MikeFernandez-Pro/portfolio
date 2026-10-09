@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three/webgpu';
 import {
   ANIMATION_IDLE as IDLE,
-  ANIMATION_RUN as RUN,
-  ANIMATION_SPRINT as SPRINT,
   ANIMATION_JUMP as JUMP,
-  ANIMATION_FALLING as FALLING,
 } from '#character/constants.js';
 
+/**
+ * Crossfades the character between its clips. `play(name)` fades out the
+ * current clip and in the new one (no-op if it is already playing);
+ * `current` is the clip playing now.
+ */
 export function useCharacterAnimation(characterAnimations) {
   const currentAnimationRef = useRef(IDLE);
 
@@ -24,24 +26,21 @@ export function useCharacterAnimation(characterAnimations) {
   const play = useCallback(
     newAnimation => {
       const prev = currentAnimationRef.current;
-      if (!characterAnimations || prev === newAnimation) return newAnimation;
+      if (!characterAnimations || prev === newAnimation) return;
       characterAnimations.actions[prev].fadeOut(0.2);
       currentAnimationRef.current = newAnimation;
       characterAnimations.actions[newAnimation].reset().fadeIn(0.2).play();
-      return newAnimation;
     },
     [characterAnimations]
   );
 
-  return {
-    get current() {
-      return currentAnimationRef.current;
-    },
-    setCurrent: name => (currentAnimationRef.current = name),
-    playIdle: () => play(IDLE),
-    playRun: () => play(RUN),
-    playSprint: () => play(SPRINT),
-    playJump: () => play(JUMP),
-    playFalling: () => play(FALLING),
-  };
+  return useMemo(
+    () => ({
+      play,
+      get current() {
+        return currentAnimationRef.current;
+      },
+    }),
+    [play]
+  );
 }

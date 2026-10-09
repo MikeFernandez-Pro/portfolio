@@ -1,6 +1,16 @@
 import { useEffect, useRef } from 'react';
 import { IS_MOBILE_DEVICE } from '#utils/device.js';
-import { keysConfigList } from '#character/CharacterControllerUtils.js';
+
+const keysConfigList = {
+  ArrowUp: 'forward',
+  ArrowDown: 'backward',
+  ArrowLeft: 'leftward',
+  ArrowRight: 'rightward',
+  KeyW: 'forward',
+  KeyS: 'backward',
+  KeyA: 'leftward',
+  KeyD: 'rightward',
+};
 
 /**
  * useKeyboardControls

@@ -11,6 +11,7 @@ import * as THREE from 'three/webgpu';
 
 import { IS_MOBILE_DEVICE } from '#utils/device.js';
 import { prefersReducedMotion } from '#utils/reducedMotion.js';
+import { CAMERA_INITIAL_OFFSET } from '#character/hooks/useThirdPersonCamera.js';
 
 import soundOnIcon from '/icons/sound-on.svg';
 import soundOffIcon from '/icons/sound-off.svg';
@@ -35,13 +36,42 @@ const setUserMuted = muted => {
   applyMute();
 };
 
+// Sound on/off icons. Own state, so a toggle doesn't re-render the scene;
+// the on icon starts transparent and App fades it in on Enter
+const SoundToggle = ({ onIconRef }) => {
+  const [muted, setMuted] = useState(false);
+  const toggle = () => {
+    setUserMuted(!muted);
+    setMuted(!muted);
+  };
+
+  return (
+    <>
+      <img
+        ref={onIconRef}
+        src={soundOnIcon}
+        style={{ opacity: 0, display: muted ? 'none' : 'block' }}
+        className="volume-controller"
+        alt="Sound on button"
+        onClick={toggle}
+      />
+      <img
+        src={soundOffIcon}
+        style={{ display: muted ? 'block' : 'none' }}
+        className="volume-controller"
+        alt="Sound down button"
+        onClick={toggle}
+      />
+    </>
+  );
+};
+
 // Animations
 let hoverAnimation = undefined;
 
 const App = () => {
   const sceneRevealerRef = useRef();
   const soundOnIconRef = useRef();
-  const soundOffIconRef = useRef();
   const startExperienceRef = useRef();
 
   const [dpr, setDpr] = useState(MAX_DPR);
@@ -105,35 +135,16 @@ const App = () => {
   return (
     <>
       <ui.Out />
-      <img
-        ref={soundOnIconRef}
-        src={soundOnIcon}
-        style={{ opacity: 0 }}
-        className="volume-controller"
-        alt="Sound on button"
-        onClick={() => {
-          soundOnIconRef.current.style.display = 'none';
-          soundOffIconRef.current.style.display = 'block';
-          setUserMuted(true);
-        }}
-      />
-      <img
-        ref={soundOffIconRef}
-        src={soundOffIcon}
-        style={{ display: 'none' }}
-        className="volume-controller"
-        alt="Sound down button"
-        onClick={() => {
-          soundOffIconRef.current.style.display = 'none';
-          soundOnIconRef.current.style.display = 'block';
-          setUserMuted(false);
-        }}
-      />
+      <SoundToggle onIconRef={soundOnIconRef} />
       <Canvas
         dpr={dpr}
         performance={{ min: 0.5 }}
         camera={{
-          position: [-3.5, 17.4, 29.6],
+          position: [
+            CAMERA_INITIAL_OFFSET.x,
+            CAMERA_INITIAL_OFFSET.y,
+            CAMERA_INITIAL_OFFSET.z,
+          ],
           rotation: [-Math.PI / 8, 0, 0],
           fov: 40,
           near: 0.5,
