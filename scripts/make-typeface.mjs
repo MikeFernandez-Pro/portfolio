@@ -1,14 +1,11 @@
-// PROTOTYPE (skills TextGeometry) - throwaway, lives on the
-// prototype/skills-textgeometry branch only.
-//
 // One-off: converts src/assets/fonts/metamorphous.woff into the typeface JSON
-// that three's FontLoader/TextGeometry expect. Same conversion as three's
+// that three's Font (FloatingSkills) expects. Same conversion as three's
 // TTFLoader, which can't be used at runtime here (it imports opentype.js from
 // a CDN URL). Printable Latin-1 only, to keep the JSON small.
 //
 // opentype.js is not a project dependency; install it anywhere and point to it:
 //   OPENTYPE=/tmp/ot/node_modules/opentype.js/dist/opentype.module.js \
-//     node scripts/prototype-make-typeface.mjs
+//     node scripts/make-typeface.mjs
 import { readFileSync, writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
@@ -17,7 +14,7 @@ if (!opentypePath) throw new Error('Set OPENTYPE to opentype.module.js');
 const { default: opentype } = await import(pathToFileURL(opentypePath).href);
 
 const SRC = 'src/assets/fonts/metamorphous.woff';
-const OUT = 'src/assets/fonts/metamorphous.typeface.prototype.json';
+const OUT = 'src/assets/fonts/metamorphous.typeface.json';
 
 const buffer = readFileSync(SRC);
 const font = opentype.parse(

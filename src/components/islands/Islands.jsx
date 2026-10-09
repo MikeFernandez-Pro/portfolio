@@ -92,8 +92,9 @@ const Islands = () => {
     materials.islandTexture = terrain;
   }, [materials, islandTexture]);
 
-  // The GLB clips animate island_7, which is intentionally not mounted —
-  // drop those tracks so the mixer doesn't warn about a missing node
+  // The GLB clips animate island_7 and island_11 (the baked floating skills,
+  // replaced by the text in FloatingSkills), neither mounted — drop those
+  // tracks so the mixer doesn't warn about a missing node
   const filteredAnimations = useMemo(() => {
     // Each island primitive gets one interleaved weights track (all morph
     // targets together), so removing the cauldron bubble means zeroing the
@@ -104,7 +105,9 @@ const Islands = () => {
 
     animations.forEach(clip => {
       clip.tracks = clip.tracks.filter(
-        track => !track.name.startsWith('island_7.')
+        track =>
+          !track.name.startsWith('island_7.') &&
+          !track.name.startsWith('island_11.')
       );
 
       clip.tracks.forEach(track => {

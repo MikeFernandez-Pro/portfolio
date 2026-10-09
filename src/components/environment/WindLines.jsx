@@ -257,7 +257,9 @@ const WindLines = () => {
   useEffect(() => () => geometry.dispose(), [geometry]);
 
   const material = useMemo(() => {
+    // Unlit glow: lights off
     const windMaterial = new THREE.MeshBasicNodeMaterial({
+      lights: false,
       transparent: true,
       blending: THREE.NormalBlending,
       depthWrite: false,
