@@ -141,12 +141,14 @@ const Islands = () => {
 
   return (
     <>
+      {/* Island space. The `details` clip animates the morph weights of
+          every island.glb primitive (one track per island_N mesh, bound by
+          name under this group, the mixer root): the GLB meshes other
+          components remount (potion, books, flags) must stay inside it.
+          World-space props mount below, outside the group */}
       <group ref={islandRef} scale={ISLAND_SCALE} position={ISLAND_POSITION}>
         <group name="island">
-          <ContactIsland
-            islandNodes={nodes}
-            islandAnimations={islandAnimations}
-          />
+          <ContactIsland islandAnimations={islandAnimations} />
           <WindowRay />
           <SkillsIsland island={island} />
           <CountriesFlags island={island} />

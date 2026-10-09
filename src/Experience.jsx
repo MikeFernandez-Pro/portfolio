@@ -22,8 +22,6 @@ import { IslandCollider } from '#islands/world/IslandCollider.jsx';
 import FireFlies from '#islands/world/lanterns/FireFlies.jsx';
 import { Spiral } from '#islands/world/Spiral.jsx';
 import { InteractiveElements } from '#islands/interaction/InteractiveElements.jsx';
-import { Grass } from '#islands/resume/grass/Grass.jsx';
-import BonfireSmoke from '#islands/resume/BonfireSmoke.jsx';
 import { useStore } from '#store';
 import { DEBUG_ENABLED } from '#debug/debugEnabled.js';
 import { SOUND_VOLUMES } from '#utils/soundVolumes.js';
@@ -178,9 +176,7 @@ const Experience = () => {
       <CloudShadows />
       <WindLines />
       <FireFlies />
-      <BonfireSmoke />
       <TorchesSparks />
-      <Grass />
       <Spiral />
       <Islands />
       <Sky

@@ -3,11 +3,11 @@ import { Forge } from './forge/Forge';
 import { XSign } from './XSign';
 
 const ContactIsland = props => {
-  const { islandNodes, islandAnimations } = props;
+  const { islandAnimations } = props;
 
   return (
     <>
-      <Well islandNodes={islandNodes} />
+      <Well />
       <Forge islandAnimations={islandAnimations} />
       <XSign />
     </>
