@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import basicSsl from '@vitejs/plugin-basic-ssl';
 import react from '@vitejs/plugin-react';
 
 // Bare `three` imports resolve to `three/webgpu`: the same shared core plus
@@ -48,14 +49,22 @@ const threeWebGPUOnly = () => ({
 });
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [threeWebGPUOnly(), react()],
+export default defineConfig(({ mode }) => ({
+  // `pnpm dev:https` serves over a self-signed certificate: WebGPU needs a
+  // secure context, which plain http only gets on localhost (phone testing).
+  plugins: [
+    threeWebGPUOnly(),
+    react(),
+    ...(mode === 'https' ? [basicSsl()] : []),
+  ],
   assetsInclude: ['**/*.glb', '**/*.gltf', '**/*.ktx2'],
   root: 'src/',
   publicDir: '../public/',
   base: './',
   server: {
     host: true,
+    // Phone testing through `cloudflared tunnel` (real certificate)
+    allowedHosts: ['.trycloudflare.com'],
   },
   build: {
     outDir: '../dist',
@@ -80,4 +89,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

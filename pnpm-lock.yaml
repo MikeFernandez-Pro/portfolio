@@ -57,6 +57,9 @@ importers:
       '@gltf-transform/extensions':
         specifier: ^4.5.1
         version: 4.5.1
+      '@vitejs/plugin-basic-ssl':
+        specifier: ^2.3.0
+        version: 2.3.0(vite@8.3.4(esbuild@0.28.1)(tsx@4.23.5))
       '@vitejs/plugin-react':
         specifier: 6.1.2
         version: 6.1.2(vite@8.3.4(esbuild@0.28.1)(tsx@4.23.5))
@@ -1709,6 +1712,12 @@ packages:
     resolution: {integrity: sha512-YWZQex+RVsoodt1EC1Ec153otgoYE5GTbau5NfJyiUEtwXRd/fdfnXwRz2CtjYJcn6ghK7y0tNg4mjPJYGO4jg==}
     cpu: [x64]
     os: [win32]
+
+  '@vitejs/plugin-basic-ssl@2.3.0':
+    resolution: {integrity: sha512-bdyo8rB3NnQbikdMpHaML9Z1OZPBu6fFOBo+OtxsBlvMJtysWskmBcnbIDhUqgC8tcxNv/a+BcV5U+2nQMm1OQ==}
+    engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
+    peerDependencies:
+      vite: ^6.0.0 || ^7.0.0 || ^8.0.0
 
   '@vitejs/plugin-react@6.1.2':
     resolution: {integrity: sha512-fhJNGUdscQa4HkI0xFxwonWyhnVReCPDbXI7FH7jmzpnVCrFQI7PRrhWecO263610vOrs9tr2Y4xcf8uAdFxbw==}
@@ -5134,6 +5143,10 @@ snapshots:
 
   '@vercel/vc-native-win32-x64@63.1.0':
     optional: true
+
+  '@vitejs/plugin-basic-ssl@2.3.0(vite@8.3.4(esbuild@0.28.1)(tsx@4.23.5))':
+    dependencies:
+      vite: 8.3.4(esbuild@0.28.1)(tsx@4.23.5)
 
   '@vitejs/plugin-react@6.1.2(vite@8.3.4(esbuild@0.28.1)(tsx@4.23.5))':
     dependencies:
