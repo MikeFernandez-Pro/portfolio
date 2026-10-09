@@ -6,7 +6,7 @@ import { useControls } from '#debug/useControls.jsx';
  * Defaults match the tuned debug panel values.
  */
 const MATERIAL_DEFAULTS = {
-  EmailSign: {
+  Signs: {
     color: '#c67757',
     emissiveColor: '#c67757',
     emissiveIntensity: 9.2,
@@ -69,11 +69,7 @@ const useMaterialControls = (folderName, material, defaults) => {
 const IslandMaterialsControls = props => {
   const { materials } = props;
 
-  useMaterialControls(
-    'EmailSign',
-    materials.signs,
-    MATERIAL_DEFAULTS.EmailSign
-  );
+  useMaterialControls('Signs', materials.signs, MATERIAL_DEFAULTS.Signs);
   useMaterialControls(
     'ForgeSword',
     materials.forgeSword,

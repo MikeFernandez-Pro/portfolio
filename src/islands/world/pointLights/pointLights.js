@@ -22,10 +22,11 @@ import {
 } from 'three/tsl';
 
 import { LANTERN_POSITIONS } from '#islands/world/lanterns/lanternPositions.js';
+import { INTERACTIVE_ELEMENTS } from '#islands/interaction/interactiveElements.js';
 
 // Old-school point lights (Three.js Journey shading lesson) shaded onto lit
 // node materials (island terrain, character, lantern): the projects portal,
-// every torch flame, lantern and interactive link indicator, the forge lava,
+// every torch flame, lantern and link indicator, the forge lava,
 // the anvil sword, the skills glyph, the well, the house window, the
 // cauldron, the spawn point, the candles and the project plates.
 
@@ -44,32 +45,20 @@ const TORCH_POSITIONS = [
   [-1.5, 7.1, -55.8],
 ];
 
-// World-space interactive link indicator positions, same as the
-// interactiveLinkPosition entries in interactiveElementsData.js
-const INDICATOR_POSITIONS = [
-  [-4.45, 2.5, -8.55], // mailBox
-  [-3.4, 2.2, -9.09], // linkedIn
-  [-2.26, 2.2, -9.65], // vercel
-  [-16.14, 5.9, -37.3], // portal
-  [-9.77, 7.9, -58.8], // statue
-];
+// One light under each link indicator
+const INDICATOR_POSITIONS = INTERACTIVE_ELEMENTS.filter(
+  element => element.kind === 'link'
+).map(element => element.indicator.position);
 
-// World-space project plate positions (interactiveElementsData.js entries;
-// the plate light height lifts the lights above them). Order must match
-// PLATE_LIGHT_INDEX: each plate's press animation drives its `factors`
-// component.
-const PLATE_POSITIONS = [
-  [-15.085, 4.4, -32.45], // hoHoNo
-  [-15.085, 4.4, -34.495], // doanTenConVat
-  [-17.14, 4.4, -34.495], // halloweenChallenge
-];
+// One light above each project plate (the plate light height lifts them);
+// each plate's press animation drives its `factors` component
+const PLATES = INTERACTIVE_ELEMENTS.filter(element => element.kind === 'plate');
+const PLATE_POSITIONS = PLATES.map(element => element.sensor.position);
 
 // Project id -> its plate light
-const PLATE_LIGHT_INDEX = {
-  hoHoNo: 0,
-  doanTenConVat: 1,
-  halloweenChallenge: 2,
-};
+const PLATE_LIGHT_INDEX = Object.fromEntries(
+  PLATES.map((element, index) => [element.id, index])
+);
 
 // The candle flames live in the GLB, so unlike the other grouped lights the
 // positions can't be baked as constants: Islands.jsx clusters the candles

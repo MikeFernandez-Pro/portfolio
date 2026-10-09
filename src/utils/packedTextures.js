@@ -70,7 +70,7 @@ const usePerlinCloudsTexture = () => {
 };
 
 // screens-atlas — images shown on screen (project portal screenshots,
-// interactive link, X logo), flattened over black. No alpha channel: cutout
+// indicator Enter tile, X logo), flattened over black. No alpha channel: cutout
 // consumers use the green channel as mask instead.
 const useScreensAtlasTexture = () =>
   useConfiguredKtx2(screensAtlasUrl, configureColor);
@@ -100,7 +100,7 @@ const SCREENS_ATLAS_RECTS = {
   halloweenChallenge: atlasRect(0, 0, 512, 342),
   hoHoNo: atlasRect(512, 0, 512, 342),
   doanTenConVat: atlasRect(0, 342, 512, 342),
-  interactiveLink: atlasRect(512, 342, 256, 256),
+  enterTile: atlasRect(512, 342, 256, 256),
   xLogo: atlasRect(768, 342, 256, 256),
 };
 

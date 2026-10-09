@@ -1,86 +1,56 @@
 import { useEffect, useRef } from 'react';
 
-import { Indicators } from './Indicators.jsx';
-import { InteractiveElementSensors } from './InteractiveElementSensors.jsx';
-import { interactiveElementsData } from './interactiveElementsData.js';
 import { useStore } from '#store';
 
+import { Indicators } from './Indicators.jsx';
+import { InteractiveElementSensors } from './InteractiveElementSensors.jsx';
+import { ELEMENTS_BY_ID, INTERACTIVE_ELEMENTS } from './interactiveElements.js';
+import {
+  enterElement,
+  killIndicatorAnimations,
+  leaveElement,
+  openLink,
+} from './interactions.js';
+
+// Every interactive element: its sensor zones, the link indicators, and the
+// dispatch of entering / leaving a zone and of Enter
 const InteractiveElements = () => {
-  const selectedProjectRef = useRef(useStore.getState().selectedProject);
-  const interactionPromptRef = useRef();
+  const indicatorsRef = useRef();
 
   useEffect(() => {
     const keyDownHandler = event => {
-      if (event.key === 'Enter') {
-        const activatedInteractiveElement =
-          useStore.getState().activatedInteractiveElement.current;
-        if (activatedInteractiveElement) {
-          const activatedInteractiveElementData =
-            interactiveElementsData[activatedInteractiveElement];
-
-          // Glyph and plates have no link to open
-          activatedInteractiveElementData.userData?.activateLink?.(
-            selectedProjectRef
-          );
-        }
+      if (event.key !== 'Enter') return;
+      const current = useStore.getState().activatedInteractiveElement.current;
+      // Plates and the glyph have no link to open
+      if (current && ELEMENTS_BY_ID[current].kind === 'link') {
+        openLink(ELEMENTS_BY_ID[current]);
       }
     };
 
     window.addEventListener('keydown', keyDownHandler);
 
-    const unsubActiveInteractiveElement = useStore.subscribe(
+    const unsubActivatedElement = useStore.subscribe(
       state => state.activatedInteractiveElement,
-      activatedInteractiveElement => {
-        if (activatedInteractiveElement.current) {
-          const activatedInteractiveElementData =
-            interactiveElementsData[activatedInteractiveElement.current];
-          activatedInteractiveElementData.userData?.startInteraction(
-            activatedInteractiveElementData,
-            interactionPromptRef,
-            selectedProjectRef
-          );
-        }
-
-        if (activatedInteractiveElement.prev) {
-          const activatedInteractiveElementData =
-            interactiveElementsData[activatedInteractiveElement.prev];
-          // Glyph and plates have nothing to close
-          activatedInteractiveElementData.userData?.closeInteraction?.(
-            activatedInteractiveElementData,
-            interactionPromptRef
-          );
-        }
+      ({ current, prev }) => {
+        if (current)
+          enterElement(ELEMENTS_BY_ID[current], indicatorsRef.current);
+        if (prev) leaveElement(ELEMENTS_BY_ID[prev]);
       }
-    );
-
-    const unsubSelectedProject = useStore.subscribe(
-      state => (selectedProjectRef.current = state.selectedProject)
     );
 
     return () => {
-      for (const link of Object.values(interactiveElementsData)) {
-        if (link.userData.interactionAnimation) {
-          link.userData.interactionAnimation?.kill();
-          delete link.userData.interactionAnimation;
-        }
-      }
-
+      killIndicatorAnimations();
       window.removeEventListener('keydown', keyDownHandler);
-      unsubActiveInteractiveElement();
-      unsubSelectedProject();
+      unsubActivatedElement();
     };
   }, []);
 
   return (
     <>
-      <InteractiveElementSensors
-        interactiveElementsData={interactiveElementsData}
-      />
-
+      <InteractiveElementSensors elements={INTERACTIVE_ELEMENTS} />
       <Indicators
-        interactiveElementsData={interactiveElementsData}
-        selectedProjectRef={selectedProjectRef}
-        interactionPromptRef={interactionPromptRef}
+        links={INTERACTIVE_ELEMENTS.filter(element => element.kind === 'link')}
+        ref={indicatorsRef}
       />
     </>
   );

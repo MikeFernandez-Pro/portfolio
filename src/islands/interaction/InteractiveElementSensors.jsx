@@ -6,18 +6,16 @@ import { physicsWorld } from '#physics/world.js';
 import { useStore } from '#store';
 
 // One box sensor zone per interactive element (mailbox, plates, glyph...),
-// baked to world space from the same position/rotation/scale the instanced
-// rapier cuboids used. Entering/leaving one toggles the activated element.
-const InteractiveElementSensors = props => {
-  const { interactiveElementsData } = props;
-
+// baked to world space from its sensor position/rotation/scale. Entering or
+// leaving one updates the activated element (by id).
+const InteractiveElementSensors = ({ elements }) => {
   useEffect(() => {
     const unitBox = new THREE.BoxGeometry(1, 1, 1);
 
-    const handles = Object.values(interactiveElementsData).map(data =>
+    const handles = elements.map(element =>
       physicsWorld.addSensor({
-        bvh: buildWorldSpaceBvh(unitBox, data),
-        userData: data.userData,
+        bvh: buildWorldSpaceBvh(unitBox, element.sensor),
+        userData: { id: element.id },
         onEnter: state => {
           useStore.setState({
             activatedInteractiveElement: {
@@ -41,7 +39,7 @@ const InteractiveElementSensors = props => {
     unitBox.dispose();
 
     return () => handles.forEach(handle => handle.remove());
-  }, [interactiveElementsData]);
+  }, [elements]);
 
   return null;
 };

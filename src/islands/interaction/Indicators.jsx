@@ -3,6 +3,11 @@ import { Merged } from '@react-three/drei/webgpu';
 import * as THREE from 'three/webgpu';
 
 import { IS_MOBILE_DEVICE } from '#utils/device.js';
+import {
+  INDICATOR_ENTER_TILE,
+  INDICATOR_RING,
+  openLink,
+} from './interactions.js';
 
 import {
   useScreensAtlasTexture,
@@ -10,21 +15,23 @@ import {
   createAtlasTileTexture,
 } from '#utils/packedTextures.js';
 
-const INTERACTIVE_LINK_COLOR = new THREE.Color(10, 1.5, 1.0);
+const INDICATOR_COLOR = new THREE.Color(10, 1.5, 1.0);
 
-const Indicators = props => {
-  const { interactiveElementsData, selectedProjectRef, interactionPromptRef } =
-    props;
-
+/**
+ * One indicator per link, named by link id: a diamond ring that turns into
+ * the Enter tile while the character stands in the link's sensor zone
+ * (interactions.js animates them). `ref` receives the group holding them.
+ */
+const Indicators = ({ links, ref }) => {
   // "Enter" tile of the screens atlas. The atlas has no alpha channel
   // (flattened over black), so the white text's green channel doubles as the
   // cutout mask through alphaMap. The clone keeps this material's own
   // sampling setup without touching the shared atlas texture.
   const atlasTexture = useScreensAtlasTexture();
-  const interactiveLinkTexture = useMemo(() => {
+  const enterTileTexture = useMemo(() => {
     const texture = createAtlasTileTexture(
       atlasTexture,
-      SCREENS_ATLAS_RECTS.interactiveLink
+      SCREENS_ATLAS_RECTS.enterTile
     );
     texture.colorSpace = THREE.NoColorSpace;
     texture.magFilter = THREE.NearestFilter;
@@ -33,83 +40,61 @@ const Indicators = props => {
     return texture;
   }, [atlasTexture]);
 
-  const interactionIndicatorMesh = useMemo(
+  const ringMesh = useMemo(
     () =>
       new THREE.Mesh(
         new THREE.RingGeometry(0.12, 0.15, 4),
-        new THREE.MeshBasicMaterial({ color: INTERACTIVE_LINK_COLOR })
+        new THREE.MeshBasicMaterial({ color: INDICATOR_COLOR })
       ),
     []
   );
 
-  const activationIndicatorMesh = useMemo(
+  const enterTileMesh = useMemo(
     () =>
       new THREE.Mesh(
         new THREE.PlaneGeometry(1, 1),
         new THREE.MeshBasicMaterial({
-          map: interactiveLinkTexture,
-          alphaMap: interactiveLinkTexture,
-          color: INTERACTIVE_LINK_COLOR,
+          map: enterTileTexture,
+          alphaMap: enterTileTexture,
+          color: INDICATOR_COLOR,
           transparent: true,
           depthWrite: false,
         })
       ),
-    [interactiveLinkTexture]
+    [enterTileTexture]
   );
 
   const meshes = useMemo(
-    () => ({
-      InteractionIndicatorMesh: interactionIndicatorMesh,
-      ActivationIndicatorMesh: activationIndicatorMesh,
-    }),
-    [interactionIndicatorMesh, activationIndicatorMesh]
+    () => ({ Ring: ringMesh, EnterTile: enterTileMesh }),
+    [ringMesh, enterTileMesh]
   );
 
   return (
-    <>
-      <Merged meshes={meshes} ref={interactionPromptRef}>
-        {({ InteractionIndicatorMesh, ActivationIndicatorMesh }) => (
-          <>
-            {Object.values(interactiveElementsData).map(linkInstanceData => {
-              // Skip if interactive element doesn't contain an url link
-              if (!linkInstanceData.userData.activateLink) {
-                return null;
-              }
-
-              return (
-                <group
-                  position={linkInstanceData.userData.interactiveLinkPosition}
-                  rotation-y={
-                    linkInstanceData.userData.interactiveLinkRotationY
-                  }
-                  name={linkInstanceData.userData.id}
-                  key={linkInstanceData.userData.id}
-                >
-                  <InteractionIndicatorMesh name="InteractionIndicatorMesh" />
-                  {/* Scale must never be exactly 0: three r185 Matrix4.decompose
-                      returns scale (1,1,1) for zero-determinant matrices, which
-                      makes drei <Merged> instances reappear at full size */}
-                  <ActivationIndicatorMesh
-                    name="ActivationIndicatorMesh"
-                    scale={0.001}
-                    onClick={() => {
-                      // Only activate click trigger on mobile devices
-                      if (!IS_MOBILE_DEVICE) {
-                        return;
-                      }
-
-                      linkInstanceData.userData.activateLink(
-                        selectedProjectRef
-                      );
-                    }}
-                  />
-                </group>
-              );
-            })}
-          </>
-        )}
-      </Merged>
-    </>
+    <Merged meshes={meshes} ref={ref}>
+      {({ Ring, EnterTile }) =>
+        links.map(link => (
+          <group
+            position={link.indicator.position}
+            rotation-y={link.indicator.rotationY}
+            name={link.id}
+            key={link.id}
+          >
+            <Ring name={INDICATOR_RING} />
+            {/* Scale must never be exactly 0: three r185 Matrix4.decompose
+                returns scale (1,1,1) for zero-determinant matrices, which
+                makes drei <Merged> instances reappear at full size */}
+            <EnterTile
+              name={INDICATOR_ENTER_TILE}
+              scale={0.001}
+              onClick={() => {
+                // Tap to open: mobile only (desktop uses Enter)
+                if (IS_MOBILE_DEVICE) openLink(link);
+              }}
+            />
+          </group>
+        ))
+      }
+    </Merged>
   );
 };
 

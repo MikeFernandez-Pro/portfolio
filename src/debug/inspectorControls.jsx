@@ -93,7 +93,7 @@ const FOLDER_TREE = {
     ForgeLava: { ForgeLava: null, ForgeLavaLight: null },
     Window: { WindowRay: null, WindowLight: null },
   },
-  Contact: { XSign: null, EmailSign: null },
+  Contact: { XSign: null, Signs: null },
   IndicatorLights: null,
   ProjectsPortal: {
     ProjectsPortal: null,
