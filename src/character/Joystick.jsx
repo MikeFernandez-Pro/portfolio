@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import nipplejs from 'nipplejs';
 import gsap from 'gsap';
 
-import { useStore } from '#store';
+import { subscribeWhenSet, useStore } from '#store';
 import { IS_MOBILE_DEVICE } from '#utils/device.js';
 
 // ScreenOrientation constants
@@ -73,11 +73,9 @@ const Joystick = () => {
     let orientationHandler;
     let setupTimeout;
 
-    const unsubExperienceStarted = useStore.subscribe(
+    const unsubExperienceStarted = subscribeWhenSet(
       state => state.experienceStarted,
-      experienceStarted => {
-        if (!experienceStarted) return;
-
+      () => {
         setupTimeout = setTimeout(() => {
           // Initialize joystick
           joystick = createJoystick(screen.orientation.type);

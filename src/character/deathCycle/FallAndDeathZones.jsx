@@ -26,7 +26,7 @@ const FallAndDeathZones = ({ onFallingZoneEnter, onDeathZoneEnter }) => {
   onFallingZoneEnterRef.current = onFallingZoneEnter;
   onDeathZoneEnterRef.current = onDeathZoneEnter;
 
-  const { deathZoneHeight } = useControls('Player Death', {
+  const { deathZoneHeight } = useControls('Character Death', {
     deathZoneHeight: { value: -1, min: -10, max: 0, step: 0.1 },
   });
 

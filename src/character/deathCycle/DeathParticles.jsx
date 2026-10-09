@@ -37,7 +37,7 @@ const CAPSULE_RADIUS = 0.25;
 const CAPSULE_Y_MIN = 0.05;
 const CAPSULE_Y_MAX = 1.1;
 
-export const DEATH_PARTICLES_DEFAULTS = {
+const DEATH_PARTICLES_DEFAULTS = {
   duration: 1,
   riseHeight: 0.69,
   size: 0.044,
@@ -115,9 +115,9 @@ const DeathParticles = () => {
   const d = DEATH_PARTICLES_DEFAULTS;
   const control = uniformControls(uniforms);
 
-  // Shares the 'Player Death' folder with the death timeline controls
+  // Shares the 'Character Death' folder with the death timeline controls
   // (DeathCycleControls)
-  const controls = useControls('Player Death', {
+  const controls = useControls('Character Death', {
     // Death particles — rebuild the geometry (new random spread) when changed
     count: { value: PARTICLES_COUNT, min: 10, max: 500, step: 10 },
     particlesDuration: {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useControls } from '#debug/useControls.jsx';
+import { uniformControls } from '#debug/uniformControls.js';
 import * as THREE from 'three/webgpu';
 import {
   max,
@@ -41,23 +42,22 @@ const LAVA_DEFAULTS = {
  * Flat by default (rotated -90° on X), spun around Y via its debug control.
  */
 const ForgeLavaPlane = ({ bellowsMesh }) => {
-  const uniformsRef = useRef(null);
   const gaspParamsRef = useRef({
     base: LAVA_DEFAULTS.minIntensity,
     peak: LAVA_DEFAULTS.maxIntensity,
   });
 
   // Gasp: uIntensity is driven each frame by the bellows morph weight
-  // (`blowerClosed`, as named in Blender)
-  // (animated by the 'details' clip on the island mixer), so the glow can
-  // never drift out of sync with the bellows
+  // (`blowerClosed`, as named in Blender, animated by the 'details' clip on
+  // the island mixer), so the glow can never drift out of sync with the
+  // bellows
   const bellowsIndex = bellowsMesh?.morphTargetDictionary?.blowerClosed;
 
   // Voronoi (R) and perlin (G) share one packed texture; both sampler
   // uniforms point at it
   const noiseTexture = useVoronoiPerlinTexture();
 
-  const lavaMaterial = useMemo(() => {
+  const { lavaMaterial, uniforms } = useMemo(() => {
     const uniforms = {
       uSize: uniform(LAVA_DEFAULTS.size),
       uSpeed: uniform(LAVA_DEFAULTS.speed),
@@ -98,10 +98,10 @@ const ForgeLavaPlane = ({ bellowsMesh }) => {
     material.colorNode = vec4(lavaColor, 1);
     material.emissiveNode = lavaColor.mul(uniforms.uIntensity);
 
-    uniformsRef.current = uniforms;
-
-    return material;
+    return { lavaMaterial: material, uniforms };
   }, [noiseTexture]);
+
+  const control = uniformControls(uniforms);
 
   useEffect(() => () => lavaMaterial.dispose(), [lavaMaterial]);
 
@@ -144,38 +144,10 @@ const ForgeLavaPlane = ({ bellowsMesh }) => {
         max: 20,
         step: 0.1,
       },
-      size: {
-        value: LAVA_DEFAULTS.size,
-        min: 0.01,
-        max: 10,
-        step: 0.01,
-        onChange: value => {
-          if (uniformsRef.current) uniformsRef.current.uSize.value = value;
-        },
-      },
-      speed: {
-        value: LAVA_DEFAULTS.speed,
-        min: 0,
-        max: 2,
-        step: 0.01,
-        onChange: value => {
-          if (uniformsRef.current) uniformsRef.current.uSpeed.value = value;
-        },
-      },
-      crustColor: {
-        value: LAVA_DEFAULTS.crustColor,
-        onChange: value => {
-          if (uniformsRef.current)
-            uniformsRef.current.uCrustColor.value.set(value);
-        },
-      },
-      glowColor: {
-        value: LAVA_DEFAULTS.glowColor,
-        onChange: value => {
-          if (uniformsRef.current)
-            uniformsRef.current.uGlowColor.value.set(value);
-        },
-      },
+      size: control('uSize', LAVA_DEFAULTS.size, 0.01, 10, 0.01),
+      speed: control('uSpeed', LAVA_DEFAULTS.speed, 0, 2, 0.01),
+      crustColor: control('uCrustColor', LAVA_DEFAULTS.crustColor),
+      glowColor: control('uGlowColor', LAVA_DEFAULTS.glowColor),
       // Resting glow intensity (bellows open)
       minIntensity: {
         value: LAVA_DEFAULTS.minIntensity,
@@ -196,50 +168,39 @@ const ForgeLavaPlane = ({ bellowsMesh }) => {
           gaspParamsRef.current.peak = value;
         },
       },
-      borderThicknessX: {
-        value: LAVA_DEFAULTS.borderThicknessX,
-        min: 0,
-        max: 0.5,
-        step: 0.001,
-        onChange: value => {
-          if (uniformsRef.current)
-            uniformsRef.current.uBorderThicknessX.value = value;
-        },
-      },
-      borderThicknessY: {
-        value: LAVA_DEFAULTS.borderThicknessY,
-        min: 0,
-        max: 0.5,
-        step: 0.001,
-        onChange: value => {
-          if (uniformsRef.current)
-            uniformsRef.current.uBorderThicknessY.value = value;
-        },
-      },
-      perlinNoiseStrength: {
-        value: LAVA_DEFAULTS.perlinNoiseStrength,
-        min: 0,
-        max: 5,
-        step: 0.01,
-        onChange: value => {
-          if (uniformsRef.current)
-            uniformsRef.current.uPerlinNoiseStrength.value = value;
-        },
-      },
+      borderThicknessX: control(
+        'uBorderThicknessX',
+        LAVA_DEFAULTS.borderThicknessX,
+        0,
+        0.5,
+        0.001
+      ),
+      borderThicknessY: control(
+        'uBorderThicknessY',
+        LAVA_DEFAULTS.borderThicknessY,
+        0,
+        0.5,
+        0.001
+      ),
+      perlinNoiseStrength: control(
+        'uPerlinNoiseStrength',
+        LAVA_DEFAULTS.perlinNoiseStrength,
+        0,
+        5,
+        0.01
+      ),
     }
   );
 
   useFrame(() => {
-    if (!uniformsRef.current) return;
-
     const influences = bellowsMesh?.morphTargetInfluences;
     const gasp =
       influences && bellowsIndex !== undefined ? influences[bellowsIndex] : 0;
 
     const { base, peak } = gaspParamsRef.current;
-    uniformsRef.current.uIntensity.value = base + (peak - base) * gasp;
+    uniforms.uIntensity.value = base + (peak - base) * gasp;
 
-    // The fake point light gasps along the same bellows factor, sweeping
+    // The point light gasps along the same bellows factor, sweeping
     // its own min/max intensity range
     const { minIntensity, maxIntensity } = pointLights.forgeLava.settings;
     pointLights.forgeLava.intensity.value =

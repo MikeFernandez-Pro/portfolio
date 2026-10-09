@@ -1,5 +1,5 @@
 import * as THREE from 'three/webgpu';
-import { instancedBufferAttribute, uv, vec2 } from 'three/tsl';
+import { instancedBufferAttribute, length, max, uv, vec2 } from 'three/tsl';
 
 // WebGPU draws THREE.Points as 1px points (no gl_PointSize). Sized particles
 // are an instanced THREE.Sprite with a PointsNodeMaterial instead: one quad
@@ -9,6 +9,14 @@ import { instancedBufferAttribute, uv, vec2 } from 'three/tsl';
 
 /** gl_PointCoord of the sprite quad: origin top-left, y down. */
 const pointCoord = /*@__PURE__*/ vec2(uv().x, uv().y.oneMinus());
+
+/** Soft glow around the particle center (firefly falloff): 0 at the rim. */
+const pointGlow = () =>
+  max(length(pointCoord.sub(0.5)), 0.001)
+    .reciprocal()
+    .mul(0.05)
+    .sub(0.1)
+    .clamp(0, 1);
 
 /**
  * Per-particle attribute node (one value per instance), readable in both
@@ -44,4 +52,25 @@ const anchorSpread = (count, anchorCount) => {
   };
 };
 
-export { pointCoord, particleAttribute, createParticleSprite, anchorSpread };
+/**
+ * Debug entry for how many of a sprite's particles are drawn (its buffers
+ * are allocated for `max`).
+ */
+const spriteCountControl = (sprite, value, max) => ({
+  value,
+  min: 0,
+  max,
+  step: 1,
+  onChange: v => {
+    sprite.count = v;
+  },
+});
+
+export {
+  pointCoord,
+  pointGlow,
+  particleAttribute,
+  createParticleSprite,
+  anchorSpread,
+  spriteCountControl,
+};

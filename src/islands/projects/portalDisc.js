@@ -27,7 +27,7 @@ import {
 import { uniformControls } from '#debug/uniformControls.js';
 
 // Current visuals, tweakable from the 'ProjectsPortal' debug folder
-export const PORTAL_DISC_DEFAULTS = {
+const PORTAL_DISC_DEFAULTS = {
   noiseScale: 1.14,
   noiseSpeed: 0.05,
   deformationStart: 0.3,

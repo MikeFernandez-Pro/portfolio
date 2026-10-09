@@ -46,23 +46,25 @@ const DEFAULTS = {
  * time offset.
  */
 const TorchSmoke = () => {
-  // One instance per column: world offset + time offset (hashed from the
-  // column's world position), filled by the effect below
   const { geometry, smokeMaterial, uniforms, columnScale } = useMemo(() => {
     const geometry = new THREE.InstancedBufferGeometry().copy(
       new THREE.PlaneGeometry(1, 10, 4, 16)
     );
     geometry.instanceCount = POSITIONS.length;
+    // One instance per column: world offset + time offset (hashed from the
+    // column's world position)
     geometry.setAttribute(
       'aColumnOffset',
-      new THREE.InstancedBufferAttribute(
-        new Float32Array(POSITIONS.length * 3),
-        3
-      )
+      new THREE.InstancedBufferAttribute(new Float32Array(POSITIONS.flat()), 3)
     );
     geometry.setAttribute(
       'aTimeOffset',
-      new THREE.InstancedBufferAttribute(new Float32Array(POSITIONS.length), 1)
+      new THREE.InstancedBufferAttribute(
+        new Float32Array(
+          POSITIONS.map(([x, , z]) => smokeColumnTimeOffset(x, z))
+        ),
+        1
+      )
     );
 
     const uniforms = createSmokeUniforms(DEFAULTS);
@@ -87,12 +89,7 @@ const TorchSmoke = () => {
   const d = DEFAULTS;
 
   const schema = {
-    color: {
-      value: d.color,
-      onChange: v => {
-        uniforms.uColor.value.set(v);
-      },
-    },
+    color: smokeControl('uColor', d.color),
     opacity: smokeControl('uOpacity', d.opacity, 0, 1, 0.01),
     fadeHeight: smokeControl('uFadeHeight', d.fadeHeight, 0, 5, 0.01),
     // Hides the hard line where the column crosses the surface it rises
@@ -116,18 +113,8 @@ const TorchSmoke = () => {
   const { width, height } = controls;
 
   useEffect(() => {
-    const columnOffsets = geometry.attributes.aColumnOffset;
-    const timeOffsets = geometry.attributes.aTimeOffset;
-
-    POSITIONS.forEach(([x, y, z], index) => {
-      columnOffsets.setXYZ(index, x, y, z);
-      timeOffsets.setX(index, smokeColumnTimeOffset(x, z));
-    });
-    columnOffsets.needsUpdate = true;
-    timeOffsets.needsUpdate = true;
-
     columnScale.value.set(width, height / 10);
-  }, [width, height, geometry, columnScale]);
+  }, [width, height, columnScale]);
 
   return (
     // Columns are spread across the map while the mesh sits at the origin,

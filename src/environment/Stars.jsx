@@ -57,18 +57,9 @@ const Stars = () => {
       max: 10000,
     },
     pointSize: control('uSize', STARS_DEFAULTS.pointSize, 0, 10),
-    color1: {
-      value: STARS_DEFAULTS.color1,
-      onChange: value => uniforms.uColor1.value.set(value),
-    },
-    color2: {
-      value: STARS_DEFAULTS.color2,
-      onChange: value => uniforms.uColor2.value.set(value),
-    },
-    color3: {
-      value: STARS_DEFAULTS.color3,
-      onChange: value => uniforms.uColor3.value.set(value),
-    },
+    color1: control('uColor1', STARS_DEFAULTS.color1),
+    color2: control('uColor2', STARS_DEFAULTS.color2),
+    color3: control('uColor3', STARS_DEFAULTS.color3),
     brightness: control('uBrightness', STARS_DEFAULTS.brightness, 0, 10),
   });
 

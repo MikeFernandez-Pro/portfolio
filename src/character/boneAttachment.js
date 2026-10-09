@@ -1,6 +1,7 @@
 import * as THREE from 'three/webgpu';
 
-const CHARACTER_MESH_NAME = 'knight';
+// The character's skinned mesh, as named in Blender
+export const CHARACTER_MESH_NAME = 'knight';
 
 /**
  * Adds a group under a bone of the character rig (`bone`: 'Hips', 'Head'...)

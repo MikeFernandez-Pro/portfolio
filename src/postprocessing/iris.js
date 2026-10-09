@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import {
   abs,
   float,
@@ -17,16 +16,12 @@ import {
   vec3,
   vec4,
 } from 'three/tsl';
-import gsap from 'gsap';
 
 import { snoise } from '#shaders/includes/simplexNoise3d.js';
 import { rotate2d } from '#shaders/includes/rotate2d.js';
 
-import { useStore } from '#store';
-import { prefersReducedMotion } from '#utils/reducedMotion.js';
-
 // Closed iris before the loading peek
-const INITIAL_PROGRESS = -0.1;
+export const INITIAL_PROGRESS = -0.1;
 // Fully open past this progress: the mask is skipped
 const REVEALED_PROGRESS = 1.5;
 
@@ -73,47 +68,4 @@ const iris = uniforms =>
     return outputColor;
   });
 
-// The loading peek, and the aspect ratio
-const useIris = (uniforms, aspectRatio) => {
-  useEffect(() => {
-    // Already past the peek: a hot reload re-runs this effect, which must
-    // not close the iris back to it
-    if (uniforms.progress.value !== INITIAL_PROGRESS) return;
-
-    // The peek opens once every pipeline is built (sceneReady): before that
-    // the first frames stall on shader compilation and the animation would
-    // jump instead of play
-    let peekAnimation = null;
-    const unsubSceneReady = useStore.subscribe(
-      state => state.sceneReady,
-      sceneReady => {
-        if (!sceneReady || peekAnimation) return;
-
-        // Reduced motion: open the loading peek without the iris animation
-        if (prefersReducedMotion()) {
-          uniforms.progress.value = 0.35;
-          return;
-        }
-
-        peekAnimation = gsap.to(uniforms.progress, {
-          value: 0.35,
-          duration: 1,
-          ease: 'circ.out',
-        });
-      },
-      { fireImmediately: true }
-    );
-
-    return () => {
-      unsubSceneReady();
-      peekAnimation?.kill();
-    };
-  }, [uniforms]);
-
-  // Resize-only uniform
-  useEffect(() => {
-    uniforms.aspectRatio.value = aspectRatio;
-  }, [uniforms, aspectRatio]);
-};
-
-export { createIrisUniforms, iris, useIris };
+export { createIrisUniforms, iris };

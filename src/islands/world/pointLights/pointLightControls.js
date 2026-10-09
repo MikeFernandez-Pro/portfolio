@@ -25,4 +25,27 @@ const positionControl = (light, value) => ({
   onChange: v => light.position.value.set(...v),
 });
 
-export { pointLightControls, positionControl };
+// Height of the light above its default position
+const heightControl = (light, min, max) => ({
+  value: light.defaults.height,
+  min,
+  max,
+  step: 0.01,
+  onChange: v => {
+    light.position.value.y = light.defaults.position[1] + v;
+  },
+});
+
+// A value of `light.settings` (one an animation scales on top of), from its
+// default
+const settingControl = (light, key, min, max, step) => ({
+  value: light.defaults[key],
+  min,
+  max,
+  step,
+  onChange: v => {
+    light.settings[key] = v;
+  },
+});
+
+export { pointLightControls, positionControl, heightControl, settingControl };

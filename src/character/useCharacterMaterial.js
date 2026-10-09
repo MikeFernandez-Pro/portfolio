@@ -9,8 +9,8 @@ import { patchPointLights } from '#islands/world/pointLights/pointLights.js';
 import { patchCloudShadows } from '#shaders/cloudShadows.js';
 import { RESPAWN_DEFAULTS } from '#character/deathCycle/respawnAnimation.js';
 import { registerDissolve } from '#character/deathCycle/deathCycle.js';
+import { CHARACTER_MESH_NAME } from '#character/boneAttachment.js';
 
-const CHARACTER_MATERIAL_NAME = 'knight';
 const BOUNDS_MIN = new THREE.Vector3(-3.34, 0, -2.41);
 const BOUNDS_MAX = new THREE.Vector3(3.34, 5.94, 0.73);
 
@@ -51,9 +51,7 @@ const useCharacterMaterial = characterScene => {
       return;
     }
 
-    const characterMesh = characterScene.getObjectByName(
-      CHARACTER_MATERIAL_NAME
-    );
+    const characterMesh = characterScene.getObjectByName(CHARACTER_MESH_NAME);
 
     if (!characterMesh) {
       return;

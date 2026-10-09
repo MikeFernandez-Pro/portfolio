@@ -25,6 +25,7 @@ import {
   createParticleSprite,
   particleAttribute,
   pointCoord,
+  spriteCountControl,
 } from '#utils/pointSprites.js';
 
 // Boiling bubbles popping on the potion surface
@@ -139,15 +140,7 @@ export const cauldronBubblesControls = (bubbles, uniforms) => {
   const d = BUBBLES_DEFAULTS;
   const control = uniformControls(uniforms);
   return {
-    count: {
-      value: d.count,
-      min: 0,
-      max: BUBBLES_COUNT,
-      step: 1,
-      onChange: v => {
-        bubbles.count = v;
-      },
-    },
+    count: spriteCountControl(bubbles, d.count, BUBBLES_COUNT),
     color: control('uColor', d.color),
     intensity: control('uIntensity', d.intensity, 0, 20, 0.1),
     opacity: control('uOpacity', d.opacity, 0, 1, 0.01),

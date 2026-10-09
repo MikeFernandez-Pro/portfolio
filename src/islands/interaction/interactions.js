@@ -1,11 +1,19 @@
 import gsap from 'gsap';
 
 import { useStore } from '#store';
-import { linkHref } from './interactiveElements.js';
+import { PROJECTS } from '#islands/projects/projects.js';
 
 // Indicator mesh names (InteractiveElements' <Merged> instances)
 export const INDICATOR_RING = 'IndicatorRing';
 export const INDICATOR_ENTER_TILE = 'IndicatorEnterTile';
+
+// The URL a link opens now. The projects portal opens whichever project is
+// selected (none before the first plate press: no indicator, nothing to open)
+const linkHref = element => {
+  if (!element.opensSelectedProject) return element.href;
+  const projectId = useStore.getState().selectedProject;
+  return projectId ? PROJECTS[projectId].url : undefined;
+};
 
 // Per link id: the indicator animation (diamond ring -> Enter tile), built
 // on first use
@@ -95,7 +103,7 @@ export const leaveElement = element => {
 // Enter (or a tap on the indicator, mobile): opens the link while the
 // character stands in a sensor zone
 export const openLink = element => {
-  if (!useStore.getState().activatedInteractiveElement.current) return;
+  if (!useStore.getState().activeElementId) return;
   const href = linkHref(element);
   if (!href) return;
   if (href.startsWith('mailto:')) {

@@ -1,18 +1,9 @@
-import { useStore } from '#store';
-import { PROJECTS } from '#islands/projects/projects.js';
-
-// The projects portal opens whichever project is selected (none before the
-// first plate press: no indicator, nothing to open)
-const selectedProjectUrl = () => {
-  const projectId = useStore.getState().selectedProject;
-  return projectId ? PROJECTS[projectId].url : undefined;
-};
-
 /**
  * Every interactive element, as plain data. `sensor`: the box sensor zone
  * (world-space position, rotation, scale) the character steps into. `kind`:
  * - link: an indicator (`indicator`: position, rotationY) floats above it;
- *   Enter or a tap on it opens `href` (a URL, or a function returning one)
+ *   Enter or a tap on it opens `href`, or the selected project's URL with
+ *   `opensSelectedProject` (the projects portal)
  * - plate: a project plate, selects project `id`
  * - glyph: the skills glyph, awakens the Skills island
  * The order of the links and plates is also their point lights' order.
@@ -54,7 +45,7 @@ export const INTERACTIVE_ELEMENTS = [
   {
     id: 'projectsPortal',
     kind: 'link',
-    href: selectedProjectUrl,
+    opensSelectedProject: true,
     indicator: { position: [-16.14, 5.9, -37.3], rotationY: 0 },
     sensor: {
       position: [-16.1, 5.72, -37.26],
@@ -114,7 +105,3 @@ export const INTERACTIVE_ELEMENTS = [
 export const ELEMENTS_BY_ID = Object.fromEntries(
   INTERACTIVE_ELEMENTS.map(element => [element.id, element])
 );
-
-// The URL a link opens now (undefined: nothing to open yet)
-export const linkHref = element =>
-  typeof element.href === 'function' ? element.href() : element.href;

@@ -5,6 +5,7 @@ import { useGLTF } from '@react-three/drei/webgpu';
 
 import LanternModel from '#assets/models/character/lantern.glb';
 import { useControls } from '#debug/useControls.jsx';
+import { settingControls } from '#debug/settingControls.js';
 import { IS_MOBILE_DEVICE } from '#utils/device.js';
 import { BODY_TYPE_FIXED as FIXED } from '#physics/PhysicsWorld.js';
 import { attachToBoneInRootFrame } from '#character/boneAttachment.js';
@@ -126,85 +127,22 @@ const useCharacterLantern = ({
 
   useLanternMaterial(scene, lanternMeshRef, dissolve);
 
+  const transformControl = settingControls(transform, applyTransform);
   useControls('LanternTransform', {
-    position: {
-      value: TRANSFORM_DEFAULTS.position,
-      step: 0.01,
-      onChange: v => {
-        transform.position = v;
-        applyTransform();
-      },
-    },
-    rotation: {
-      value: TRANSFORM_DEFAULTS.rotation,
-      step: 0.01,
-      onChange: v => {
-        transform.rotation = v;
-        applyTransform();
-      },
-    },
-    scale: {
-      value: TRANSFORM_DEFAULTS.scale,
-      min: 0.1,
-      max: 3,
-      step: 0.01,
-      onChange: v => {
-        transform.scale = v;
-        applyTransform();
-      },
-    },
+    position: transformControl('position', undefined, undefined, 0.01),
+    rotation: transformControl('rotation', undefined, undefined, 0.01),
+    scale: transformControl('scale', 0.1, 3, 0.01),
   });
 
+  const swingControl = settingControls(swing);
   useControls('LanternSwing', {
-    stiffness: {
-      value: SWING_DEFAULTS.stiffness,
-      min: 1,
-      max: 200,
-      step: 1,
-      onChange: v => (swing.stiffness = v),
-    },
-    damping: {
-      value: SWING_DEFAULTS.damping,
-      min: 0,
-      max: 30,
-      step: 0.1,
-      onChange: v => (swing.damping = v),
-    },
-    maxAngle: {
-      value: SWING_DEFAULTS.maxAngle,
-      min: 0,
-      max: 1.5,
-      step: 0.01,
-      onChange: v => (swing.maxAngle = v),
-    },
-    influence: {
-      value: SWING_DEFAULTS.influence,
-      min: -0.2,
-      max: 0.2,
-      step: 0.005,
-      onChange: v => (swing.influence = v),
-    },
-    yawInfluence: {
-      value: SWING_DEFAULTS.yawInfluence,
-      min: -1,
-      max: 1,
-      step: 0.01,
-      onChange: v => (swing.yawInfluence = v),
-    },
-    verticalInfluence: {
-      value: SWING_DEFAULTS.verticalInfluence,
-      min: -0.2,
-      max: 0.2,
-      step: 0.005,
-      onChange: v => (swing.verticalInfluence = v),
-    },
-    smoothing: {
-      value: SWING_DEFAULTS.smoothing,
-      min: 1,
-      max: 40,
-      step: 0.5,
-      onChange: v => (swing.smoothing = v),
-    },
+    stiffness: swingControl('stiffness', 1, 200, 1),
+    damping: swingControl('damping', 0, 30, 0.1),
+    maxAngle: swingControl('maxAngle', 0, 1.5, 0.01),
+    influence: swingControl('influence', -0.2, 0.2, 0.005),
+    yawInfluence: swingControl('yawInfluence', -1, 1, 0.01),
+    verticalInfluence: swingControl('verticalInfluence', -0.2, 0.2, 0.005),
+    smoothing: swingControl('smoothing', 1, 40, 0.5),
   });
 
   // Point light following the lantern

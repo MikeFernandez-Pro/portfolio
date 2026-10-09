@@ -1,7 +1,6 @@
 import gsap from 'gsap';
 
-import { useStore } from '#store';
-import { playDeathAnimation, resetDeathAnimation } from './deathAnimation.js';
+import { playDeathAnimation } from './deathAnimation.js';
 import { playRespawnAnimation } from './respawnAnimation.js';
 import { playDeathParticles } from './DeathParticles.jsx';
 
@@ -40,18 +39,5 @@ export const die = (position, { onTeleport, onRespawned }) => {
     () => playRespawnAnimation({ onComplete: onRespawned }),
     undefined,
     RESPAWN_AT
-  );
-};
-
-// Debug preview of a death at the character's current position (the spawn
-// point before it moved): it dissolves away while the death particles rise,
-// then forms back in place once both are done (no teleport, no respawn)
-export const playDeathPreview = () => {
-  const position = useStore.getState().characterPosition ?? SPAWN_POINT;
-  const death = playDeathAnimation();
-  const particles = playDeathParticles(position);
-  // gsap tweens/timelines are thenable
-  Promise.all([death, particles].filter(Boolean)).then(() =>
-    resetDeathAnimation()
   );
 };

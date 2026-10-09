@@ -18,6 +18,7 @@ import { Font } from 'three/addons/loaders/FontLoader.js';
 import gsap from 'gsap';
 
 import { useControls } from '#debug/useControls.jsx';
+import { uniformControls } from '#debug/uniformControls.js';
 import { subscribeWhenSet } from '#store';
 import fontJson from '#assets/fonts/metamorphous.typeface.json';
 
@@ -143,18 +144,10 @@ const FloatingSkills = () => {
     [mesh]
   );
 
+  const control = uniformControls(uniforms);
   useControls('Skills', {
-    color: {
-      value: SKILLS_COLOR,
-      onChange: value => uniforms.uColor.value.set(value),
-    },
-    intensity: {
-      value: SKILLS_INTENSITY,
-      min: 0,
-      max: 20,
-      step: 0.01,
-      onChange: value => (uniforms.uIntensity.value = value),
-    },
+    color: control('uColor', SKILLS_COLOR),
+    intensity: control('uIntensity', SKILLS_INTENSITY, 0, 20, 0.01),
   });
 
   // Fade in when the Skills island awakens

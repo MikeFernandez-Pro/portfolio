@@ -19,6 +19,7 @@ import { dissolveLava } from '#shaders/dissolve.js';
 import { patchPointLights } from '#islands/world/pointLights/pointLights.js';
 import { patchCloudShadows } from '#shaders/cloudShadows.js';
 import { useControls } from '#debug/useControls.jsx';
+import { uniformControls } from '#debug/uniformControls.js';
 
 // Lantern geometry bounds (origin at the top attachment loop)
 const BOUNDS_MIN = new THREE.Vector3(-0.39, -1.07, -0.39);
@@ -131,29 +132,19 @@ const useLanternMaterial = (characterScene, lanternMeshRef, shared) => {
     };
   }, [characterScene, shared]);
 
+  // The material (and its uniforms) is built once the lantern mesh exists
+  const colorControl = uniformControls(() => colorUniformsRef.current);
   useControls('LanternColors', {
-    blackColor: {
-      value: COLOR_DEFAULTS.blackColor,
-      onChange: v => colorUniformsRef.current?.uBlackColor.value.set(v),
-    },
-    whiteColor: {
-      value: COLOR_DEFAULTS.whiteColor,
-      onChange: v => colorUniformsRef.current?.uWhiteColor.value.set(v),
-    },
-    whiteIntensity: {
-      value: COLOR_DEFAULTS.whiteIntensity,
-      min: 0,
-      max: 10,
-      step: 0.05,
-      onChange: v => {
-        if (colorUniformsRef.current)
-          colorUniformsRef.current.uWhiteIntensity.value = v;
-      },
-    },
-    redColor: {
-      value: COLOR_DEFAULTS.redColor,
-      onChange: v => colorUniformsRef.current?.uRedColor.value.set(v),
-    },
+    blackColor: colorControl('uBlackColor', COLOR_DEFAULTS.blackColor),
+    whiteColor: colorControl('uWhiteColor', COLOR_DEFAULTS.whiteColor),
+    whiteIntensity: colorControl(
+      'uWhiteIntensity',
+      COLOR_DEFAULTS.whiteIntensity,
+      0,
+      10,
+      0.05
+    ),
+    redColor: colorControl('uRedColor', COLOR_DEFAULTS.redColor),
     roughness: {
       value: COLOR_DEFAULTS.roughness,
       min: 0,

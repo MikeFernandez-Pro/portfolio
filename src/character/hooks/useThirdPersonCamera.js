@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import gsap from 'gsap';
 import * as THREE from 'three/webgpu';
 
-import { useStore } from '#store';
+import { subscribeWhenSet, useStore } from '#store';
 import { IS_MOBILE_DEVICE } from '#utils/device.js';
 import {
   prefersReducedMotion,
@@ -75,43 +75,41 @@ export function useThirdPersonCamera(characterBodyRef) {
     let introPanAnimation = null;
 
     // Animate camera offset at experience start
-    const unsubExperienceStarted = useStore.subscribe(
+    const unsubExperienceStarted = subscribeWhenSet(
       state => state.experienceStarted,
-      experienceStarted => {
-        if (experienceStarted) {
-          const followDistance = IS_MOBILE_DEVICE
-            ? CAMERA_FOLLOW_DISTANCE_MOBILE
-            : CAMERA_FOLLOW_DISTANCE_DESKTOP;
+      () => {
+        const followDistance = IS_MOBILE_DEVICE
+          ? CAMERA_FOLLOW_DISTANCE_MOBILE
+          : CAMERA_FOLLOW_DISTANCE_DESKTOP;
 
-          // Reduced motion: cut to the gameplay angle instead of the 5s pan.
-          // Snap the lerp target too, or the follow damping would still swoop
-          if (prefersReducedMotion()) {
-            CAMERA_OFFSET.set(0, 4, followDistance);
-            const characterPosition = characterBodyRef.current?.translation();
-            if (characterPosition) {
-              LERP_CAMERA_POSITION.set(
-                characterPosition.x,
-                Math.max(characterPosition.y, 0),
-                characterPosition.z
-              ).add(CAMERA_OFFSET);
-            }
-            return;
+        // Reduced motion: cut to the gameplay angle instead of the 5s pan.
+        // Snap the lerp target too, or the follow damping would still swoop
+        if (prefersReducedMotion()) {
+          CAMERA_OFFSET.set(0, 4, followDistance);
+          const characterPosition = characterBodyRef.current?.translation();
+          if (characterPosition) {
+            LERP_CAMERA_POSITION.set(
+              characterPosition.x,
+              Math.max(characterPosition.y, 0),
+              characterPosition.z
+            ).add(CAMERA_OFFSET);
           }
-
-          // Character can't move until the pan is almost over
-          useStore.setState({ introControlsLocked: true });
-          unlockControlsCall = gsap.delayedCall(INTRO_CONTROLS_UNLOCK_AT, () =>
-            useStore.setState({ introControlsLocked: false })
-          );
-
-          introPanAnimation = gsap.to(CAMERA_OFFSET, {
-            duration: CAMERA_INTRO_DURATION,
-            x: 0,
-            y: 4,
-            z: followDistance,
-            ease: 'power3.out',
-          });
+          return;
         }
+
+        // Character can't move until the pan is almost over
+        useStore.setState({ introControlsLocked: true });
+        unlockControlsCall = gsap.delayedCall(INTRO_CONTROLS_UNLOCK_AT, () =>
+          useStore.setState({ introControlsLocked: false })
+        );
+
+        introPanAnimation = gsap.to(CAMERA_OFFSET, {
+          duration: CAMERA_INTRO_DURATION,
+          x: 0,
+          y: 4,
+          z: followDistance,
+          ease: 'power3.out',
+        });
       }
     );
 

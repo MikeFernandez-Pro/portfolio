@@ -9,7 +9,10 @@ import * as THREE from 'three/webgpu';
 import { subscribeWhenSet, useStore } from '#store';
 import { useDistanceVolume } from '#utils/useDistanceVolume.js';
 import { pointLights } from '#islands/world/pointLights/pointLights.js';
-import { pointLightControls } from '#islands/world/pointLights/pointLightControls.js';
+import {
+  pointLightControls,
+  settingControl,
+} from '#islands/world/pointLights/pointLightControls.js';
 
 import PortalAudio from '#assets/sounds/portal.mp3';
 
@@ -111,15 +114,7 @@ const ProjectsPortal = props => {
     'PortalLight',
     pointLightControls(pointLights.portal, {
       // Scaled by the open factor every frame (see below)
-      intensity: {
-        value: pointLights.portal.defaults.intensity,
-        min: 0,
-        max: 10,
-        step: 0.05,
-        onChange: v => {
-          pointLights.portal.settings.intensity = v;
-        },
-      },
+      intensity: settingControl(pointLights.portal, 'intensity', 0, 10, 0.05),
     })
   );
 
@@ -127,14 +122,14 @@ const ProjectsPortal = props => {
 
   useEffect(() => {
     // Every portal visual (GLB swirl mesh, shader disc, sparks) stays hidden
-    // until a project is selected; the store remembers it, so a remount keeps
-    // an already-opened portal visible
+    // until a project is selected (the subscription below catches up on a
+    // remount)
     const applyPortalVisibility = visible => {
       portal.visible = visible;
       if (portalDiscRef.current) portalDiscRef.current.visible = visible;
       sparks.visible = visible;
     };
-    applyPortalVisibility(Boolean(useStore.getState().selectedProject));
+    applyPortalVisibility(false);
 
     // Animate a progress value and scale by the (tweakable) open size, so
     // the animation target doesn't get baked in at creation time
@@ -157,15 +152,13 @@ const ProjectsPortal = props => {
     const unsubSelectedProject = subscribeWhenSet(
       state => state.selectedProject,
       selectedProject => {
-        if (selectedProject) {
-          applyPortalVisibility(true);
-          const rect = PROJECTS[selectedProject].screen;
-          portalUniforms.uTextureOffset.value.copy(rect.offset);
-          portalUniforms.uTextureSize.value.copy(rect.size);
-          portalUniforms.uTextureAspect.value = rect.aspect;
-          portalScaleUpAnimation.restart();
-          portalSoundEffect.play();
-        }
+        applyPortalVisibility(true);
+        const rect = PROJECTS[selectedProject].screen;
+        portalUniforms.uTextureOffset.value.copy(rect.offset);
+        portalUniforms.uTextureSize.value.copy(rect.size);
+        portalUniforms.uTextureAspect.value = rect.aspect;
+        portalScaleUpAnimation.restart();
+        portalSoundEffect.play();
       }
     );
 

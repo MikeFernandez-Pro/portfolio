@@ -7,7 +7,7 @@ import { useStore } from '#store';
 
 // One box sensor zone per interactive element (mailbox, plates, glyph...),
 // baked to world space from its sensor position/rotation/scale. Entering or
-// leaving one updates the activated element (by id).
+// leaving one sets the active element id.
 const InteractiveElementSensors = ({ elements }) => {
   useEffect(() => {
     const unitBox = new THREE.BoxGeometry(1, 1, 1);
@@ -15,23 +15,8 @@ const InteractiveElementSensors = ({ elements }) => {
     const handles = elements.map(element =>
       physicsWorld.addSensor({
         bvh: buildWorldSpaceBvh(unitBox, element.sensor),
-        userData: { id: element.id },
-        onEnter: state => {
-          useStore.setState({
-            activatedInteractiveElement: {
-              prev: useStore.getState().activatedInteractiveElement.current,
-              current: state.target.rigidBody.userData.id,
-            },
-          });
-        },
-        onExit: () => {
-          useStore.setState({
-            activatedInteractiveElement: {
-              prev: useStore.getState().activatedInteractiveElement.current,
-              current: null,
-            },
-          });
-        },
+        onEnter: () => useStore.setState({ activeElementId: element.id }),
+        onExit: () => useStore.setState({ activeElementId: null }),
       })
     );
 

@@ -15,22 +15,10 @@ const FLAGS_GRADE_DEFAULTS = {
 // Per-flag grade defaults are a no-op: the shared Grade folder stays the
 // production source of truth until a flag is tuned individually
 const useFlagOwnControls = (title, uniforms) => {
+  const control = uniformControls(uniforms);
   useControls(title, {
-    lightness: {
-      value: 1,
-      min: 0,
-      max: 3,
-      step: 0.01,
-      onChange: v => {
-        uniforms.uFlagOwnLightness.value = v;
-      },
-    },
-    tint: {
-      value: '#ffd6d6',
-      onChange: v => {
-        uniforms.uFlagTint.value.set(v);
-      },
-    },
+    lightness: control('uFlagOwnLightness', 1, 0, 3, 0.01),
+    tint: control('uFlagTint', '#ffd6d6'),
   });
 };
 

@@ -83,35 +83,31 @@ const SkillsGlyph = props => {
     pointLights.skillsGlyph.position.value.y +=
       pointLights.skillsGlyph.settings.height;
 
-    // Magic Glyphs Animation
-    let glyphEmissiveAnimation = gsap.fromTo(
+    // The glyphs glow up
+    const glyphEmissiveAnimation = gsap.fromTo(
       glyphMaterial,
       { emissiveIntensity: 0 },
       { duration: 1, emissiveIntensity: 9, paused: true }
     );
 
-    // The fake point light fades in along the same activation
-    const lightProgress = { value: lightProgressRef.current };
-    let magicLightAnimation = gsap.to(lightProgress, {
+    // The point light fades in along the same awakening
+    const lightAnimation = gsap.to(lightProgressRef, {
       duration: 1,
-      value: 1,
+      current: 1,
       paused: true,
       onUpdate: () => {
-        lightProgressRef.current = lightProgress.value;
         pointLights.skillsGlyph.intensity.value =
-          pointLights.skillsGlyph.settings.intensity * lightProgress.value;
+          pointLights.skillsGlyph.settings.intensity * lightProgressRef.current;
       },
     });
-    /**
-     * Storage Subscriptions
-     */
+
     // The glyphs light up when the Skills island awakens
     const unsubAwake = subscribeWhenSet(
       state => state.skillsIslandAwake,
       () => {
         awakeRef.current = true;
         glyphEmissiveAnimation.play();
-        magicLightAnimation.play();
+        lightAnimation.play();
 
         // Sound Effect
         glyphSoundEffect.play();
@@ -122,9 +118,7 @@ const SkillsGlyph = props => {
     return () => {
       unsubAwake();
       glyphEmissiveAnimation.kill();
-      glyphEmissiveAnimation = null;
-      magicLightAnimation.kill();
-      magicLightAnimation = null;
+      lightAnimation.kill();
     };
   }, [island]);
 

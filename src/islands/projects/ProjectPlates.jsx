@@ -13,18 +13,14 @@ import {
 
 import { PROJECTS } from './projects.js';
 
-import PressurePlateAudio from '#assets/sounds/pressure-plate.mp3';
+import PlateAudio from '#assets/sounds/pressure-plate.mp3';
 
 // Shared by reference across all plate materials, so mutating it updates every plate
 const PLATE_EMISSIVE_COLOR = new THREE.Color('#68CFF2');
 // Glow of the selected project's plate, set by the debug control
 const plateSettings = { activeIntensity: 3.56 };
 
-const createPlateAnimation = (
-  material,
-  lightIndex,
-  pressurePlateSoundEffect
-) => {
+const createPlateAnimation = (material, lightIndex, plateSoundEffect) => {
   const progress = { value: 0 };
 
   return gsap.to(progress, {
@@ -32,9 +28,9 @@ const createPlateAnimation = (
     value: 1,
     paused: true,
     onStart: () => {
-      pressurePlateSoundEffect.volume(SOUND_VOLUMES.pressurePlate);
-      pressurePlateSoundEffect.seek(0);
-      pressurePlateSoundEffect.play();
+      plateSoundEffect.volume(SOUND_VOLUMES.projectPlate);
+      plateSoundEffect.seek(0);
+      plateSoundEffect.play();
     },
     onUpdate: () => {
       material.emissiveIntensity =
@@ -48,12 +44,12 @@ const createPlateAnimation = (
 const ProjectPlates = props => {
   const { island } = props;
 
-  const pressurePlateSoundEffect = useMemo(
+  const plateSoundEffect = useMemo(
     () =>
       new Howl({
-        src: [PressurePlateAudio],
+        src: [PlateAudio],
         autoplay: false,
-        volume: SOUND_VOLUMES.pressurePlate,
+        volume: SOUND_VOLUMES.projectPlate,
       }),
     []
   );
@@ -85,38 +81,31 @@ const ProjectPlates = props => {
   });
 
   useEffect(() => {
-    // One plate per project, keyed by project id
-    const plates = {};
-    for (const [projectId, project] of Object.entries(PROJECTS)) {
-      plates[projectId] = { material: island.materials[project.plateMaterial] };
-    }
-
-    for (const plate in plates) {
-      plates[plate].material.emissive = PLATE_EMISSIVE_COLOR;
-      plates[plate].material.emissiveIntensity = 0;
-
-      plates[plate].animation = createPlateAnimation(
-        plates[plate].material,
-        PLATE_LIGHT_INDEX[plate],
-        pressurePlateSoundEffect
-      );
-    }
+    // One press animation per project plate, keyed by project id
+    const plates = Object.fromEntries(
+      Object.entries(PROJECTS).map(([projectId, project]) => {
+        const material = island.materials[project.plateMaterial];
+        material.emissive = PLATE_EMISSIVE_COLOR;
+        material.emissiveIntensity = 0;
+        const animation = createPlateAnimation(
+          material,
+          PLATE_LIGHT_INDEX[projectId],
+          plateSoundEffect
+        );
+        return [projectId, animation];
+      })
+    );
 
     const unsubSelectedProject = subscribeWhenSet(
       state => state.selectedProject,
       (selectedProject, previousProject) => {
-        plates[selectedProject].animation.play();
-        if (previousProject) {
-          plates[previousProject].animation.reverse();
-        }
+        plates[selectedProject].play();
+        if (previousProject) plates[previousProject].reverse();
       }
     );
 
     return () => {
-      for (const plate in plates) {
-        plates[plate].animation.kill();
-        delete plates[plate].animation;
-      }
+      Object.values(plates).forEach(animation => animation.kill());
       unsubSelectedProject();
     };
   }, [island]);

@@ -23,7 +23,7 @@ import { smaa } from 'three/addons/tsl/display/SMAANode.js';
 
 import { IS_MOBILE_DEVICE } from '#utils/device.js';
 import { cheapDof, createCheapDofUniforms } from './cheapDof.js';
-import { createIrisUniforms, iris } from './Iris.jsx';
+import { createIrisUniforms, iris } from './iris.js';
 
 const AO_ENABLED = !IS_MOBILE_DEVICE;
 const DOF_ENABLED = !IS_MOBILE_DEVICE;
@@ -66,25 +66,45 @@ export const createPipelineParams = () => ({
   bloom: { ...BLOOM_DEFAULTS },
 });
 
-// Writes the node-owned settings into a pipeline's GTAO and bloom nodes
-export const applyNodeSettings = (post, params) => {
-  if (post.aoPass) {
-    const s = params.ao;
-    post.aoPass.radius.value = s.radius;
-    post.aoPass.distanceExponent.value = s.distanceExponent;
-    post.aoPass.distanceFallOff.value = s.distanceFallOff;
-    post.aoPass.thickness.value = s.thickness;
-    post.aoPass.scale.value = s.scale;
-    post.aoPass.samples.value = s.samples;
-    post.aoPass.resolutionScale = s.halfRes ? 0.5 : 1;
-    post.denoisePass.radius.value = s.denoiseRadius;
-  }
-  if (post.bloomPass) {
-    const s = params.bloom;
-    post.bloomPass.strength.value = s.intensity;
-    post.bloomPass.radius.value = s.radius;
-    post.bloomPass.threshold.value = s.threshold;
-    post.bloomPass.smoothWidth.value = s.smoothing;
+// How each node-owned setting reaches its node, per effect (`node`: the
+// pipeline field holding it, null when the effect is off)
+const NODE_SETTINGS = {
+  ao: {
+    node: 'aoPass',
+    write: {
+      radius: (post, v) => (post.aoPass.radius.value = v),
+      distanceExponent: (post, v) => (post.aoPass.distanceExponent.value = v),
+      distanceFallOff: (post, v) => (post.aoPass.distanceFallOff.value = v),
+      thickness: (post, v) => (post.aoPass.thickness.value = v),
+      scale: (post, v) => (post.aoPass.scale.value = v),
+      samples: (post, v) => (post.aoPass.samples.value = v),
+      halfRes: (post, v) => (post.aoPass.resolutionScale = v ? 0.5 : 1),
+      denoiseRadius: (post, v) => (post.denoisePass.radius.value = v),
+    },
+  },
+  bloom: {
+    node: 'bloomPass',
+    write: {
+      intensity: (post, v) => (post.bloomPass.strength.value = v),
+      radius: (post, v) => (post.bloomPass.radius.value = v),
+      threshold: (post, v) => (post.bloomPass.threshold.value = v),
+      smoothing: (post, v) => (post.bloomPass.smoothWidth.value = v),
+    },
+  },
+};
+
+// Writes one node-owned setting (params[effect][key]) into a pipeline
+export const applyNodeSetting = (post, params, effect, key) => {
+  const { node, write } = NODE_SETTINGS[effect];
+  if (post[node]) write[key](post, params[effect][key]);
+};
+
+// Writes every node-owned setting into a freshly built pipeline
+const applyNodeSettings = (post, params) => {
+  for (const effect in NODE_SETTINGS) {
+    for (const key in NODE_SETTINGS[effect].write) {
+      applyNodeSetting(post, params, effect, key);
+    }
   }
 };
 

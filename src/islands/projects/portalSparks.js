@@ -3,7 +3,6 @@ import {
   cos,
   float,
   fract,
-  length,
   max,
   mix,
   PI2,
@@ -19,7 +18,8 @@ import { uniformControls } from '#debug/uniformControls.js';
 import {
   createParticleSprite,
   particleAttribute,
-  pointCoord,
+  pointGlow,
+  spriteCountControl,
 } from '#utils/pointSprites.js';
 
 // Sparks spiralling into the open portal, as if it were sucking in reality
@@ -86,11 +86,7 @@ const createPortalSparksMaterial = u => {
   const life = smoothstep(0, 0.2, t)
     .mul(smoothstep(0.75, 1, t).oneMinus())
     .mul(u.uOpenFactor);
-  const glow = max(length(pointCoord.sub(0.5)), 0.001)
-    .reciprocal()
-    .mul(0.05)
-    .sub(0.1)
-    .clamp(0, 1);
+  const glow = pointGlow();
   material.colorNode = vec4(u.uColor.mul(u.uIntensity), glow.mul(max(life, 0)));
 
   return material;
@@ -125,15 +121,7 @@ export const portalSparksControls = (sparks, uniforms) => {
   const control = uniformControls(uniforms);
   const d = SPARKS_DEFAULTS;
   return {
-    count: {
-      value: d.count,
-      min: 0,
-      max: SPARKS_COUNT,
-      step: 1,
-      onChange: v => {
-        sparks.count = v;
-      },
-    },
+    count: spriteCountControl(sparks, d.count, SPARKS_COUNT),
     color: control('uColor', d.color),
     intensity: control('uIntensity', d.intensity, 0, 20, 0.1),
     size: control('uSize', d.size, 0, 0.3, 0.001),

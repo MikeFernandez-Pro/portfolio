@@ -20,7 +20,7 @@ const InteractiveElements = () => {
   useEffect(() => {
     const keyDownHandler = event => {
       if (event.key !== 'Enter') return;
-      const current = useStore.getState().activatedInteractiveElement.current;
+      const current = useStore.getState().activeElementId;
       // Plates and the glyph have no link to open
       if (current && ELEMENTS_BY_ID[current].kind === 'link') {
         openLink(ELEMENTS_BY_ID[current]);
@@ -30,8 +30,8 @@ const InteractiveElements = () => {
     window.addEventListener('keydown', keyDownHandler);
 
     const unsubActivatedElement = useStore.subscribe(
-      state => state.activatedInteractiveElement,
-      ({ current, prev }) => {
+      state => state.activeElementId,
+      (current, prev) => {
         if (current)
           enterElement(ELEMENTS_BY_ID[current], indicatorsRef.current);
         if (prev) leaveElement(ELEMENTS_BY_ID[prev]);

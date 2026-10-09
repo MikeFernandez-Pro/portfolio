@@ -6,7 +6,12 @@ import { uniformControls } from '#debug/uniformControls.js';
 import { DEBUG_ENABLED } from '#debug/debugEnabled.js';
 
 import { pointLights } from './pointLights.js';
-import { pointLightControls, positionControl } from './pointLightControls.js';
+import {
+  heightControl,
+  pointLightControls,
+  positionControl,
+  settingControl,
+} from './pointLightControls.js';
 
 // Debug marker at a point light's position: a small unlit sphere in the
 // light color plus an axes cross, copying the position uniform every frame so
@@ -68,15 +73,7 @@ const PointLightsControls = () => {
 
   useControls('CauldronLight', {
     ...pointLightControls(cauldron),
-    height: {
-      value: cauldron.defaults.height,
-      min: -1,
-      max: 5,
-      step: 0.01,
-      onChange: v => {
-        cauldron.position.value.y = cauldron.defaults.position[1] + v;
-      },
-    },
+    height: heightControl(cauldron, -1, 5),
   });
 
   useControls(
@@ -84,24 +81,8 @@ const PointLightsControls = () => {
     pointLightControls(spawn, {
       // The uniform is driven by the respawn timeline (0 at rest); the
       // control only sets the peak intensity the fade rises to
-      intensity: {
-        value: spawn.defaults.intensity,
-        min: 0,
-        max: 15,
-        step: 0.05,
-        onChange: v => {
-          spawn.settings.intensity = v;
-        },
-      },
-      height: {
-        value: spawn.defaults.height,
-        min: -2,
-        max: 5,
-        step: 0.01,
-        onChange: v => {
-          spawn.position.value.y = spawn.defaults.position[1] + v;
-        },
-      },
+      intensity: settingControl(spawn, 'intensity', 0, 15, 0.05),
+      height: heightControl(spawn, -2, 5),
     })
   );
 
@@ -130,25 +111,9 @@ const PointLightsControls = () => {
     showHelper: false,
     ...forgeLavaLook,
     // Resting intensity (bellows open)
-    minIntensity: {
-      value: forgeLava.defaults.minIntensity,
-      min: 0,
-      max: 100,
-      step: 0.05,
-      onChange: v => {
-        forgeLava.settings.minIntensity = v;
-      },
-    },
+    minIntensity: settingControl(forgeLava, 'minIntensity', 0, 100, 0.05),
     // Gasp peak intensity (bellows fully closed)
-    maxIntensity: {
-      value: forgeLava.defaults.maxIntensity,
-      min: 0,
-      max: 100,
-      step: 0.05,
-      onChange: v => {
-        forgeLava.settings.maxIntensity = v;
-      },
-    },
+    maxIntensity: settingControl(forgeLava, 'maxIntensity', 0, 100, 0.05),
     position: positionControl(forgeLava, forgeLava.defaults.position),
   });
 

@@ -40,7 +40,7 @@ const FOLDER_TREE = {
     Bloom: null,
     Antialiasing: null,
   },
-  Sky: { Background: null, Stars: null },
+  Sky: { SkyColors: null, Stars: null },
   WorldLight: {
     directionalLight: null,
     ambientLight: null,
@@ -59,7 +59,7 @@ const FOLDER_TREE = {
   },
   Spawn: {
     'Respawn Animation': null,
-    'Player Death': null,
+    'Character Death': null,
     SpawnLight: null,
     Controls: null,
   },

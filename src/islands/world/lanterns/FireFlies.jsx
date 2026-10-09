@@ -20,6 +20,7 @@ import {
   createParticleSprite,
   particleAttribute,
   pointCoord,
+  pointGlow,
 } from '#utils/pointSprites.js';
 
 // Reduced motion: the fireflies drift at a third of their usual pace
@@ -93,11 +94,7 @@ const FireFlies = () => {
     // (1/0); the clamp already saturates below 0.05. Color and alpha are both
     // scaled, as gl_FragColor was
     const distanceToCenter = distance(pointCoord, vec2(0.5));
-    const strength = max(distanceToCenter, 0.001)
-      .reciprocal()
-      .mul(0.05)
-      .sub(0.1)
-      .clamp(0, 1);
+    const strength = pointGlow();
     const glow = vec4(uniforms.uColor, strength)
       .mul(uniforms.uIntensity)
       .mul(max(aScale, 0));

@@ -9,12 +9,12 @@ import { useStore } from '#store';
 import {
   AO_DEFAULTS,
   BLOOM_DEFAULTS,
-  applyNodeSettings,
+  applyNodeSetting,
   createPipeline,
   createPipelineParams,
 } from './pipeline.js';
 import { CHEAP_DOF_DEFAULTS } from './cheapDof.js';
-import { useIris } from './Iris.jsx';
+import { useIris } from './useIris.js';
 
 // Antialiasing: 4x MSAA on the scene pass (desktop) + SMAA after tone
 // mapping; mobile is SMAA-only. The debug "Antialiasing" msaa control
@@ -37,9 +37,9 @@ const EFFECTS_DEFAULTS = {
 // Debug folders. Shared uniforms are written directly; GTAO and bloom values
 // go into params (the next rebuild applies them) and onto the live nodes
 const usePostProcessingControls = (params, postRef) => {
-  const setNodeSetting = (group, key) => value => {
-    params[group][key] = value;
-    applyNodeSettings(postRef.current, params);
+  const setNodeSetting = (effect, key) => value => {
+    params[effect][key] = value;
+    applyNodeSetting(postRef.current, params, effect, key);
   };
 
   const a = AO_DEFAULTS;

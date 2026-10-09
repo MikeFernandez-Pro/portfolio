@@ -12,7 +12,8 @@ export const useStore = create(
 
     joystickAngle: undefined,
 
-    activatedInteractiveElement: { prev: undefined, current: undefined },
+    // Id of the interactive element whose sensor zone the character is in
+    activeElementId: null,
 
     // Set once the character steps on the skills glyph; never goes back
     skillsIslandAwake: false,

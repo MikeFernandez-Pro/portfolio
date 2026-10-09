@@ -170,23 +170,26 @@ const CharacterController = () => {
     animation.play(JUMP);
   };
 
+  // Sprint can start now: jumping, falling and respawning own the animation
+  const canStartSprint = () =>
+    animation.current !== SPRINT && !s.jumping && !s.falling && !s.respawning;
+
+  // Keep the vertical velocity (gravity, jump), drop the horizontal one
+  const stopHorizontal = () => {
+    const body = characterBody.current;
+    body.setLinvel({ x: 0, y: body.linvel().y, z: 0 });
+  };
+
   // Keyboard controls (desktop)
   const { eventKeys, resetKeys } = useKeyboardControls({
-    onSpaceDown: () => {
-      characterJumpEvent();
-    },
+    onSpaceDown: characterJumpEvent,
     onShiftDown: () => {
       if (!s.moving) return;
       s.speed = DEFAULT_CHARACTER_SPRINT_SPEED;
       s.sprinting = true;
       // Falling / respawning own the animation; the sprint flag stays set so
       // the frame loop picks the sprint up on landing if shift is still held
-      if (
-        animation.current !== SPRINT &&
-        !s.jumping &&
-        !s.falling &&
-        !s.respawning
-      ) {
+      if (canStartSprint()) {
         animation.play(SPRINT);
         // Increase playback rate when sprinting
         runningSoundEffect.rate(1.5);
@@ -216,14 +219,7 @@ const CharacterController = () => {
     const direction = controlsLocked ? undefined : directionOffset(eventKeys);
     s.moving = direction !== undefined;
 
-    if (
-      s.moving &&
-      s.sprinting &&
-      animation.current !== SPRINT &&
-      !s.jumping &&
-      !s.falling &&
-      !s.respawning
-    ) {
+    if (s.moving && s.sprinting && canStartSprint()) {
       animation.play(SPRINT);
     }
 
@@ -245,8 +241,8 @@ const CharacterController = () => {
     }
 
     // Primary death trigger is the death zone; this catches the character
-    // if it slips past the sensor
-    if (characterPosition.y < DEATH_HEIGHT && !s.respawning) {
+    // if it slips past the sensor (killCharacter ignores a second call)
+    if (characterPosition.y < DEATH_HEIGHT) {
       killCharacter();
     }
 
@@ -257,11 +253,7 @@ const CharacterController = () => {
       if (animation.current !== IDLE && animation.current !== FALLING) {
         animation.play(IDLE);
       }
-      characterBody.current.setLinvel({
-        x: 0,
-        y: characterBody.current.linvel().y,
-        z: 0,
-      });
+      stopHorizontal();
       return;
     }
 
@@ -275,12 +267,7 @@ const CharacterController = () => {
       if (animation.current !== IDLE && !s.jumping && !s.falling) {
         animation.play(IDLE);
       }
-
-      characterBody.current.setLinvel({
-        x: 0,
-        y: characterBody.current.linvel().y,
-        z: 0,
-      });
+      stopHorizontal();
       return;
     }
 
@@ -303,34 +290,24 @@ const CharacterController = () => {
   });
 
   useLayoutEffect(() => {
-    if (!IS_MOBILE_DEVICE) {
-      scene.traverse(object => {
-        if (object.isMesh || object.isSkinnedMesh) {
-          object.castShadow = true;
-          object.receiveShadow = true;
-        }
-      });
+    // Mobile: the joystick drives the movement angle (no shadows)
+    if (IS_MOBILE_DEVICE) {
+      return useStore.subscribe(
+        state => state.joystickAngle,
+        joystickAngle => (joystickAngleRef.current = joystickAngle)
+      );
     }
 
-    // JoyStick subscriber
-    const unsubJoystickAngle = !IS_MOBILE_DEVICE
-      ? undefined
-      : useStore.subscribe(
-          state => state.joystickAngle,
-          joystickAngle => (joystickAngleRef.current = joystickAngle)
-        );
-
-    // Event Listeners
-    if (!IS_MOBILE_DEVICE) {
-      window.addEventListener('blur', pauseCharacter);
-    }
-
-    return () => {
-      if (!IS_MOBILE_DEVICE) {
-        window.removeEventListener('blur', pauseCharacter);
+    scene.traverse(object => {
+      if (object.isMesh || object.isSkinnedMesh) {
+        object.castShadow = true;
+        object.receiveShadow = true;
       }
-      if (IS_MOBILE_DEVICE) unsubJoystickAngle();
-    };
+    });
+
+    // Leaving the window drops the held keys and freezes the body
+    window.addEventListener('blur', pauseCharacter);
+    return () => window.removeEventListener('blur', pauseCharacter);
   }, []);
 
   useThirdPersonCamera(characterBody);

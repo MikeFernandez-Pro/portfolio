@@ -1,4 +1,6 @@
 import { useControls } from '#debug/useControls.jsx';
+import { uniformControls } from '#debug/uniformControls.js';
+import { useStore } from '#store';
 import {
   RESPAWN_DEFAULTS,
   respawnConfig,
@@ -10,21 +12,34 @@ import {
 import {
   DEATH_DEFAULTS,
   deathConfig,
+  playDeathAnimation,
   scrubDeathAnimation,
   refreshDeathAnimation,
   resetDeathAnimation,
 } from './deathAnimation.js';
-import { resetDeathParticles, scrubDeathParticles } from './DeathParticles.jsx';
-import { playDeathPreview } from './deathCycle.js';
+import {
+  playDeathParticles,
+  resetDeathParticles,
+  scrubDeathParticles,
+} from './DeathParticles.jsx';
+import { SPAWN_POINT } from './deathCycle.js';
 import { targets } from './targets.js';
 
-// Targets register once their models load, so every setter guards against
-// them being missing yet
-const withChar = updater => {
-  if (targets.dissolve) updater(targets.dissolve);
-};
-const withSpiral = updater => {
-  if (targets.spiral) updater(targets.spiral.uniforms);
+// Targets register once their models load: these resolve them on change
+const charControl = uniformControls(() => targets.dissolve);
+const spiralControl = uniformControls(() => targets.spiral?.uniforms);
+
+// Debug preview of a death at the character's current position (the spawn
+// point before it moved): it dissolves away while the death particles rise,
+// then forms back in place once both are done (no teleport, no respawn)
+const playDeathPreview = () => {
+  const position = useStore.getState().characterPosition ?? SPAWN_POINT;
+  const death = playDeathAnimation();
+  const particles = playDeathParticles(position);
+  // gsap tweens/timelines are thenable
+  Promise.all([death, particles].filter(Boolean)).then(() =>
+    resetDeathAnimation()
+  );
 };
 
 // Build-time values are baked into the timelines; after changing one,
@@ -45,7 +60,7 @@ const setDeathConfig = (key, value) => {
  * nothing.
  */
 const DeathCycleControls = () => {
-  useControls('Player Death', {
+  useControls('Character Death', {
     // Death at the character's current position, formed back in place
     Play: () => playDeathPreview(),
     'Reset Animation': () => {
@@ -154,60 +169,42 @@ const DeathCycleControls = () => {
     },
 
     // Character look (only visible during the dissolve)
-    charColor: {
-      value: RESPAWN_DEFAULTS.charColor,
-      onChange: value => withChar(u => u.uColor.value.set(value)),
-    },
-    charIntensity: {
-      value: RESPAWN_DEFAULTS.charIntensity,
-      min: 0,
-      max: 100,
-      step: 0.1,
-      onChange: value =>
-        withChar(u => {
-          u.uIntensity.value = value;
-        }),
-    },
-    voronoiScale: {
-      value: RESPAWN_DEFAULTS.charRepeat,
-      min: 0,
-      max: 10,
-      step: 0.01,
-      onChange: value =>
-        withChar(u => {
-          u.uRepeat.value = value;
-        }),
-    },
-    perlinScale: {
-      value: RESPAWN_DEFAULTS.charPerlinScale,
-      min: 0.1,
-      max: 20,
-      step: 0.1,
-      onChange: value =>
-        withChar(u => {
-          u.uPerlinScale.value = value;
-        }),
-    },
-    perlinStrength: {
-      value: RESPAWN_DEFAULTS.charPerlinStrength,
-      min: 0,
-      max: 2,
-      step: 0.01,
-      onChange: value =>
-        withChar(u => {
-          u.uPerlinStrength.value = value;
-        }),
-    },
-    perlinSpeed: {
-      value: RESPAWN_DEFAULTS.charPerlinSpeed,
-      min: 0,
-      max: 1,
-      step: 0.01,
-      onChange: value =>
-        withChar(u => {
-          u.uPerlinSpeed.value = value;
-        }),
-    },
+    charColor: charControl('uColor', RESPAWN_DEFAULTS.charColor),
+    charIntensity: charControl(
+      'uIntensity',
+      RESPAWN_DEFAULTS.charIntensity,
+      0,
+      100,
+      0.1
+    ),
+    voronoiScale: charControl(
+      'uRepeat',
+      RESPAWN_DEFAULTS.charRepeat,
+      0,
+      10,
+      0.01
+    ),
+    perlinScale: charControl(
+      'uPerlinScale',
+      RESPAWN_DEFAULTS.charPerlinScale,
+      0.1,
+      20,
+      0.1
+    ),
+    perlinStrength: charControl(
+      'uPerlinStrength',
+      RESPAWN_DEFAULTS.charPerlinStrength,
+      0,
+      2,
+      0.01
+    ),
+    perlinSpeed: charControl(
+      'uPerlinSpeed',
+      RESPAWN_DEFAULTS.charPerlinSpeed,
+      0,
+      1,
+      0.01
+    ),
     // Animated peak: thickness ramps 0 -> this -> 0 across the respawn
     voronoiThickness: {
       value: RESPAWN_DEFAULTS.charThickness,
@@ -218,56 +215,29 @@ const DeathCycleControls = () => {
     },
     // Fragments below this alpha are discarded (don't write depth), which
     // removes the silhouette of the still-invisible character
-    alphaClip: {
-      value: RESPAWN_DEFAULTS.alphaClip,
-      min: 0,
-      max: 1,
-      step: 0.01,
-      onChange: value =>
-        withChar(u => {
-          u.uAlphaClip.value = value;
-        }),
-    },
+    alphaClip: charControl(
+      'uAlphaClip',
+      RESPAWN_DEFAULTS.alphaClip,
+      0,
+      1,
+      0.01
+    ),
     // Manual voronoi reveal (0 = none, 1 = full lava pattern). Timeline-driven
     // during Play/scrub, so this is for static inspection
-    voronoiProgress: {
-      value: 0,
-      min: 0,
-      max: 1,
-      step: 0.01,
-      onChange: value =>
-        withChar(u => {
-          u.uProgress.value = value;
-        }),
-    },
+    voronoiProgress: charControl('uProgress', 0, 0, 1, 0.01),
     // Manual character form (0 = only lava, 1 = formed character). Also
     // timeline-driven; for static inspection.
-    uCharFormProgress: {
-      value: 1,
-      min: 0,
-      max: 1,
-      step: 0.01,
-      onChange: value =>
-        withChar(u => {
-          u.uCharFormProgress.value = value;
-        }),
-    },
+    uCharFormProgress: charControl('uCharFormProgress', 1, 0, 1, 0.01),
 
     // Spiral look
-    spiralColor: {
-      value: RESPAWN_DEFAULTS.spiralColor,
-      onChange: value => withSpiral(u => u.uColor.value.set(value)),
-    },
-    spiralIntensity: {
-      value: RESPAWN_DEFAULTS.spiralEmissive,
-      min: 0,
-      max: 20,
-      step: 0.01,
-      onChange: value =>
-        withSpiral(u => {
-          u.uEmissiveIntensity.value = value;
-        }),
-    },
+    spiralColor: spiralControl('uColor', RESPAWN_DEFAULTS.spiralColor),
+    spiralIntensity: spiralControl(
+      'uEmissiveIntensity',
+      RESPAWN_DEFAULTS.spiralEmissive,
+      0,
+      20,
+      0.01
+    ),
   });
 
   return null;
