@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { IS_MOBILE_DEVICE } from '#utils/utils.js';
+import { IS_MOBILE_DEVICE } from '#utils/device.js';
 import { keysConfigList } from '#character/CharacterControllerUtils.js';
 
 /**

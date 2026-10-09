@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { useGLTF, useAnimations } from '@react-three/drei/webgpu';
 import * as THREE from 'three';
 
-import { IS_MOBILE_DEVICE } from '#utils/utils.js';
+import { IS_MOBILE_DEVICE } from '#utils/device.js';
 
 import { patchCloudShadows } from '#environment/CloudShadows.jsx';
 import {

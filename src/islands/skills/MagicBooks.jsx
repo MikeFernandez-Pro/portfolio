@@ -15,6 +15,7 @@ import {
 
 import { useStore } from '#store';
 import { useControls } from '#debug/useControls.jsx';
+import { uniformControls } from '#debug/uniformControls.js';
 import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
 import { toNodeMaterial } from '#utils/nodeMaterials.js';
 import { dissolveLava } from '#shaders/character/dissolve.js';
@@ -176,24 +177,18 @@ const MagicBooks = props => {
     u.uLavaOpacity.value = 1;
   };
 
+  const control = uniformControls(uniforms);
   useControls('MagicBooks', {
     Play: () => playBooksDissolve(),
     'Reset Animation': () => resetBooksDissolve(),
-    intensity: {
-      value: BOOKS_DISSOLVE_DEFAULTS.intensity,
-      min: 0,
-      max: 100,
-      step: 0.1,
-      onChange: value => {
-        uniforms.uIntensity.value = value;
-      },
-    },
-    color: {
-      value: BOOKS_DISSOLVE_DEFAULTS.color,
-      onChange: value => {
-        uniforms.uColor.value.set(value);
-      },
-    },
+    intensity: control(
+      'uIntensity',
+      BOOKS_DISSOLVE_DEFAULTS.intensity,
+      0,
+      100,
+      0.1
+    ),
+    color: control('uColor', BOOKS_DISSOLVE_DEFAULTS.color),
     // Build-time values, read when the next Play/activation builds its
     // timeline
     dissolveDuration: {

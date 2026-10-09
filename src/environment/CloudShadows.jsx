@@ -21,6 +21,7 @@ import {
 } from 'three/tsl';
 
 import { useControls } from '#debug/useControls.jsx';
+import { uniformControls } from '#debug/uniformControls.js';
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 import { usePerlinCloudsTexture } from '#utils/packedTextures.js';
 
@@ -141,6 +142,7 @@ const CloudShadows = () => {
     cloudShadowUniforms.uCloudShadowNoise.value = perlinNoiseTexture;
   }, [perlinNoiseTexture]);
 
+  const cloudShadowControl = uniformControls(cloudShadowUniforms);
   useControls('Cloud Shadows', {
     enabled: {
       value: CLOUD_SHADOW_DEFAULTS.enabled,
@@ -160,69 +162,55 @@ const CloudShadows = () => {
         );
       },
     },
-    speed: {
-      value: CLOUD_SHADOW_DEFAULTS.speed,
-      min: 0,
-      max: 0.05,
-      step: 0.0001,
-      onChange: value => {
-        cloudShadowUniforms.uCloudShadowSpeed.value = value;
-      },
-    },
-    scale: {
-      value: CLOUD_SHADOW_DEFAULTS.scale,
-      min: 0.001,
-      max: 0.05,
-      step: 0.001,
-      onChange: value => {
-        cloudShadowUniforms.uCloudShadowScale.value = value;
-      },
-    },
-    layers: {
-      value: CLOUD_SHADOW_DEFAULTS.layers,
-      min: 1,
-      max: 6,
-      step: 1,
-      onChange: value => {
-        cloudShadowUniforms.uCloudShadowLayers.value = value;
-      },
-    },
-    coverage: {
-      value: CLOUD_SHADOW_DEFAULTS.coverage,
-      min: 0,
-      max: 1,
-      step: 0.01,
-      onChange: value => {
-        cloudShadowUniforms.uCloudShadowCoverage.value = value;
-      },
-    },
-    softness: {
-      value: CLOUD_SHADOW_DEFAULTS.softness,
-      min: 0,
-      max: 0.5,
-      step: 0.001,
-      onChange: value => {
-        cloudShadowUniforms.uCloudShadowSoftness.value = value;
-      },
-    },
-    darkness: {
-      value: CLOUD_SHADOW_DEFAULTS.darkness,
-      min: 0,
-      max: 1,
-      step: 0.01,
-      onChange: value => {
-        cloudShadowUniforms.uCloudShadowDarkness.value = value;
-      },
-    },
-    power: {
-      value: CLOUD_SHADOW_DEFAULTS.power,
-      min: 0.1,
-      max: 4,
-      step: 0.1,
-      onChange: value => {
-        cloudShadowUniforms.uCloudShadowPower.value = value;
-      },
-    },
+    speed: cloudShadowControl(
+      'uCloudShadowSpeed',
+      CLOUD_SHADOW_DEFAULTS.speed,
+      0,
+      0.05,
+      0.0001
+    ),
+    scale: cloudShadowControl(
+      'uCloudShadowScale',
+      CLOUD_SHADOW_DEFAULTS.scale,
+      0.001,
+      0.05,
+      0.001
+    ),
+    layers: cloudShadowControl(
+      'uCloudShadowLayers',
+      CLOUD_SHADOW_DEFAULTS.layers,
+      1,
+      6,
+      1
+    ),
+    coverage: cloudShadowControl(
+      'uCloudShadowCoverage',
+      CLOUD_SHADOW_DEFAULTS.coverage,
+      0,
+      1,
+      0.01
+    ),
+    softness: cloudShadowControl(
+      'uCloudShadowSoftness',
+      CLOUD_SHADOW_DEFAULTS.softness,
+      0,
+      0.5,
+      0.001
+    ),
+    darkness: cloudShadowControl(
+      'uCloudShadowDarkness',
+      CLOUD_SHADOW_DEFAULTS.darkness,
+      0,
+      1,
+      0.01
+    ),
+    power: cloudShadowControl(
+      'uCloudShadowPower',
+      CLOUD_SHADOW_DEFAULTS.power,
+      0.1,
+      4,
+      0.1
+    ),
   });
 
   useFrame(({ elapsed }) => {

@@ -2,7 +2,8 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 
 import { useControls } from '#debug/useControls.jsx';
-import { DEBUG_ENABLED } from '#utils/debug.js';
+import { uniformControls } from '#debug/uniformControls.js';
+import { DEBUG_ENABLED } from '#debug/debugEnabled.js';
 
 import {
   TORCH_LIGHTS_DEFAULTS,
@@ -186,17 +187,16 @@ const IslandPointLightsControls = () => {
 
   // Per-plate on/off is driven by the activation ramps in ProjectPlates
   // (uPlateLightFactors); these controls set the shared look
+  const plateLightsControl = uniformControls(plateLightsUniforms);
   useControls('PlatesLight', {
     ...groupSchema(plateLightsUniforms, 'Plate', PLATE_LIGHTS_DEFAULTS),
-    height: {
-      value: PLATE_LIGHTS_DEFAULTS.height,
-      min: -1,
-      max: 5,
-      step: 0.01,
-      onChange: v => {
-        plateLightsUniforms.uPlateLightHeight.value = v;
-      },
-    },
+    height: plateLightsControl(
+      'uPlateLightHeight',
+      PLATE_LIGHTS_DEFAULTS.height,
+      -1,
+      5,
+      0.01
+    ),
   });
 
   // The intensity uniform is driven every frame by the bellows gasp in

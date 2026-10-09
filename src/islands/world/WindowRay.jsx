@@ -24,6 +24,7 @@ import {
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 
 import { useControls } from '#debug/useControls.jsx';
+import { uniformControls } from '#debug/uniformControls.js';
 
 import windowRayModel from '#assets/models/island/windowRay.glb?url';
 
@@ -160,78 +161,36 @@ const WindowRay = () => {
 
   useEffect(() => () => material.dispose(), [material]);
 
+  const control = uniformControls(uniforms);
   useControls('WindowRay', {
-    color: {
-      value: RAY_COLOR,
-      onChange: value => {
-        uniforms.uColor.value.set(value);
-      },
-    },
-    opacity: {
-      value: RAY_OPACITY,
-      min: 0,
-      max: 1,
-      step: 0.01,
-      onChange: value => {
-        uniforms.uOpacity.value = value;
-      },
-    },
-    start: {
-      value: RAY_START,
-      min: 0,
-      max: 1,
-      step: 0.01,
-      onChange: value => {
-        uniforms.uStart.value = value;
-      },
-    },
-    end: {
-      value: RAY_END,
-      min: 0,
-      max: 1,
-      step: 0.01,
-      onChange: value => {
-        uniforms.uEnd.value = value;
-      },
-    },
-    smoothness: {
-      value: RAY_SMOOTHNESS,
-      min: 0.1,
-      max: 5,
-      step: 0.01,
-      onChange: value => {
-        uniforms.uSmoothness.value = value;
-      },
-    },
-    edgeSmoothness: {
-      value: RAY_EDGE_SMOOTHNESS,
-      min: 0.01,
-      max: 0.5,
-      step: 0.01,
-      onChange: value => {
-        uniforms.uEdgeSmoothness.value = value;
-      },
-    },
+    color: control('uColor', RAY_COLOR),
+    opacity: control('uOpacity', RAY_OPACITY, 0, 1, 0.01),
+    start: control('uStart', RAY_START, 0, 1, 0.01),
+    end: control('uEnd', RAY_END, 0, 1, 0.01),
+    smoothness: control('uSmoothness', RAY_SMOOTHNESS, 0.1, 5, 0.01),
+    edgeSmoothness: control(
+      'uEdgeSmoothness',
+      RAY_EDGE_SMOOTHNESS,
+      0.01,
+      0.5,
+      0.01
+    ),
     // View-angle fade hiding the beam's hard corners: strength blends the
     // effect in (0 = off), power shapes how fast grazing faces melt away
-    angleFadeStrength: {
-      value: RAY_ANGLE_FADE_STRENGTH,
-      min: 0,
-      max: 1,
-      step: 0.01,
-      onChange: value => {
-        uniforms.uAngleFadeStrength.value = value;
-      },
-    },
-    angleFadePower: {
-      value: RAY_ANGLE_FADE_POWER,
-      min: 0.1,
-      max: 8,
-      step: 0.01,
-      onChange: value => {
-        uniforms.uAngleFadePower.value = value;
-      },
-    },
+    angleFadeStrength: control(
+      'uAngleFadeStrength',
+      RAY_ANGLE_FADE_STRENGTH,
+      0,
+      1,
+      0.01
+    ),
+    angleFadePower: control(
+      'uAngleFadePower',
+      RAY_ANGLE_FADE_POWER,
+      0.1,
+      8,
+      0.01
+    ),
   });
 
   return <mesh geometry={geometry} material={material} />;

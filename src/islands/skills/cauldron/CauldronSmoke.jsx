@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useLoader } from '@react-three/fiber';
 import { useControls } from '#debug/useControls.jsx';
+import { uniformControls } from '#debug/uniformControls.js';
 import * as THREE from 'three/webgpu';
 import {
   If,
@@ -137,47 +138,34 @@ const CauldronSmoke = props => {
 
   useEffect(() => () => smokeMaterial.dispose(), [smokeMaterial]);
 
-  const numberUniform = (uniform, value, min, max, step) => ({
-    value,
-    min,
-    max,
-    step,
-    onChange: v => {
-      uniforms[uniform].value = v;
-    },
-  });
+  const smokeControl = uniformControls(uniforms);
 
   const d = defaultsRef.current;
 
   const { width, height, offset } = useControls(folderName, {
-    color: {
-      value: d.color,
-      onChange: v => {
-        uniforms.uColor.value.set(v);
-      },
-    },
-    opacity: numberUniform('uOpacity', d.opacity, 0, 1, 0.01),
+    color: smokeControl('uColor', d.color),
+    opacity: smokeControl('uOpacity', d.opacity, 0, 1, 0.01),
     // Gamma on the texture: < 1 = denser smoke (keeps the detail), > 1 =
     // thinner wisps, 1 = raw texture
-    density: numberUniform('uDensity', d.density, 0.1, 3, 0.01),
+    density: smokeControl('uDensity', d.density, 0.1, 3, 0.01),
     // Texture scroll speed (1 = the old hardcoded pace)
-    speed: numberUniform('uSpeed', d.speed, 0, 3, 0.01),
+    speed: smokeControl('uSpeed', d.speed, 0, 3, 0.01),
     // Fade width on the plane's vertical edges, in plane units (0 = hard)
-    edgeFade: numberUniform('uEdgeFade', d.edgeFade, 0, 0.5, 0.001),
+    edgeFade: smokeControl('uEdgeFade', d.edgeFade, 0, 0.5, 0.001),
     // Vertical fade-out at the top: full below topFadeStart, fully gone
     // at topFadeEnd
-    topFadeStart: numberUniform('uTopFadeStart', d.topFadeStart, 0, 1, 0.01),
-    topFadeEnd: numberUniform('uTopFadeEnd', d.topFadeEnd, 0, 1, 0.01),
+    topFadeStart: smokeControl('uTopFadeStart', d.topFadeStart, 0, 1, 0.01),
+    topFadeEnd: smokeControl('uTopFadeEnd', d.topFadeEnd, 0, 1, 0.01),
     // Vertical fade-in at the base: gone below bottomFadeStart, full at
     // bottomFadeEnd
-    bottomFadeStart: numberUniform(
+    bottomFadeStart: smokeControl(
       'uBottomFadeStart',
       d.bottomFadeStart,
       0,
       1,
       0.01
     ),
-    bottomFadeEnd: numberUniform('uBottomFadeEnd', d.bottomFadeEnd, 0, 1, 0.01),
+    bottomFadeEnd: smokeControl('uBottomFadeEnd', d.bottomFadeEnd, 0, 1, 0.01),
     // Fully disables the vertex sway animation
     sway: {
       value: d.sway,
@@ -186,18 +174,18 @@ const CauldronSmoke = props => {
       },
     },
     // Shifts the animation phase (hashed from the column's world position)
-    timeOffsetStrength: numberUniform(
+    timeOffsetStrength: smokeControl(
       'uTimeOffsetStrength',
       d.timeOffsetStrength,
       0,
       3,
       0.01
     ),
-    swayScale: numberUniform('uDisplacementUv', d.swayScale, 0, 10, 0.01),
-    swayPower: numberUniform('uDisplacementUvY', d.swayPower, 0, 3, 0.01),
+    swayScale: smokeControl('uDisplacementUv', d.swayScale, 0, 10, 0.01),
+    swayPower: smokeControl('uDisplacementUvY', d.swayPower, 0, 3, 0.01),
     // Left/right displacement amplitude at the top of the column, in local
     // plane units (0 = still; the base never moves)
-    swayAmplitude: numberUniform('uSwayAmplitude', d.swayAmplitude, 0, 3, 0.01),
+    swayAmplitude: smokeControl('uSwayAmplitude', d.swayAmplitude, 0, 3, 0.01),
     width: { value: d.width, min: 0.05, max: 3, step: 0.01 },
     height: { value: d.height, min: 0.5, max: 20, step: 0.1 },
     offset: { value: d.offset, step: 0.01 },

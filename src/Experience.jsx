@@ -25,7 +25,7 @@ import { InteractiveElements } from '#islands/interaction/InteractiveElements.js
 import { Grass } from '#islands/resume/grass/Grass.jsx';
 import BonfireSmoke from '#islands/resume/BonfireSmoke.jsx';
 import { useStore } from '#store';
-import { DEBUG_ENABLED } from '#utils/debug.js';
+import { DEBUG_ENABLED } from '#debug/debugEnabled.js';
 import { SOUND_VOLUMES } from '#utils/soundVolumes.js';
 import runningSoundEffect from '#character/runningSound.js';
 

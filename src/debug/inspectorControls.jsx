@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { hasConfig, initialControlValues } from '#debug/controlsSchema.js';
+
 /**
  * The three.js Inspector-backed implementation of useControls, active when
- * DEBUG_ENABLED (see debug.js) — production builds use the headless version
+ * DEBUG_ENABLED (see debugEnabled.js) — production builds use the headless version
  * in useControls.jsx instead and drop this module from the bundle. Keep it
  * free of top-level side effects so it stays tree-shakeable, and keep the
  * Inspector behind the dynamic import below: its modules inject CSS at load,
@@ -26,9 +28,11 @@ import { useEffect, useRef, useState } from 'react';
 
 // Debug folder hierarchy, in display order. `null` marks a folder that a
 // useControls call fills with bindings; a nested object is a group. Titles
-// must match the folderName passed at call sites; any title not listed here
-// gets its own top-level folder, in mount order.
+// must match the folderName passed at call sites and be unique across the
+// tree; any title not listed here gets its own top-level folder, in mount
+// order.
 const FOLDER_TREE = {
+  General: { Camera: null, Sounds: null, Physics: null },
   Postprocessing: {
     Effects: null,
     depthOfField: null,
@@ -42,14 +46,17 @@ const FOLDER_TREE = {
     ambientLight: null,
   },
   NatureEffects: { 'Wind Lines': null, 'Cloud Shadows': null },
-  Grass: {
-    Blades: null,
-    Flowers: null,
-    Rendering: null,
-    Wind: null,
-    Trample: null,
+  Resume: {
+    Grass: {
+      Blades: null,
+      Flowers: null,
+      Rendering: null,
+      Wind: null,
+      Trample: null,
+    },
+    Flags: { Grade: null, British: null, French: null, Spain: null },
+    SleepText: null,
   },
-  Flags: { Grade: null, British: null, French: null, Spain: null },
   Spawn: {
     'Respawn Animation': null,
     'Player Death': null,
@@ -73,7 +80,12 @@ const FOLDER_TREE = {
     TorchesSmoke: null,
   },
   Well: { Well: null, WellLight: null },
-  Lanterns: { Lanterns: null, LanternLights: null, FireFlies: null },
+  Lanterns: {
+    Lanterns: null,
+    LanternLights: null,
+    HouseLanternLight: null,
+    FireFlies: null,
+  },
   Candles: { Candles: null, CandlesLight: null },
   Forge: {
     ForgeSparks: null,
@@ -82,6 +94,7 @@ const FOLDER_TREE = {
     Window: { WindowRay: null, WindowLight: null },
   },
   Contact: { XSign: null, EmailSign: null },
+  IndicatorLights: null,
   ProjectsPortal: {
     ProjectsPortal: null,
     PortalLight: null,
@@ -94,7 +107,7 @@ const FOLDER_TREE = {
     CauldronLight: null,
     CauldronSmoke: null,
   },
-  SkillsPortal: { Skills: null, SkillsPortalLight: null },
+  SkillsPortal: { Skills: null, MagicBooks: null, SkillsPortalLight: null },
 };
 
 // Extra titles funneled into another leaf's folder: their bindings merge
@@ -107,6 +120,9 @@ const collectFolderPaths = (tree, parentPath, paths) => {
   for (const [title, children] of Object.entries(tree)) {
     const path = [...parentPath, title];
     if (children === null) {
+      // Leaves are keyed by bare title: a duplicate would steal the other's
+      // bindings
+      if (paths[title]) console.warn(`Debug folder "${title}" listed twice`);
       paths[title] = path;
     } else {
       collectFolderPaths(children, path, paths);
@@ -209,12 +225,6 @@ const loadInspector = () => {
 
 const AXES = ['x', 'y', 'z', 'w'];
 
-const hasConfig = def =>
-  def !== null &&
-  typeof def === 'object' &&
-  !Array.isArray(def) &&
-  'value' in def;
-
 const isVectorLike = value =>
   value !== null &&
   typeof value === 'object' &&
@@ -258,19 +268,9 @@ const useInspectorControls = (folderName, schema) => {
   const folderNameRef = useRef(folderName);
   const schemaRef = useRef(schema);
 
-  const [values, setValues] = useState(() => {
-    const initial = {};
-    for (const [key, def] of Object.entries(schemaRef.current)) {
-      if (typeof def === 'function') continue; // button, not part of the state
-      if (hasConfig(def)) {
-        if (def.onChange) continue; // transient, not part of the state
-        initial[key] = def.value;
-      } else {
-        initial[key] = def;
-      }
-    }
-    return initial;
-  });
+  const [values, setValues] = useState(() =>
+    initialControlValues(schemaRef.current)
+  );
 
   useEffect(() => {
     let detach = null;

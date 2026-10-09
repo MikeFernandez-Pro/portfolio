@@ -3,7 +3,7 @@ import nipplejs from 'nipplejs';
 import gsap from 'gsap';
 
 import { useStore } from '#store';
-import { IS_MOBILE_DEVICE } from '#utils/utils.js';
+import { IS_MOBILE_DEVICE } from '#utils/device.js';
 
 // ScreenOrientation constants
 const PORTRAIT_ORIENTATION = 'portrait-primary';

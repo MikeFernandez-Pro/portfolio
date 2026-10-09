@@ -9,7 +9,7 @@ import tunnel from 'tunnel-rat';
 import { Howler } from 'howler';
 import * as THREE from 'three/webgpu';
 
-import { IS_MOBILE_DEVICE, MAX_DPR } from '#utils/utils.js';
+import { IS_MOBILE_DEVICE } from '#utils/device.js';
 import { prefersReducedMotion } from '#utils/reducedMotion.js';
 
 import soundOnIcon from '/icons/sound-on.svg';
@@ -20,6 +20,10 @@ import { AdaptiveDpr } from './workarounds/AdaptiveDpr.jsx';
 
 /* Tunnel */
 const ui = tunnel();
+
+// Pixel ratio ceiling. dpr 2 is 4x the fill of dpr 1; 1.5 is the visual
+// sweet spot. Slow machines drop to 1 through <PerformanceMonitor>
+const MAX_DPR = 1.5;
 
 // Mute = the user's sound toggle OR a hidden tab, so coming back to the tab
 // never overrides a sound the user turned off

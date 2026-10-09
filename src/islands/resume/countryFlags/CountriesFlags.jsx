@@ -1,4 +1,5 @@
 import { useControls } from '#debug/useControls.jsx';
+import { uniformControls } from '#debug/uniformControls.js';
 
 import {
   CountryFlag,
@@ -36,25 +37,22 @@ const useFlagOwnControls = (title, uniforms) => {
 const CountriesFlags = props => {
   const { island } = props;
 
+  const flagsGradeControl = uniformControls(flagsGradeUniforms);
   useControls('Grade', {
-    lightness: {
-      value: FLAGS_GRADE_DEFAULTS.lightness,
-      min: 0,
-      max: 3,
-      step: 0.01,
-      onChange: v => {
-        flagsGradeUniforms.uFlagLightness.value = v;
-      },
-    },
-    saturation: {
-      value: FLAGS_GRADE_DEFAULTS.saturation,
-      min: 0,
-      max: 2,
-      step: 0.01,
-      onChange: v => {
-        flagsGradeUniforms.uFlagSaturation.value = v;
-      },
-    },
+    lightness: flagsGradeControl(
+      'uFlagLightness',
+      FLAGS_GRADE_DEFAULTS.lightness,
+      0,
+      3,
+      0.01
+    ),
+    saturation: flagsGradeControl(
+      'uFlagSaturation',
+      FLAGS_GRADE_DEFAULTS.saturation,
+      0,
+      2,
+      0.01
+    ),
   });
 
   useFlagOwnControls('British', flagsIndividualUniforms.british);

@@ -2,6 +2,7 @@ import { useMemo, useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Circle } from '@react-three/drei/webgpu';
 import { useControls } from '#debug/useControls.jsx';
+import { uniformControls } from '#debug/uniformControls.js';
 import { Howl } from 'howler';
 import gsap from 'gsap';
 import * as THREE from 'three/webgpu';
@@ -383,24 +384,7 @@ const ProjectsPortal = props => {
   // Target radius of the open portal; the scale-up animation reads it live
   const openSizeRef = useRef(PORTAL_OPEN_SIZE);
 
-  // Control factories: every control writes its uniform straight through,
-  // no re-render
-  const numberControl = (uniform, value, min, max, step) => ({
-    value,
-    min,
-    max,
-    step,
-    onChange: v => {
-      portalUniforms[uniform].value = v;
-    },
-  });
-
-  const colorControl = (uniform, value) => ({
-    value,
-    onChange: v => {
-      portalUniforms[uniform].value.set(v);
-    },
-  });
+  const portalControl = uniformControls(portalUniforms);
 
   const d = PORTAL_SHADER_DEFAULTS;
 
@@ -419,84 +403,84 @@ const ProjectsPortal = props => {
         }
       },
     },
-    sizePulseSpeed: numberControl(
+    sizePulseSpeed: portalControl(
       'uSizePulseSpeed',
       d.sizePulseSpeed,
       0,
       10,
       0.01
     ),
-    sizePulseMin: numberControl(
+    sizePulseMin: portalControl(
       'uSizePulseMin',
       d.sizePulseMin,
       -0.1,
       0.1,
       0.001
     ),
-    sizePulseMax: numberControl(
+    sizePulseMax: portalControl(
       'uSizePulseMax',
       d.sizePulseMax,
       -0.1,
       0.1,
       0.001
     ),
-    noiseScale: numberControl('uNoiseScale', d.noiseScale, 0, 5, 0.01),
-    noiseSpeed: numberControl('uNoiseSpeed', d.noiseSpeed, 0, 0.5, 0.001),
-    deformationStart: numberControl(
+    noiseScale: portalControl('uNoiseScale', d.noiseScale, 0, 5, 0.01),
+    noiseSpeed: portalControl('uNoiseSpeed', d.noiseSpeed, 0, 0.5, 0.001),
+    deformationStart: portalControl(
       'uDeformationStart',
       d.deformationStart,
       0,
       0.7,
       0.005
     ),
-    deformationEnd: numberControl(
+    deformationEnd: portalControl(
       'uDeformationEnd',
       d.deformationEnd,
       0,
       0.7,
       0.005
     ),
-    deformationStrength: numberControl(
+    deformationStrength: portalControl(
       'uDeformationStrength',
       d.deformationStrength,
       0,
       1,
       0.005
     ),
-    textureDistortion: numberControl(
+    textureDistortion: portalControl(
       'uTextureDistortion',
       d.textureDistortion,
       0,
       3,
       0.01
     ),
-    parallaxDepth: numberControl(
+    parallaxDepth: portalControl(
       'uParallaxDepth',
       d.parallaxDepth,
       0,
       0.5,
       0.005
     ),
-    rimColor: colorControl('uRimColor', d.rimColor),
-    rimIntensity: numberControl('uRimIntensity', d.rimIntensity, 0, 20, 0.1),
-    rimWidth: numberControl('uRimWidth', d.rimWidth, 0, 0.2, 0.001),
-    lighting: numberControl('uLighting', d.lighting, 0, 3, 0.01),
-    saturation: numberControl('uSaturation', d.saturation, 0, 2, 0.01),
-    distortionScale: numberControl(
+    rimColor: portalControl('uRimColor', d.rimColor),
+    rimIntensity: portalControl('uRimIntensity', d.rimIntensity, 0, 20, 0.1),
+    rimWidth: portalControl('uRimWidth', d.rimWidth, 0, 0.2, 0.001),
+    lighting: portalControl('uLighting', d.lighting, 0, 3, 0.01),
+    saturation: portalControl('uSaturation', d.saturation, 0, 2, 0.01),
+    distortionScale: portalControl(
       'uDistortionScale',
       d.distortionScale,
       0,
       3,
       0.01
     ),
-    distortionStrength: numberControl(
+    distortionStrength: portalControl(
       'uDistortionStrength',
       d.distortionStrength,
       0,
       0.5,
       0.001
     ),
-    distortionSpeed: numberControl(
+    distortionSpeed: portalControl(
       'uDistortionSpeed',
       d.distortionSpeed,
       0,
@@ -505,15 +489,7 @@ const ProjectsPortal = props => {
     ),
   });
 
-  const sparksNumberControl = (uniform, value, min, max, step) => ({
-    value,
-    min,
-    max,
-    step,
-    onChange: v => {
-      sparksUniforms[uniform].value = v;
-    },
-  });
+  const sparksControl = uniformControls(sparksUniforms);
 
   const portalDiscRef = useRef(null);
 
@@ -527,36 +503,31 @@ const ProjectsPortal = props => {
         sparks.count = v;
       },
     },
-    color: {
-      value: SPARKS_DEFAULTS.color,
-      onChange: v => {
-        sparksUniforms.uColor.value.set(v);
-      },
-    },
-    intensity: sparksNumberControl(
+    color: sparksControl('uColor', SPARKS_DEFAULTS.color),
+    intensity: sparksControl(
       'uIntensity',
       SPARKS_DEFAULTS.intensity,
       0,
       20,
       0.1
     ),
-    size: sparksNumberControl('uSize', SPARKS_DEFAULTS.size, 0, 0.3, 0.001),
-    speed: sparksNumberControl('uSpeed', SPARKS_DEFAULTS.speed, 0, 1, 0.005),
-    spawnRadius: sparksNumberControl(
+    size: sparksControl('uSize', SPARKS_DEFAULTS.size, 0, 0.3, 0.001),
+    speed: sparksControl('uSpeed', SPARKS_DEFAULTS.speed, 0, 1, 0.005),
+    spawnRadius: sparksControl(
       'uSpawnRadius',
       SPARKS_DEFAULTS.spawnRadius,
       0,
       3,
       0.01
     ),
-    swirlTurns: sparksNumberControl(
+    swirlTurns: sparksControl(
       'uSwirlTurns',
       SPARKS_DEFAULTS.swirlTurns,
       -2,
       2,
       0.01
     ),
-    frontOffset: sparksNumberControl(
+    frontOffset: sparksControl(
       'uFrontOffset',
       SPARKS_DEFAULTS.frontOffset,
       0,
@@ -565,13 +536,9 @@ const ProjectsPortal = props => {
     ),
   });
 
+  const portalLightControl = uniformControls(portalLightUniforms);
   useControls('PortalLight', {
-    color: {
-      value: PORTAL_LIGHT_DEFAULTS.color,
-      onChange: v => {
-        portalLightUniforms.uPortalLightColor.value.set(v);
-      },
-    },
+    color: portalLightControl('uPortalLightColor', PORTAL_LIGHT_DEFAULTS.color),
     intensity: {
       value: PORTAL_LIGHT_DEFAULTS.intensity,
       min: 0,
@@ -581,33 +548,27 @@ const ProjectsPortal = props => {
         portalLightSettings.intensity = v;
       },
     },
-    decay: {
-      value: PORTAL_LIGHT_DEFAULTS.decay,
-      min: 0,
-      max: 1,
-      step: 0.005,
-      onChange: v => {
-        portalLightUniforms.uPortalLightDecay.value = v;
-      },
-    },
-    decayPower: {
-      value: PORTAL_LIGHT_DEFAULTS.decayPower,
-      min: 0.1,
-      max: 8,
-      step: 0.05,
-      onChange: v => {
-        portalLightUniforms.uPortalLightDecayPower.value = v;
-      },
-    },
-    specularPower: {
-      value: PORTAL_LIGHT_DEFAULTS.specularPower,
-      min: 1,
-      max: 64,
-      step: 1,
-      onChange: v => {
-        portalLightUniforms.uPortalLightSpecularPower.value = v;
-      },
-    },
+    decay: portalLightControl(
+      'uPortalLightDecay',
+      PORTAL_LIGHT_DEFAULTS.decay,
+      0,
+      1,
+      0.005
+    ),
+    decayPower: portalLightControl(
+      'uPortalLightDecayPower',
+      PORTAL_LIGHT_DEFAULTS.decayPower,
+      0.1,
+      8,
+      0.05
+    ),
+    specularPower: portalLightControl(
+      'uPortalLightSpecularPower',
+      PORTAL_LIGHT_DEFAULTS.specularPower,
+      1,
+      64,
+      1
+    ),
   });
 
   // Animation

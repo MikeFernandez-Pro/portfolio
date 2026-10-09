@@ -14,7 +14,7 @@ import { CharacterBody } from '#physics/CharacterBody.js';
 import { physicsWorld } from '#physics/world.js';
 
 import { useStore } from '#store';
-import { IS_MOBILE_DEVICE } from '#utils/utils.js';
+import { IS_MOBILE_DEVICE } from '#utils/device.js';
 import { useControls } from '#debug/useControls.jsx';
 
 import CharacterModel from '#assets/models/character/character.glb';

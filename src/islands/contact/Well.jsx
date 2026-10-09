@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei/webgpu';
 import { useControls } from '#debug/useControls.jsx';
+import { uniformControls } from '#debug/uniformControls.js';
 import * as THREE from 'three/webgpu';
 import {
   abs,
@@ -195,61 +196,40 @@ const Well = () => {
   useEffect(() => () => wellMaterial.dispose(), [wellMaterial]);
   useEffect(() => () => fishMaterial.dispose(), [fishMaterial]);
 
+  const wellControl = uniformControls(wellUniforms);
+  const fishControl = uniformControls(fishUniforms);
   const controls = useControls('Well', {
-    foamColor: {
-      value: FOAM_COLOR,
-      onChange: value => {
-        wellUniforms.uFoamColor.value.set(value);
-      },
-    },
-    outerWaterColor: {
-      value: OUTER_WATER_COLOR,
-      onChange: value => {
-        wellUniforms.uOuterWaterColor.value.set(value);
-      },
-    },
-    innerWaterColor: {
-      value: INNER_WATER_COLOR,
-      onChange: value => {
-        wellUniforms.uInnerWaterColor.value.set(value);
-      },
-    },
-    innerCircleRadius: {
-      value: INNER_CIRCLE_RADIUS,
-      min: 0,
-      max: 0.7,
-      step: 0.001,
-      onChange: value => {
-        wellUniforms.uInnerCircleRadius.value = value;
-      },
-    },
-    innerCircleThickness: {
-      value: INNER_CIRCLE_THICKNESS,
-      min: 0,
-      max: 0.3,
-      step: 0.001,
-      onChange: value => {
-        wellUniforms.uInnerCircleThickness.value = value;
-      },
-    },
-    outerCircleRadius: {
-      value: OUTER_CIRCLE_RADIUS,
-      min: 0,
-      max: 1,
-      step: 0.001,
-      onChange: value => {
-        wellUniforms.uOuterCircleRadius.value = value;
-      },
-    },
-    outerCircleThickness: {
-      value: OUTER_CIRCLE_THICKNESS,
-      min: 0,
-      max: 0.3,
-      step: 0.001,
-      onChange: value => {
-        wellUniforms.uOuterCircleThickness.value = value;
-      },
-    },
+    foamColor: wellControl('uFoamColor', FOAM_COLOR),
+    outerWaterColor: wellControl('uOuterWaterColor', OUTER_WATER_COLOR),
+    innerWaterColor: wellControl('uInnerWaterColor', INNER_WATER_COLOR),
+    innerCircleRadius: wellControl(
+      'uInnerCircleRadius',
+      INNER_CIRCLE_RADIUS,
+      0,
+      0.7,
+      0.001
+    ),
+    innerCircleThickness: wellControl(
+      'uInnerCircleThickness',
+      INNER_CIRCLE_THICKNESS,
+      0,
+      0.3,
+      0.001
+    ),
+    outerCircleRadius: wellControl(
+      'uOuterCircleRadius',
+      OUTER_CIRCLE_RADIUS,
+      0,
+      1,
+      0.001
+    ),
+    outerCircleThickness: wellControl(
+      'uOuterCircleThickness',
+      OUTER_CIRCLE_THICKNESS,
+      0,
+      0.3,
+      0.001
+    ),
     innerCircleOffsetX: {
       value: INNER_CIRCLE_OFFSET_X,
       min: -0.5,
@@ -268,24 +248,20 @@ const Well = () => {
         wellUniforms.uInnerCircleOffset.value.y = value;
       },
     },
-    perlinStrengthInner: {
-      value: INNER_PERLIN_STRENGTH,
-      min: 0,
-      max: 0.2,
-      step: 0.001,
-      onChange: value => {
-        wellUniforms.uInnerPerlinStrength.value = value;
-      },
-    },
-    perlinStrengthOuter: {
-      value: OUTER_PERLIN_STRENGTH,
-      min: 0,
-      max: 0.2,
-      step: 0.001,
-      onChange: value => {
-        wellUniforms.uOuterPerlinStrength.value = value;
-      },
-    },
+    perlinStrengthInner: wellControl(
+      'uInnerPerlinStrength',
+      INNER_PERLIN_STRENGTH,
+      0,
+      0.2,
+      0.001
+    ),
+    perlinStrengthOuter: wellControl(
+      'uOuterPerlinStrength',
+      OUTER_PERLIN_STRENGTH,
+      0,
+      0.2,
+      0.001
+    ),
     posX: { value: 15.45, min: 10, max: 20, step: 0.01 },
     posY: { value: -1.82, min: -5, max: 2, step: 0.01 },
     posZ: { value: 11.2, min: 6, max: 16, step: 0.01 },
@@ -305,24 +281,14 @@ const Well = () => {
       max: 2,
       step: 0.01,
     },
-    fishDeformationStrength: {
-      value: FISH_DEFORMATION_STRENGTH,
-      min: 0,
-      max: 1.5,
-      step: 0.01,
-      onChange: value => {
-        fishUniforms.uDeformationStrength.value = value;
-      },
-    },
-    fishWiggleSpeed: {
-      value: FISH_WIGGLE_SPEED,
-      min: 0,
-      max: 15,
-      step: 0.1,
-      onChange: value => {
-        fishUniforms.uWiggleSpeed.value = value;
-      },
-    },
+    fishDeformationStrength: fishControl(
+      'uDeformationStrength',
+      FISH_DEFORMATION_STRENGTH,
+      0,
+      1.5,
+      0.01
+    ),
+    fishWiggleSpeed: fishControl('uWiggleSpeed', FISH_WIGGLE_SPEED, 0, 15, 0.1),
   });
 
   useEffect(() => {

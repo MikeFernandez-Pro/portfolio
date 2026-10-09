@@ -1,6 +1,7 @@
 import { useMemo, useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useControls } from '#debug/useControls.jsx';
+import { uniformControls } from '#debug/uniformControls.js';
 import { Howl } from 'howler';
 import gsap from 'gsap';
 import * as THREE from 'three';
@@ -41,13 +42,12 @@ const SkillsGlyph = props => {
   // control offsets the light from it
   const glyphBaseYRef = useRef(null);
 
+  const magicPortalLightControl = uniformControls(magicPortalLightUniforms);
   useControls('SkillsPortalLight', {
-    color: {
-      value: MAGIC_PORTAL_LIGHT_DEFAULTS.color,
-      onChange: v => {
-        magicPortalLightUniforms.uMagicPortalLightColor.value.set(v);
-      },
-    },
+    color: magicPortalLightControl(
+      'uMagicPortalLightColor',
+      MAGIC_PORTAL_LIGHT_DEFAULTS.color
+    ),
     intensity: {
       value: MAGIC_PORTAL_LIGHT_DEFAULTS.intensity,
       min: 0,
@@ -59,24 +59,20 @@ const SkillsGlyph = props => {
           v * lightProgressRef.current;
       },
     },
-    decay: {
-      value: MAGIC_PORTAL_LIGHT_DEFAULTS.decay,
-      min: 0,
-      max: 1,
-      step: 0.005,
-      onChange: v => {
-        magicPortalLightUniforms.uMagicPortalLightDecay.value = v;
-      },
-    },
-    decayPower: {
-      value: MAGIC_PORTAL_LIGHT_DEFAULTS.decayPower,
-      min: 0.1,
-      max: 8,
-      step: 0.05,
-      onChange: v => {
-        magicPortalLightUniforms.uMagicPortalLightDecayPower.value = v;
-      },
-    },
+    decay: magicPortalLightControl(
+      'uMagicPortalLightDecay',
+      MAGIC_PORTAL_LIGHT_DEFAULTS.decay,
+      0,
+      1,
+      0.005
+    ),
+    decayPower: magicPortalLightControl(
+      'uMagicPortalLightDecayPower',
+      MAGIC_PORTAL_LIGHT_DEFAULTS.decayPower,
+      0.1,
+      8,
+      0.05
+    ),
     height: {
       value: MAGIC_PORTAL_LIGHT_DEFAULTS.height,
       min: -1,
@@ -90,15 +86,13 @@ const SkillsGlyph = props => {
         }
       },
     },
-    specularPower: {
-      value: MAGIC_PORTAL_LIGHT_DEFAULTS.specularPower,
-      min: 1,
-      max: 64,
-      step: 1,
-      onChange: v => {
-        magicPortalLightUniforms.uMagicPortalLightSpecularPower.value = v;
-      },
-    },
+    specularPower: magicPortalLightControl(
+      'uMagicPortalLightSpecularPower',
+      MAGIC_PORTAL_LIGHT_DEFAULTS.specularPower,
+      1,
+      64,
+      1
+    ),
   });
 
   useEffect(() => {

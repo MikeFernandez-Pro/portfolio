@@ -26,8 +26,15 @@ import { useControls } from '#debug/useControls.jsx';
 
 import { createCheapDof, useCheapDofControls } from './CheapDofPass.jsx';
 import { createIris, useIris } from './Iris.jsx';
-import { IS_MOBILE_DEVICE, COMPOSER_MSAA } from '#utils/utils.js';
+import { IS_MOBILE_DEVICE } from '#utils/device.js';
 import { useStore } from '#store';
+
+// Antialiasing: 4x MSAA on the scene pass (desktop) + SMAA after tone
+// mapping; mobile is SMAA-only. The debug "Antialiasing" msaa control
+// rebuilds the pipeline for A/B. MSAA extrapolates varyings past their
+// vertex range on thin geometry and TSL has no centroid sampling: anything
+// fed into a mix/threshold there is clamped (lantern, grass)
+const COMPOSER_MSAA = IS_MOBILE_DEVICE ? 0 : 4;
 
 const AO_ENABLED = !IS_MOBILE_DEVICE;
 const DOF_ENABLED = !IS_MOBILE_DEVICE;

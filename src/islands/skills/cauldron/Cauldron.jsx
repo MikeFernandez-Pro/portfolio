@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useControls } from '#debug/useControls.jsx';
+import { uniformControls } from '#debug/uniformControls.js';
 import * as THREE from 'three/webgpu';
 import {
   cos,
@@ -231,15 +232,7 @@ const Cauldron = props => {
   useEffect(() => () => bubbles.material.dispose(), [bubbles]);
   bubblesPointsRef.current = bubbles;
 
-  const bubblesNumberControl = (uniform, value, min, max, step) => ({
-    value,
-    min,
-    max,
-    step,
-    onChange: v => {
-      bubblesUniforms[uniform].value = v;
-    },
-  });
+  const bubblesControl = uniformControls(bubblesUniforms);
 
   useControls('CauldronBubbles', {
     count: {
@@ -251,46 +244,35 @@ const Cauldron = props => {
         bubbles.count = v;
       },
     },
-    color: {
-      value: BUBBLES_DEFAULTS.color,
-      onChange: v => {
-        bubblesUniforms.uColor.value.set(v);
-      },
-    },
-    intensity: bubblesNumberControl(
+    color: bubblesControl('uColor', BUBBLES_DEFAULTS.color),
+    intensity: bubblesControl(
       'uIntensity',
       BUBBLES_DEFAULTS.intensity,
       0,
       20,
       0.1
     ),
-    opacity: bubblesNumberControl(
-      'uOpacity',
-      BUBBLES_DEFAULTS.opacity,
-      0,
-      1,
-      0.01
-    ),
+    opacity: bubblesControl('uOpacity', BUBBLES_DEFAULTS.opacity, 0, 1, 0.01),
     // Inside fill of the bubble (0 = hollow ring, 1 = full disc)
-    coreOpacity: bubblesNumberControl(
+    coreOpacity: bubblesControl(
       'uCoreOpacity',
       BUBBLES_DEFAULTS.coreOpacity,
       0,
       1,
       0.01
     ),
-    rimThickness: bubblesNumberControl(
+    rimThickness: bubblesControl(
       'uRimThickness',
       BUBBLES_DEFAULTS.rimThickness,
       0.01,
       0.48,
       0.005
     ),
-    size: bubblesNumberControl('uSize', BUBBLES_DEFAULTS.size, 0, 0.3, 0.001),
-    speed: bubblesNumberControl('uSpeed', BUBBLES_DEFAULTS.speed, 0, 2, 0.005),
+    size: bubblesControl('uSize', BUBBLES_DEFAULTS.size, 0, 0.3, 0.001),
+    speed: bubblesControl('uSpeed', BUBBLES_DEFAULTS.speed, 0, 2, 0.005),
     // Shape of the swelling over a bubble's life (< 1 grows fast then
     // slows down, > 1 the opposite)
-    growPower: bubblesNumberControl(
+    growPower: bubblesControl(
       'uGrowPower',
       BUBBLES_DEFAULTS.growPower,
       0.2,
@@ -298,20 +280,8 @@ const Cauldron = props => {
       0.01
     ),
     // Life fraction where the burst begins (closer to 1 = more sudden)
-    pop: bubblesNumberControl(
-      'uPopStart',
-      BUBBLES_DEFAULTS.pop,
-      0.5,
-      0.99,
-      0.005
-    ),
-    spread: bubblesNumberControl(
-      'uSpread',
-      BUBBLES_DEFAULTS.spread,
-      0,
-      1,
-      0.01
-    ),
+    pop: bubblesControl('uPopStart', BUBBLES_DEFAULTS.pop, 0.5, 0.99, 0.005),
+    spread: bubblesControl('uSpread', BUBBLES_DEFAULTS.spread, 0, 1, 0.01),
   });
 
   const { portalMaterial, portalUniforms } = useMemo(() => {
@@ -328,23 +298,7 @@ const Cauldron = props => {
 
   useEffect(() => () => portalMaterial.dispose(), [portalMaterial]);
 
-  // Control factories: every control just writes its uniform
-  const numberControl = (uniform, value, min, max, step) => ({
-    value,
-    min,
-    max,
-    step,
-    onChange: v => {
-      portalUniforms[uniform].value = v;
-    },
-  });
-
-  const colorControl = (uniform, value) => ({
-    value,
-    onChange: v => {
-      portalUniforms[uniform].value.set(v);
-    },
-  });
+  const potionControl = uniformControls(portalUniforms);
 
   const d = PORTAL_DEFAULTS;
 
@@ -356,126 +310,126 @@ const Cauldron = props => {
       step: 0.001,
       onChange: applyPlaneHeight,
     },
-    deepColor: colorControl('uDeepColor', d.deepColor),
-    midColor: colorControl('uMidColor', d.midColor),
-    brightColor: colorControl('uBrightColor', d.brightColor),
-    opacity: numberControl('uOpacity', d.opacity, 0, 1, 0.01),
-    distortionScale: numberControl(
+    deepColor: potionControl('uDeepColor', d.deepColor),
+    midColor: potionControl('uMidColor', d.midColor),
+    brightColor: potionControl('uBrightColor', d.brightColor),
+    opacity: potionControl('uOpacity', d.opacity, 0, 1, 0.01),
+    distortionScale: potionControl(
       'uDistortionScale',
       d.distortionScale,
       0,
       3,
       0.01
     ),
-    distortionStrength: numberControl(
+    distortionStrength: potionControl(
       'uDistortionStrength',
       d.distortionStrength,
       0,
       0.2,
       0.001
     ),
-    distortionSpeed: numberControl(
+    distortionSpeed: potionControl(
       'uDistortionSpeed',
       d.distortionSpeed,
       0,
       0.5,
       0.001
     ),
-    rotationSpeed: numberControl(
+    rotationSpeed: potionControl(
       'uRotationSpeed',
       d.rotationSpeed,
       -3,
       3,
       0.01
     ),
-    backgroundStrength: numberControl(
+    backgroundStrength: potionControl(
       'uBackgroundStrength',
       d.backgroundStrength,
       0,
       4,
       0.01
     ),
-    backgroundCenterGlow: numberControl(
+    backgroundCenterGlow: potionControl(
       'uBackgroundCenterGlow',
       d.backgroundCenterGlow,
       0,
       4,
       0.01
     ),
-    backgroundFalloff: numberControl(
+    backgroundFalloff: potionControl(
       'uBackgroundFalloff',
       d.backgroundFalloff,
       0.1,
       8,
       0.01
     ),
-    backgroundCloudContrast: numberControl(
+    backgroundCloudContrast: potionControl(
       'uBackgroundCloudContrast',
       d.backgroundCloudContrast,
       0,
       1,
       0.01
     ),
-    ribbonStrength: numberControl(
+    ribbonStrength: potionControl(
       'uRibbonStrength',
       d.ribbonStrength,
       0,
       2,
       0.01
     ),
-    ribbonCount: numberControl('uRibbonCount', d.ribbonCount, 0, 20, 0.5),
-    ribbonWidth: numberControl('uRibbonWidth', d.ribbonWidth, 0, 0.5, 0.005),
-    ribbonTwist: numberControl('uRibbonTwist', d.ribbonTwist, -10, 10, 0.01),
-    ribbonSpeed: numberControl('uRibbonSpeed', d.ribbonSpeed, -3, 3, 0.01),
-    ribbonBreakup: numberControl('uRibbonBreakup', d.ribbonBreakup, 0, 1, 0.01),
-    filamentStrength: numberControl(
+    ribbonCount: potionControl('uRibbonCount', d.ribbonCount, 0, 20, 0.5),
+    ribbonWidth: potionControl('uRibbonWidth', d.ribbonWidth, 0, 0.5, 0.005),
+    ribbonTwist: potionControl('uRibbonTwist', d.ribbonTwist, -10, 10, 0.01),
+    ribbonSpeed: potionControl('uRibbonSpeed', d.ribbonSpeed, -3, 3, 0.01),
+    ribbonBreakup: potionControl('uRibbonBreakup', d.ribbonBreakup, 0, 1, 0.01),
+    filamentStrength: potionControl(
       'uFilamentStrength',
       d.filamentStrength,
       0,
       2,
       0.01
     ),
-    filamentCount: numberControl('uFilamentCount', d.filamentCount, 0, 30, 0.5),
-    filamentWidth: numberControl(
+    filamentCount: potionControl('uFilamentCount', d.filamentCount, 0, 30, 0.5),
+    filamentWidth: potionControl(
       'uFilamentWidth',
       d.filamentWidth,
       0,
       0.3,
       0.005
     ),
-    filamentTwist: numberControl(
+    filamentTwist: potionControl(
       'uFilamentTwist',
       d.filamentTwist,
       -10,
       10,
       0.01
     ),
-    filamentSpeed: numberControl(
+    filamentSpeed: potionControl(
       'uFilamentSpeed',
       d.filamentSpeed,
       -3,
       3,
       0.01
     ),
-    filamentBreakup: numberControl(
+    filamentBreakup: potionControl(
       'uFilamentBreakup',
       d.filamentBreakup,
       0,
       1,
       0.01
     ),
-    coreStrength: numberControl('uCoreStrength', d.coreStrength, 0, 3, 0.01),
-    coreRadius: numberControl('uCoreRadius', d.coreRadius, 0, 0.5, 0.005),
-    coreSoftness: numberControl('uCoreSoftness', d.coreSoftness, 0, 0.5, 0.005),
-    coreHalo: numberControl('uCoreHalo', d.coreHalo, 0, 2, 0.01),
-    corePulseAmount: numberControl(
+    coreStrength: potionControl('uCoreStrength', d.coreStrength, 0, 3, 0.01),
+    coreRadius: potionControl('uCoreRadius', d.coreRadius, 0, 0.5, 0.005),
+    coreSoftness: potionControl('uCoreSoftness', d.coreSoftness, 0, 0.5, 0.005),
+    coreHalo: potionControl('uCoreHalo', d.coreHalo, 0, 2, 0.01),
+    corePulseAmount: potionControl(
       'uCorePulseAmount',
       d.corePulseAmount,
       0,
       0.5,
       0.001
     ),
-    corePulseSpeed: numberControl(
+    corePulseSpeed: potionControl(
       'uCorePulseSpeed',
       d.corePulseSpeed,
       0,

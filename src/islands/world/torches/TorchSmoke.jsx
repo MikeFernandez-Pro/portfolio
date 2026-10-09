@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useControls } from '#debug/useControls.jsx';
+import { uniformControls } from '#debug/uniformControls.js';
 import * as THREE from 'three/webgpu';
 import { attribute, uniform, vec3 } from 'three/tsl';
 
@@ -58,15 +59,7 @@ const TorchSmoke = props => {
   useEffect(() => () => geometry.dispose(), [geometry]);
   useEffect(() => () => smokeMaterial.dispose(), [smokeMaterial]);
 
-  const numberUniform = (uniform, value, min, max, step) => ({
-    value,
-    min,
-    max,
-    step,
-    onChange: v => {
-      uniforms[uniform].value = v;
-    },
-  });
+  const smokeControl = uniformControls(uniforms);
 
   const d = defaultsRef.current;
 
@@ -77,21 +70,21 @@ const TorchSmoke = props => {
         uniforms.uColor.value.set(v);
       },
     },
-    opacity: numberUniform('uOpacity', d.opacity, 0, 1, 0.01),
-    fadeHeight: numberUniform('uFadeHeight', d.fadeHeight, 0, 5, 0.01),
+    opacity: smokeControl('uOpacity', d.opacity, 0, 1, 0.01),
+    fadeHeight: smokeControl('uFadeHeight', d.fadeHeight, 0, 5, 0.01),
     // Hides the hard line where the column crosses the surface it rises
     // from (fade distance in local plane units, 0 = off)
-    baseFade: numberUniform('uBaseFade', d.baseFade, 0, 4, 0.01),
+    baseFade: smokeControl('uBaseFade', d.baseFade, 0, 4, 0.01),
     // Scales the per-column animation desynchronization (0 = all in phase)
-    timeOffsetStrength: numberUniform(
+    timeOffsetStrength: smokeControl(
       'uTimeOffsetStrength',
       d.timeOffsetStrength,
       0,
       3,
       0.01
     ),
-    swayScale: numberUniform('uDisplacementUv', d.swayScale, 0, 10, 0.01),
-    swayPower: numberUniform('uDisplacementUvY', d.swayPower, 0, 3, 0.01),
+    swayScale: smokeControl('uDisplacementUv', d.swayScale, 0, 10, 0.01),
+    swayPower: smokeControl('uDisplacementUvY', d.swayPower, 0, 3, 0.01),
     width: { value: d.width, min: 0.05, max: 3, step: 0.01 },
     height: { value: d.height, min: 0.5, max: 20, step: 0.1 },
   };

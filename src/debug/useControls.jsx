@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { DEBUG_ENABLED } from '#utils/debug.js';
+import { DEBUG_ENABLED } from '#debug/debugEnabled.js';
 import { useInspectorControls } from '#debug/inspectorControls.jsx';
+import { hasConfig, initialControlValues } from '#debug/controlsSchema.js';
 
 /**
  * useControls facade. With DEBUG_ENABLED the three.js Inspector
@@ -16,29 +17,11 @@ import { useInspectorControls } from '#debug/inspectorControls.jsx';
  * they're ignored here.
  */
 
-const hasConfig = def =>
-  def !== null &&
-  typeof def === 'object' &&
-  !Array.isArray(def) &&
-  'value' in def;
-
 const useHeadlessControls = (folderName, schema) => {
   // Captured on first render, like the panel version
   const schemaRef = useRef(schema);
 
-  const [values] = useState(() => {
-    const initial = {};
-    for (const [key, def] of Object.entries(schemaRef.current)) {
-      if (typeof def === 'function') continue; // button, panel-only
-      if (hasConfig(def)) {
-        if (def.onChange) continue; // transient, not part of the state
-        initial[key] = def.value;
-      } else {
-        initial[key] = def;
-      }
-    }
-    return initial;
-  });
+  const [values] = useState(() => initialControlValues(schemaRef.current));
 
   useEffect(() => {
     // Same timing as the panel version: onChange fires once with the initial

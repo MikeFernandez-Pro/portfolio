@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useControls } from '#debug/useControls.jsx';
+import { uniformControls } from '#debug/uniformControls.js';
 import * as THREE from 'three/webgpu';
 import {
   float,
@@ -48,20 +49,14 @@ const Stars = () => {
   );
 
   // Controls
+  const control = uniformControls(uniforms);
   const { count } = useControls('Stars', {
     count: {
       value: STARS_DEFAULTS.count,
       min: 0,
       max: 10000,
     },
-    pointSize: {
-      value: STARS_DEFAULTS.pointSize,
-      min: 0,
-      max: 10,
-      onChange: value => {
-        uniforms.uSize.value = value;
-      },
-    },
+    pointSize: control('uSize', STARS_DEFAULTS.pointSize, 0, 10),
     color1: {
       value: STARS_DEFAULTS.color1,
       onChange: value => uniforms.uColor1.value.set(value),
@@ -74,14 +69,7 @@ const Stars = () => {
       value: STARS_DEFAULTS.color3,
       onChange: value => uniforms.uColor3.value.set(value),
     },
-    brightness: {
-      value: STARS_DEFAULTS.brightness,
-      min: 0,
-      max: 10,
-      onChange: value => {
-        uniforms.uBrightness.value = value;
-      },
-    },
+    brightness: control('uBrightness', STARS_DEFAULTS.brightness, 0, 10),
   });
 
   const stars = useMemo(() => {

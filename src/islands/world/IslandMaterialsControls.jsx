@@ -28,6 +28,12 @@ const MATERIAL_DEFAULTS = {
   },
 };
 
+// Glow of the keyboard-controls hint painted near the spawn point
+const CONTROLS_HINT_INTENSITY = 5.2;
+
+// The values are also seeded in a layout effect: the initial onChange calls
+// run in a regular effect, which can land after the first frames (the
+// precompile warm-up included)
 const useMaterialControls = (folderName, material, defaults) => {
   useLayoutEffect(() => {
     material.color.set(defaults.color);
@@ -80,12 +86,12 @@ const IslandMaterialsControls = props => {
   );
   useMaterialControls('Candles', materials.candles, MATERIAL_DEFAULTS.Candles);
   useLayoutEffect(() => {
-    materials.controls.emissiveIntensity = 5.2;
+    materials.controls.emissiveIntensity = CONTROLS_HINT_INTENSITY;
   }, [materials.controls]);
 
   useControls('Controls', {
     emissiveIntensity: {
-      value: 5.2,
+      value: CONTROLS_HINT_INTENSITY,
       min: 0,
       max: 20,
       step: 0.01,

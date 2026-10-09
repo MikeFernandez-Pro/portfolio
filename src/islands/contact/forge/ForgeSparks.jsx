@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useControls } from '#debug/useControls.jsx';
+import { uniformControls } from '#debug/uniformControls.js';
 import * as THREE from 'three/webgpu';
 import {
   cos,
@@ -105,31 +106,11 @@ const ForgeSparks = props => {
 
   forgeSparksRef.current = uniforms;
 
+  const control = uniformControls(uniforms);
   useControls('ForgeSparks', {
-    color: {
-      value: FORGE_SPARKS_COLOR,
-      onChange: value => {
-        uniforms.uColor.value.set(value);
-      },
-    },
-    intensity: {
-      value: FORGE_SPARKS_INTENSITY,
-      min: 0,
-      max: 20,
-      step: 0.01,
-      onChange: value => {
-        uniforms.uIntensity.value = value;
-      },
-    },
-    size: {
-      value: FORGE_SPARKS_SIZE,
-      min: 0,
-      max: 0.5,
-      step: 0.001,
-      onChange: value => {
-        uniforms.uSize.value = value;
-      },
-    },
+    color: control('uColor', FORGE_SPARKS_COLOR),
+    intensity: control('uIntensity', FORGE_SPARKS_INTENSITY, 0, 20, 0.01),
+    size: control('uSize', FORGE_SPARKS_SIZE, 0, 0.5, 0.001),
   });
 
   return <primitive object={sparks} />;

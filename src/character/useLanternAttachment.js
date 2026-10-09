@@ -5,7 +5,8 @@ import { useGLTF } from '@react-three/drei/webgpu';
 
 import LanternModel from '#assets/models/character/lantern.glb';
 import { useControls } from '#debug/useControls.jsx';
-import { IS_MOBILE_DEVICE } from '#utils/utils.js';
+import { uniformControls } from '#debug/uniformControls.js';
+import { IS_MOBILE_DEVICE } from '#utils/device.js';
 import { BODY_TYPE_FIXED as FIXED } from '#character/constants.js';
 import { useLanternMaterial } from '#character/useLanternMaterial.js';
 import {
@@ -245,49 +246,40 @@ const useLanternAttachment = ({ scene, characterBody, characterMesh }) => {
   });
 
   // Fake point light following the lantern (BeltLanternLight debug folder)
+  const beltLanternLightControl = uniformControls(beltLanternLightUniforms);
   useControls('BeltLanternLight', {
-    color: {
-      value: BELT_LANTERN_LIGHT_DEFAULTS.color,
-      onChange: v => {
-        beltLanternLightUniforms.uBeltLanternLightColor.value.set(v);
-      },
-    },
-    intensity: {
-      value: BELT_LANTERN_LIGHT_DEFAULTS.intensity,
-      min: 0,
-      max: 10,
-      step: 0.05,
-      onChange: v => {
-        beltLanternLightUniforms.uBeltLanternLightIntensity.value = v;
-      },
-    },
-    decay: {
-      value: BELT_LANTERN_LIGHT_DEFAULTS.decay,
-      min: 0,
-      max: 1,
-      step: 0.005,
-      onChange: v => {
-        beltLanternLightUniforms.uBeltLanternLightDecay.value = v;
-      },
-    },
-    decayPower: {
-      value: BELT_LANTERN_LIGHT_DEFAULTS.decayPower,
-      min: 0.1,
-      max: 8,
-      step: 0.05,
-      onChange: v => {
-        beltLanternLightUniforms.uBeltLanternLightDecayPower.value = v;
-      },
-    },
-    specularPower: {
-      value: BELT_LANTERN_LIGHT_DEFAULTS.specularPower,
-      min: 1,
-      max: 64,
-      step: 1,
-      onChange: v => {
-        beltLanternLightUniforms.uBeltLanternLightSpecularPower.value = v;
-      },
-    },
+    color: beltLanternLightControl(
+      'uBeltLanternLightColor',
+      BELT_LANTERN_LIGHT_DEFAULTS.color
+    ),
+    intensity: beltLanternLightControl(
+      'uBeltLanternLightIntensity',
+      BELT_LANTERN_LIGHT_DEFAULTS.intensity,
+      0,
+      10,
+      0.05
+    ),
+    decay: beltLanternLightControl(
+      'uBeltLanternLightDecay',
+      BELT_LANTERN_LIGHT_DEFAULTS.decay,
+      0,
+      1,
+      0.005
+    ),
+    decayPower: beltLanternLightControl(
+      'uBeltLanternLightDecayPower',
+      BELT_LANTERN_LIGHT_DEFAULTS.decayPower,
+      0.1,
+      8,
+      0.05
+    ),
+    specularPower: beltLanternLightControl(
+      'uBeltLanternLightSpecularPower',
+      BELT_LANTERN_LIGHT_DEFAULTS.specularPower,
+      1,
+      64,
+      1
+    ),
     offset: {
       value: BELT_LANTERN_LIGHT_DEFAULTS.offset,
       min: -1,

@@ -4,7 +4,7 @@ import { useControls } from '#debug/useControls.jsx';
 import * as THREE from 'three';
 
 import { useStore } from '#store';
-import { IS_MOBILE_DEVICE } from '#utils/utils.js';
+import { IS_MOBILE_DEVICE } from '#utils/device.js';
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 import { DEFAULT_CHARACTER_SPEED } from '#character/constants.js';
 
