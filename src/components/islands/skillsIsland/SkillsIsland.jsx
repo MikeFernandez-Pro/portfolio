@@ -1,7 +1,8 @@
 import { MagicBooks } from './MagicBooks';
-import { FloatingSkills } from './FloatingSkills';
 import { MagicGlyphs } from './MagicGlyphs';
 import { Cauldron } from './Cauldron';
+// PROTOTYPE (skills TextGeometry) - throwaway branch only
+import { FloatingSkillsTextPrototype } from './FloatingSkillsText.prototype';
 
 const SkillsIsland = props => {
   const { island } = props;
@@ -10,7 +11,7 @@ const SkillsIsland = props => {
     <>
       <Cauldron island={island} />
       <MagicBooks island={island} />
-      <FloatingSkills island={island} />
+      <FloatingSkillsTextPrototype island={island} />
       <MagicGlyphs island={island} />
     </>
   );
