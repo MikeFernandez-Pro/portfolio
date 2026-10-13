@@ -1,7 +1,8 @@
-// One-off: converts src/assets/fonts/metamorphous.woff into the typeface JSON
-// that three's Font (FloatingSkills) expects. Same conversion as three's
+// Converts src/assets/fonts/metamorphous.woff into the typeface JSON that
+// three's Font (FloatingSkills, SleepText) expects. Same conversion as three's
 // TTFLoader, which can't be used at runtime here (it imports opentype.js from
-// a CDN URL). Printable Latin-1 only, to keep the JSON small.
+// a CDN URL). Only the glyphs in CHARS, to keep the JSON small: rerun after
+// changing a skill word (a missing glyph is skipped with a console warning).
 //
 // opentype.js is not a project dependency; install it anywhere and point to it:
 //   OPENTYPE=/tmp/ot/node_modules/opentype.js/dist/opentype.module.js \
@@ -16,6 +17,11 @@ const { default: opentype } = await import(pathToFileURL(opentypePath).href);
 const SRC = 'src/assets/fonts/metamorphous.woff';
 const OUT = 'src/assets/fonts/metamorphous.typeface.json';
 
+// The FloatingSkills words, H for their cap height, and the SleepText Z
+const CHARS = new Set(
+  ['WebGL', 'ThreeJs', 'WebGPU', 'R3F / TSL', 'React / TS', 'H', 'Z'].join('')
+);
+
 const buffer = readFileSync(SRC);
 const font = opentype.parse(
   buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
@@ -28,7 +34,7 @@ const glyphIndexMap = font.encoding.cmap.glyphIndexMap;
 
 for (const unicode of Object.keys(glyphIndexMap)) {
   const code = Number(unicode);
-  if (code < 32 || code > 255 || (code > 126 && code < 160)) continue;
+  if (!CHARS.has(String.fromCodePoint(code))) continue;
   const glyph = font.glyphs.get(glyphIndexMap[unicode]);
   const token = {
     ha: round(glyph.advanceWidth * scale),
@@ -55,7 +61,9 @@ for (const unicode of Object.keys(glyphIndexMap)) {
 
 const json = {
   glyphs,
-  familyName: font.getEnglishName('fullName'),
+  // A subset is a modified version of the font: the OFL keeps the Reserved
+  // Font Name "Metamorphous" for the original, so it goes by another name
+  familyName: 'Portfolio Skills Subset',
   ascender: round(font.ascender * scale),
   descender: round(font.descender * scale),
   underlinePosition: font.tables.post.underlinePosition,

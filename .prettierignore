@@ -2,3 +2,5 @@ node_modules
 dist
 build
 pnpm-lock.yaml
+# Vendored copy of a three.js addon, kept close to upstream
+src/postprocessing/SMAANode.js

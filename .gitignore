@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# pack-textures temp files
+*.tmp.png

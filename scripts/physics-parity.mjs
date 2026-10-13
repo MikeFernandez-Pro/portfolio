@@ -8,6 +8,7 @@
 // never bundled) so this stays runnable. Run it after ANY change to
 // src/physics solver order or constants. islandSensors.glb is also only
 // referenced from here since grounded moved into the contact solve.
+import { fileURLToPath } from 'node:url';
 import { NodeIO } from '@gltf-transform/core';
 import { KHRONOS_EXTENSIONS } from '@gltf-transform/extensions';
 import draco3d from 'draco3dgltf';
@@ -18,20 +19,13 @@ import {
   BODY_TYPE_DYNAMIC,
 } from '../src/physics/PhysicsWorld.js';
 import { CharacterBody } from '../src/physics/CharacterBody.js';
+import { GRAVITY_Y } from '../src/physics/world.js';
 import { buildWorldSpaceBvh } from '../src/physics/buildBvh.js';
 
-let RAPIER;
-try {
-  RAPIER = (
-    await import('../node_modules/.pnpm/@dimforge+rapier3d-compat@0.19.2/node_modules/@dimforge/rapier3d-compat/rapier.mjs')
-  ).default;
-} catch {
-  RAPIER = (await import('@dimforge/rapier3d-compat')).default;
-}
+const { default: RAPIER } = await import('@dimforge/rapier3d-compat');
 await RAPIER.init();
 
 const DT = 1 / 60;
-const GRAVITY_Y = -29.43;
 
 // --- load geometries (gltf-transform: GLTFLoader's draco path needs web
 // workers, which node lacks) --------------------------------------------
@@ -42,7 +36,7 @@ const io = new NodeIO()
   });
 
 async function loadGlb(path) {
-  return io.read(new URL(path, import.meta.url).pathname.replace(/^\//, ''));
+  return io.read(fileURLToPath(new URL(path, import.meta.url)));
 }
 
 // Raw primitive data -> BufferGeometry, ignoring the GLB node transform (the

@@ -1,4 +1,3 @@
-/* global console, Buffer */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -11,11 +10,6 @@ const PACKS = [
   ['spiral-grassHeight.png', ['spiralTexture.png', 'grass-height-map.webp']],
   ['voronoi-perlin.png', ['voronoi.webp', 'perlin.png']],
 ];
-
-// Star sprite packed into the blue channel of spiral-grassHeight.png.
-// Placed at the bottom-left of the image so that with three.js's default
-// flipY it sits at UV origin: sample it with uv * (STAR_SIZE / 512).
-const STAR = { file: 'star.png', size: 64, packInto: 'spiral-grassHeight.png' };
 
 // sRGB atlas of on-screen textures (portal screens + interactive link).
 // Power-of-two canvas so mipmaps can be generated; tiles keep native size,
@@ -61,19 +55,6 @@ for (const [output, [rSource, gSource]] of PACKS) {
   for (let i = 0; i < width * height; i++) {
     pixels[i * 3] = r.data[i];
     pixels[i * 3 + 1] = g.data[i];
-  }
-
-  if (output === STAR.packInto) {
-    const star = await extractRawChannel(STAR.file, STAR.size);
-    for (let y = 0; y < STAR.size; y++) {
-      for (let x = 0; x < STAR.size; x++) {
-        const target = (height - STAR.size + y) * width + x;
-        pixels[target * 3 + 2] = star.data[y * STAR.size + x];
-      }
-    }
-    console.log(
-      `  B: ${STAR.file} (${STAR.size}x${STAR.size} at bottom-left, UV scale ${STAR.size / width})`
-    );
   }
 
   const outputPath = path.join(TEXTURES_DIR, output);
@@ -232,6 +213,30 @@ const KTX_ENCODES = [
 
 const kb = v => `${(v / 1024).toFixed(0)} kB`;
 
+// Writes `prepare(sharp(sourcePath))` to a temp PNG, encodes it to ktx2Path
+// with mipmaps, then deletes the temp file
+const encodeKtx2 = async ({ sourcePath, ktx2Path, prepare, args }) => {
+  const tempPath = ktx2Path.replace(/\.ktx2$/, '.tmp.png');
+  await prepare(sharp(sourcePath))
+    .png({ compressionLevel: 1 })
+    .toFile(tempPath);
+
+  const result = spawnSync(
+    'ktx',
+    ['create', ...args, '--generate-mipmap', tempPath, ktx2Path],
+    { encoding: 'utf8' }
+  );
+  fs.unlinkSync(tempPath);
+
+  if (result.status !== 0) {
+    throw new Error(`ktx create failed for ${sourcePath}:\n${result.stderr}`);
+  }
+
+  console.log(
+    `${ktx2Path} (${kb(fs.statSync(ktx2Path).size)}, from ${kb(fs.statSync(sourcePath).size)} ${path.basename(sourcePath)})`
+  );
+};
+
 if (spawnSync('ktx', ['--version']).error) {
   console.warn(
     '\nktx CLI not found - skipping KTX2 encoding (PNGs still valid)'
@@ -239,28 +244,12 @@ if (spawnSync('ktx', ['--version']).error) {
 } else {
   for (const { source, args } of KTX_ENCODES) {
     const sourcePath = path.join(TEXTURES_DIR, source);
-    const flippedPath = sourcePath.replace(/\.png$/, '.flipped.tmp.png');
-    const ktx2Path = sourcePath.replace(/\.png$/, '.ktx2');
-
-    await sharp(sourcePath)
-      .flip()
-      .png({ compressionLevel: 1 })
-      .toFile(flippedPath);
-
-    const result = spawnSync(
-      'ktx',
-      ['create', ...args, '--generate-mipmap', flippedPath, ktx2Path],
-      { encoding: 'utf8' }
-    );
-    fs.unlinkSync(flippedPath);
-
-    if (result.status !== 0) {
-      throw new Error(`ktx create failed for ${source}:\n${result.stderr}`);
-    }
-
-    console.log(
-      `${ktx2Path} (${kb(fs.statSync(ktx2Path).size)}, from ${kb(fs.statSync(sourcePath).size)} png)`
-    );
+    await encodeKtx2({
+      sourcePath,
+      ktx2Path: sourcePath.replace(/\.png$/, '.ktx2'),
+      prepare: image => image.flip(),
+      args,
+    });
   }
 
   // Island baseColor atlas, applied in code to the island.glb materials
@@ -269,47 +258,24 @@ if (spawnSync('ktx', ['--version']).error) {
   // also how KTX2 uploads — the extracted PNG is already in that
   // orientation. RGBA: several island materials are alphaMode MASK and
   // cut out through the atlas alpha.
-  {
-    const sourcePath = 'extracted-textures/islandTexture4k.png';
-    const resizedPath = path.join(TEXTURES_DIR, 'islandTexture2k.tmp.png');
-    const ktx2Path = path.join(TEXTURES_DIR, 'islandTexture2k.ktx2');
-
-    await sharp(sourcePath)
-      .resize(2048, 2048)
-      .png({ compressionLevel: 1 })
-      .toFile(resizedPath);
-
-    const result = spawnSync(
-      'ktx',
-      // No RDO: it banded the atlas's smooth gradients (RDO trades block
-      // quality for zstd size; dropping it costs ~0.4 MB on disk, GPU
-      // memory is unchanged)
-      [
-        'create',
-        '--format',
-        'R8G8B8A8_SRGB',
-        '--assign-tf',
-        'srgb',
-        '--encode',
-        'uastc',
-        '--uastc-quality',
-        '4',
-        '--zstd',
-        '19',
-        '--generate-mipmap',
-        resizedPath,
-        ktx2Path,
-      ],
-      { encoding: 'utf8' }
-    );
-    fs.unlinkSync(resizedPath);
-
-    if (result.status !== 0) {
-      throw new Error(`ktx create failed for ${sourcePath}:\n${result.stderr}`);
-    }
-
-    console.log(
-      `${ktx2Path} (${kb(fs.statSync(ktx2Path).size)}, from ${kb(fs.statSync(sourcePath).size)} 4k png)`
-    );
-  }
+  await encodeKtx2({
+    sourcePath: 'extracted-textures/islandTexture4k.png',
+    ktx2Path: path.join(TEXTURES_DIR, 'islandTexture2k.ktx2'),
+    prepare: image => image.resize(2048, 2048),
+    // No RDO: it banded the atlas's smooth gradients (RDO trades block
+    // quality for zstd size; dropping it costs ~0.4 MB on disk, GPU
+    // memory is unchanged)
+    args: [
+      '--format',
+      'R8G8B8A8_SRGB',
+      '--assign-tf',
+      'srgb',
+      '--encode',
+      'uastc',
+      '--uastc-quality',
+      '4',
+      '--zstd',
+      '19',
+    ],
+  });
 }

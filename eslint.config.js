@@ -40,4 +40,13 @@ export default [
       },
     },
   },
+  {
+    // Node build / check scripts
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
 ];

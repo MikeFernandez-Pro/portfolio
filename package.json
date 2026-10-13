@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "pnpm@10.33.0",
   "imports": {
     "#assets/*": "./src/assets/*",
     "#character/*": "./src/character/*",
@@ -13,19 +14,21 @@
     "#postprocessing/*": "./src/postprocessing/*",
     "#shaders/*": "./src/shaders/*",
     "#store": "./src/store.js",
-    "#utils/*": "./src/utils/*",
-    "#workarounds/*": "./src/workarounds/*"
+    "#utils/*": "./src/utils/*"
   },
   "scripts": {
     "dev": "vite",
     "dev:https": "vite --mode https",
     "build": "vite build",
-    "deploy": "vercel --prod",
-    "lint": "eslint src",
-    "lint:fix": "eslint src --fix",
+    "preview": "vite preview",
+    "deploy": "pnpm dlx vercel --prod",
+    "lint": "eslint src scripts",
+    "lint:fix": "eslint src scripts --fix",
     "format": "prettier --write .",
     "pack-textures": "node scripts/pack-textures.mjs",
-    "physics-parity": "node scripts/physics-parity.mjs"
+    "physics-parity": "node scripts/physics-parity.mjs",
+    "check-wgsl": "node scripts/check-wgsl.mjs",
+    "smoke": "node scripts/smoke.mjs"
   },
   "devDependencies": {
     "@dimforge/rapier3d-compat": "0.19.2",
@@ -39,9 +42,9 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
+    "playwright-core": "1.63.0",
     "prettier": "^3.9.9",
     "sharp": "^0.35.5",
-    "vercel": "^63.1.0",
     "vite": "^8.3.4"
   },
   "dependencies": {
@@ -49,7 +52,6 @@
     "@react-three/fiber": "10.0.0-canary.a056612",
     "gsap": "3.15.0",
     "howler": "^2.2.4",
-    "nipplejs": "^1.0.4",
     "react": "~19.2.8",
     "react-dom": "~19.2.8",
     "three": "0.186.1",

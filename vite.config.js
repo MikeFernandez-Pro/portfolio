@@ -75,13 +75,14 @@ export default defineConfig(({ mode }) => ({
     // download: build/three.module.js (past the shared core it is the classic
     // WebGLRenderer, which R3F only lazy-loads for its WebGL path) and the
     // Inspector addon (debug only; drei lazy-loads it for its <Inspector>)
+    // with the OrbitControls its render target viewer pulls in
     rolldownOptions: {
       output: {
         codeSplitting: {
           groups: [
             {
               name: 'three',
-              test: /node_modules[\\/]three[\\/](?!build[\\/]three\.module\.js|examples[\\/]jsm[\\/]inspector[\\/])/,
+              test: /node_modules[\\/]three[\\/](?!build[\\/]three\.module\.js|examples[\\/]jsm[\\/](?:inspector|controls)[\\/])/,
               priority: 10,
             },
           ],

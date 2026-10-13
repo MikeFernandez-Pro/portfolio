@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
-// Body type values mirror the rapier RigidBodyType enum values the controller
-// constants (#character/constants.js) already use: Dynamic = 0, Fixed = 1
+// Body type values mirror rapier's RigidBodyType enum (Dynamic = 0,
+// Fixed = 1), like the rest of the CharacterBody API
 export const BODY_TYPE_DYNAMIC = 0;
 export const BODY_TYPE_FIXED = 1;
 
