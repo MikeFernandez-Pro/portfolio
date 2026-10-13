@@ -14,14 +14,12 @@ import islandTextureUrl from '#assets/textures/islandTexture2k.ktx2';
 // so their UV space matches the PNGs under three's default flipY and all the
 // shader/rect wiring is format-agnostic.
 
-// Basis transcoder (public/basis/), served locally instead of drei's CDN
-const TRANSCODER_PATH = `${import.meta.env.BASE_URL}basis/`;
-
 // useKTX2 caches by URL so every consumer shares one texture instance; the
 // per-texture configure below runs once per mount and must stay consistent
-// across consumers.
+// across consumers. `false` skips drei's transcoder path (a CDN by default):
+// KTX2Loader then uses three's own Basis transcoder, emitted with the build.
 const useConfiguredKtx2 = (url, configure) => {
-  const texture = useKTX2(url, TRANSCODER_PATH);
+  const texture = useKTX2(url, false);
 
   useMemo(() => configure(texture), [texture, configure]);
 
@@ -48,8 +46,7 @@ const configureColor = texture => {
   texture.needsUpdate = true;
 };
 
-// spiral-grassHeight. R: spiral sweep mask, G: grass height map, B: 64x64
-// star sprite sitting at UV origin (sample with uv * 0.125).
+// spiral-grassHeight. R: spiral sweep mask, G: grass height map.
 const useSpiralGrassHeightTexture = () =>
   useConfiguredKtx2(spiralGrassHeightUrl, configureData);
 
@@ -100,7 +97,13 @@ const SCREENS_ATLAS_RECTS = {
   halloweenChallenge: atlasRect(0, 0, 512, 342),
   hoHoNo: atlasRect(512, 0, 512, 342),
   doanTenConVat: atlasRect(0, 342, 512, 342),
-  enterTile: atlasRect(512, 342, 256, 256),
+  // Inset in its 256px tile at (512, 342): 4px off the right, where the
+  // source art's "r" tail runs into the edge and showed as a cut-off line;
+  // 2px off the left and top, which touch the neighbor screenshots (edge
+  // samples, MSAA-extrapolated UVs and compression blocks reach them), and
+  // the bottom to keep it centered.
+  // Indicators.jsx sizes its plane to match
+  enterTile: atlasRect(514, 344, 250, 252),
   xLogo: atlasRect(768, 342, 256, 256),
 };
 
