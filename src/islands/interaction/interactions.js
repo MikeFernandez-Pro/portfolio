@@ -3,7 +3,7 @@ import gsap from 'gsap';
 import { useStore } from '#store';
 import { PROJECTS } from '#islands/projects/projects.js';
 
-// Indicator mesh names (InteractiveElements' <Merged> instances)
+// Indicator mesh names (the <Merged> instances in Indicators.jsx)
 export const INDICATOR_RING = 'IndicatorRing';
 export const INDICATOR_ENTER_TILE = 'IndicatorEnterTile';
 
@@ -31,9 +31,8 @@ const createIndicatorAnimation = indicator => {
     ease: 'power2.in',
   });
 
-  // Scale down to an epsilon instead of 0: three r185 Matrix4.decompose
-  // returns scale (1,1,1) for zero-determinant matrices, which makes
-  // drei <Merged> instances reappear at full size
+  // Scale down to an epsilon instead of 0 (see the EnterTile scale in
+  // Indicators.jsx)
   tl.to(
     ring.scale,
     {
@@ -109,7 +108,7 @@ export const openLink = element => {
   if (href.startsWith('mailto:')) {
     window.location.href = href;
   } else {
-    window.open(href, '_blank');
+    window.open(href, '_blank', 'noopener,noreferrer');
   }
 };
 

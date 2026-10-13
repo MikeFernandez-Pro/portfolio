@@ -1,11 +1,11 @@
 import { useMemo, useRef } from 'react';
+import { materialColor, texture, uv } from 'three/tsl';
 
 import { useControls } from '#debug/useControls.jsx';
 
 import {
   useScreensAtlasTexture,
   SCREENS_ATLAS_RECTS,
-  createAtlasTileTexture,
 } from '#utils/packedTextures.js';
 
 // The baked Vercel sign quads (hidden in Islands.jsx) spanned
@@ -30,12 +30,13 @@ const XSign = () => {
 
   // White X logo tile of the screens atlas. The atlas has no alpha channel
   // (flattened over black), so the white logo's green channel doubles as the
-  // cutout mask through alphaMap.
+  // cutout mask (what alphaMap reads). Sampled from the shared atlas: a
+  // cloned texture would be a second GPU copy of the whole atlas.
   const atlasTexture = useScreensAtlasTexture();
-  const xLogoTexture = useMemo(
-    () => createAtlasTileTexture(atlasTexture, SCREENS_ATLAS_RECTS.xLogo),
-    [atlasTexture]
-  );
+  const xLogo = useMemo(() => {
+    const { offset, size } = SCREENS_ATLAS_RECTS.xLogo;
+    return texture(atlasTexture, uv().mul(size).add(offset));
+  }, [atlasTexture]);
 
   useControls('XSign', {
     color: {
@@ -118,10 +119,10 @@ const XSign = () => {
       scale={X_SIGN_SCALE}
     >
       <planeGeometry args={[X_SIGN_SIZE, X_SIGN_SIZE]} />
-      <meshStandardMaterial
+      <meshStandardNodeMaterial
         ref={materialRef}
-        map={xLogoTexture}
-        alphaMap={xLogoTexture}
+        colorNode={materialColor.mul(xLogo.rgb)}
+        opacityNode={xLogo.g}
         // The mask now rides a color channel, so it gets sRGB-decoded:
         // 0.21 in linear ≈ the old 0.5 straight-alpha threshold
         alphaTest={0.21}

@@ -30,8 +30,8 @@ const createSmokeUniforms = defaults => ({
   uFadeHeight: uniform(defaults.fadeHeight),
   uBaseFade: uniform(defaults.baseFade),
   uTimeOffsetStrength: uniform(defaults.timeOffsetStrength),
-  uDisplacementUv: uniform(defaults.swayScale),
-  uDisplacementUvY: uniform(defaults.swayPower),
+  uSwayScale: uniform(defaults.swayScale),
+  uSwayPower: uniform(defaults.swayPower),
 });
 
 /**
@@ -53,8 +53,8 @@ const createSmokeMaterial = (u, timeOffset, place = position => position) => {
   // Sway growing with height. max: below the anchor (y < 0) the pow would be
   // NaN; that half is fully faded out anyway (alpha 0 under positionY 0)
   const p = positionGeometry;
-  const sway = sin(p.y.mul(u.uDisplacementUv).sub(columnTime))
-    .mul(pow(max(p.y, 0), u.uDisplacementUvY))
+  const sway = sin(p.y.mul(u.uSwayScale).sub(columnTime))
+    .mul(pow(max(p.y, 0), u.uSwayPower))
     .mul(0.1);
   material.positionNode = place(vec3(p.x.add(sway), p.y, p.z));
 

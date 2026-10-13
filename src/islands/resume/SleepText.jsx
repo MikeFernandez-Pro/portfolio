@@ -5,7 +5,7 @@ import gsap from 'gsap';
 
 import { useControls } from '#debug/useControls.jsx';
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
-import TextFont from '#assets/fonts/metamorphous.woff';
+import { METAMORPHOUS } from '#utils/metamorphousFont.js';
 
 const LETTERS_COUNT = 3;
 const BASE_POSITION = [-11.36, 7.62, -60.64];
@@ -26,15 +26,30 @@ const SLEEP_TEXT_DEFAULTS = {
   swayFrequency: 2,
 };
 
+// Fills the Z glyph outline (same font size as the old 0.75 * width text),
+// centered on its bounding box: no webfont to download and wait for
 function drawLetter(canvas) {
   const ctx = canvas.getContext('2d');
   const { width, height } = canvas;
-  ctx.clearRect(0, 0, width, height);
+  const outlines = METAMORPHOUS.generateShapes('Z', width * 0.75).flatMap(
+    shape => [shape, ...shape.holes].map(path => path.getPoints(16))
+  );
+  const box = new THREE.Box2().setFromPoints(outlines.flat());
+  const center = box.getCenter(new THREE.Vector2());
+
   ctx.fillStyle = '#ffffff';
-  ctx.font = `${width * 0.75}px Metamorphous, serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('Z', width / 2, height / 2);
+  ctx.beginPath();
+  for (const points of outlines) {
+    points.forEach(({ x, y }, i) => {
+      // Glyph space is y-up, the canvas y-down
+      const px = width / 2 + x - center.x;
+      const py = height / 2 - (y - center.y);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    });
+    ctx.closePath();
+  }
+  ctx.fill('evenodd');
 }
 
 function createLetterTexture() {
@@ -99,22 +114,6 @@ const SleepText = () => {
       step: 0.1,
     },
   });
-
-  useLayoutEffect(() => {
-    let cancelled = false;
-    const font = new FontFace('Metamorphous', `url(${TextFont})`);
-
-    font.load().then(loadedFont => {
-      if (cancelled) return;
-      document.fonts.add(loadedFont);
-      drawLetter(texture.image);
-      texture.needsUpdate = true;
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [texture]);
 
   useLayoutEffect(() => {
     // One letter spawns every duration / LETTERS_COUNT: each timeline lasts
@@ -206,9 +205,8 @@ const SleepText = () => {
       {/* alphaTest discards the transparent quad around the glyph before it
           can write depth (depth rectangles punched into smoke/sparks), while
           the glyph pixels keep writing theirs - the depth-driven cheap DoF
-          and the depth-predicated SMAA need it, or letters over bare sky get
-          defocused to the far plane (and lose their bloom, since DoF runs
-          before Bloom) */}
+          needs it, or letters over bare sky get defocused to the far
+          plane */}
       <meshBasicMaterial
         map={texture}
         transparent

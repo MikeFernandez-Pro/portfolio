@@ -177,7 +177,7 @@ const Grass = () => {
   }, [bladeControls.segmentsCount, bladeControls.patchSize, placement]);
 
   // Materials. The height map lives in the green channel of the packed
-  // spiral/grass/star texture; it used to be loaded with flipY = false, so
+  // spiral/grass-height texture; it used to be loaded with flipY = false, so
   // the vertex shader flips patchUv.y before sampling instead.
   const grassHeightTexture = useSpiralGrassHeightTexture();
 

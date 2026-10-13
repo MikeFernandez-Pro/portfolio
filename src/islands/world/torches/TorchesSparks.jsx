@@ -2,46 +2,24 @@ import { useControls } from '#debug/useControls.jsx';
 
 import TorchSparks from './TorchSparks';
 import { SPARKS_COLOR, SPARKS_INTENSITY } from './sparksMaterial';
+import { TORCHES } from './torches.js';
 
 const PARTICLES_COUNT = 40; // Number of particles per torch
 
-const SMALL_TORCHES_SPARKS = {
-  size: 0.04,
-  scale: [0.45, 0.9, 0.45],
-  offsets: [
-    [-12.85, 2.0, -36.78], // -5.8, 1.7, -16.6
-    [-30.77, 6.6, -79.09], // -18.5, 5.9, -31
-    [-40.71, 6.59, -79.41], // -18.3 5.9 -35.7
-    [-41.16, 6.55, -68.95], // -13.8 5.9 -35.6
-    [-24.17, 8.82, -104.15], // -10.9 8.0 -46.9
-    [-33.97, 8.65, -117.45], // -15.3 7.8 -52.9
-    [-10.42, 8.75, -117.77], // -4.7 7.9 -53.0
-  ],
-};
-
-const MEDIUM_TORCHES_SPARKS = {
-  size: 0.06,
-  scale: [0.8, 1.3, 0.8],
-  offsets: [
-    [-7.86, 6.55, -72.52], // -6.3 8.5 -58.0
-    [-16.43, 6.55, -72.5], // -13.2 8.5 -58.0
-  ],
-};
-
-const LARGE_TORCHES_SPARKS = {
-  size: 0.16,
-  scale: [1.5, 3, 1.5],
-  offsets: [
-    [-0.94, 2.4, -37.16], // -1.5 7.1 -55.8
-  ],
-};
-
-// One sprite per torch size class
+// One sprite per torch size class. The sprite is scaled non-uniformly to
+// stretch the spark paths, so its torch offsets are the world sparks
+// origins divided by that scale
 const TORCH_SIZE_CLASSES = [
-  SMALL_TORCHES_SPARKS,
-  MEDIUM_TORCHES_SPARKS,
-  LARGE_TORCHES_SPARKS,
-];
+  { name: 'small', size: 0.04, scale: [0.45, 0.9, 0.45] },
+  { name: 'medium', size: 0.06, scale: [0.8, 1.3, 0.8] },
+  { name: 'large', size: 0.16, scale: [1.5, 3, 1.5] },
+].map(({ name, size, scale }) => ({
+  size,
+  scale,
+  offsets: TORCHES.filter(torch => torch.size === name).map(torch =>
+    torch.sparks.map((value, axis) => value / scale[axis])
+  ),
+}));
 
 const TorchesSparks = () => {
   const controls = useControls('TorchesSparks', {

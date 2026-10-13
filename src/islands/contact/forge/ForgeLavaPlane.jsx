@@ -38,7 +38,7 @@ const LAVA_DEFAULTS = {
 };
 
 /**
- * Standalone lava plane replacing the GLB lava mesh (island_6, hidden).
+ * Standalone lava plane replacing the GLB lava mesh (island_6, not mounted).
  * Flat by default (rotated -90° on X), spun around Y via its debug control.
  */
 const ForgeLavaPlane = ({ bellowsMesh }) => {

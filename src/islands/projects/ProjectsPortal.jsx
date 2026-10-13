@@ -190,7 +190,7 @@ const ProjectsPortal = props => {
     );
 
     sparksUniforms.uOpenFactor.value = openFactor;
-    // The island point light follows the same ratchet: off until the first
+    // The portal light follows the same ratchet: off until the first
     // opening, full strength forever after
     pointLights.portal.intensity.value =
       pointLights.portal.settings.intensity * openFactor;

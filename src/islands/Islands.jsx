@@ -28,8 +28,9 @@ import islandModel from '#assets/models/island/island.glb?url';
 import { GlbSkinnedMesh } from './GlbSkinnedMesh.jsx';
 import {
   candleFlamePositions,
-  hidePotBubbles,
+  dropEmptyMorphTargets,
   hideVercelSign,
+  splitIslandTerrain,
 } from './islandGeometryFixups.js';
 import { ISLAND_POSITION, ISLAND_SCALE, islandToWorld } from './islandSpace.js';
 
@@ -50,8 +51,8 @@ const TEXTURED_MATERIALS = [
 ];
 
 // island.glb nodes mounted as they are, with their GLB material (the
-// island_1 terrain, the hidden island_6 lava and the nodes other components
-// mount with their own material are not listed)
+// island_1 terrain and the nodes other components mount with their own
+// material are not listed; island_6, 7 and 11 are not mounted at all)
 const PLAIN_MESHES = [
   ['island_2', 'lanternsAndHomes'],
   ['island_3', 'torchesAndFire'],
@@ -82,7 +83,7 @@ const Islands = () => {
       materials[name].needsUpdate = true;
     }
 
-    // The terrain gets the TSL cloud shadows and island point lights, which
+    // The terrain gets the TSL cloud shadows and point lights, which
     // need a node material: swap it in the GLTF materials map (the JSX below
     // and IslandMaterialsControls read it from there)
     const terrain = toNodeMaterial(materials.islandTexture);
@@ -92,42 +93,33 @@ const Islands = () => {
     materials.islandTexture = terrain;
   }, [materials, islandTexture]);
 
-  // The GLB clips animate island_7 and island_11 (the baked floating skills,
-  // replaced by the text in FloatingSkills), neither mounted — drop those
+  // Geometry edits that must land before the meshes mount: the terrain split
+  // into its static and moving triangles, and no morph targets on the
+  // primitives they don't move (islandGeometryFixups.js)
+  const staticTerrain = useMemo(() => {
+    dropEmptyMorphTargets(nodes);
+    return splitIslandTerrain(nodes);
+  }, [nodes]);
+
+  // The GLB clips animate island_6 (the old lava, replaced by
+  // ForgeLavaPlane) and island_7 / island_11 (the baked floating skills,
+  // replaced by the text in FloatingSkills), none mounted — drop those
   // tracks so the mixer doesn't warn about a missing node
   const filteredAnimations = useMemo(() => {
-    // Each island primitive gets one interleaved weights track (all morph
-    // targets together), so removing the cauldron bubble means zeroing the
-    // potBubbles component inside the values rather than dropping a track
-    const morphDictionary = nodes.island_1.morphTargetDictionary;
-    const potBubblesIndex = morphDictionary.potBubbles;
-    const targetCount = Object.keys(morphDictionary).length;
-
     animations.forEach(clip => {
       clip.tracks = clip.tracks.filter(
         track =>
+          !track.name.startsWith('island_6.') &&
           !track.name.startsWith('island_7.') &&
           !track.name.startsWith('island_11.')
       );
-
-      clip.tracks.forEach(track => {
-        if (!track.name.endsWith('.morphTargetInfluences')) return;
-        for (
-          let i = potBubblesIndex;
-          i < track.values.length;
-          i += targetCount
-        ) {
-          track.values[i] = 0;
-        }
-      });
     });
     return animations;
-  }, [animations, nodes]);
+  }, [animations]);
 
   const islandAnimations = useAnimations(filteredAnimations, islandRef);
 
   useEffect(() => {
-    hidePotBubbles(nodes);
     hideVercelSign(nodes);
     // One point light per candle, at its flame tip
     setCandleLightPositions(candleFlamePositions(nodes).map(islandToWorld));
@@ -152,17 +144,20 @@ const Islands = () => {
           <WindowRay />
           <SkillsIsland island={island} />
           <CountriesFlags island={island} />
+          {/* The terrain: its static triangles as a plain mesh, the moving
+              ones as island_1 (skinned, morphed) */}
+          <mesh
+            name="islandStatic"
+            geometry={staticTerrain}
+            material={materials.islandTexture}
+            castShadow={!IS_MOBILE_DEVICE}
+            receiveShadow={!IS_MOBILE_DEVICE}
+          />
           <GlbSkinnedMesh
             node={nodes.island_1}
             material={materials.islandTexture}
             castShadow={!IS_MOBILE_DEVICE}
             receiveShadow={!IS_MOBILE_DEVICE}
-          />
-          {/* Replaced by ForgeLavaPlane */}
-          <GlbSkinnedMesh
-            node={nodes.island_6}
-            material={materials.lava}
-            visible={false}
           />
           {PLAIN_MESHES.map(([node, material]) => (
             <GlbSkinnedMesh

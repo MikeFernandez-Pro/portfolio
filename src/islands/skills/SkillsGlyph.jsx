@@ -75,7 +75,7 @@ const SkillsGlyph = props => {
     glyphMaterial.emissive = new THREE.Color('#ff6c43');
     glyphMaterial.emissiveIntensity = 0;
 
-    // The island point light sits above the major glyph; its world
+    // The glyph light sits above the major glyph; its world
     // position lives in the GLB, so it's resolved at runtime
     majorGlyph.updateWorldMatrix(true, false);
     majorGlyph.getWorldPosition(pointLights.skillsGlyph.position.value);
@@ -87,7 +87,7 @@ const SkillsGlyph = props => {
     const glyphEmissiveAnimation = gsap.fromTo(
       glyphMaterial,
       { emissiveIntensity: 0 },
-      { duration: 1, emissiveIntensity: 9, paused: true }
+      { duration: 1, emissiveIntensity: 8, paused: true }
     );
 
     // The point light fades in along the same awakening

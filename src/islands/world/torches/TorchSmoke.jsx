@@ -9,21 +9,10 @@ import {
   createSmokeUniforms,
   smokeColumnTimeOffset,
 } from '#shaders/smoke.js';
+import { TORCHES } from './torches.js';
 
-// World-space torch smoke positions: the torch flames (the coordinates noted
-// next to each sparks offset in TorchesSparks.jsx) minus the bonfire, which
-// has its own BonfireSmoke, with the hand-tuned per-torch offsets baked in
-const POSITIONS = [
-  [-5.78, 1.7, -16.55],
-  [-18.51, 5.8, -30.99],
-  [-18.31, 5.8, -35.71],
-  [-13.83, 5.8, -35.57],
-  [-10.87, 7.88, -46.85],
-  [-15.29, 7.69, -52.85],
-  [-4.68, 7.8, -52.99],
-  [-6.28, 8.37, -57.97],
-  [-13.13, 8.4, -57.97],
-];
+// The torches' smoke column bases (the bonfire has its own BonfireSmoke)
+const POSITIONS = TORCHES.flatMap(torch => (torch.smoke ? [torch.smoke] : []));
 
 const DEFAULTS = {
   color: '#313131',
@@ -103,8 +92,8 @@ const TorchSmoke = () => {
       3,
       0.01
     ),
-    swayScale: smokeControl('uDisplacementUv', d.swayScale, 0, 10, 0.01),
-    swayPower: smokeControl('uDisplacementUvY', d.swayPower, 0, 3, 0.01),
+    swayScale: smokeControl('uSwayScale', d.swayScale, 0, 10, 0.01),
+    swayPower: smokeControl('uSwayPower', d.swayPower, 0, 3, 0.01),
     width: { value: d.width, min: 0.05, max: 3, step: 0.01 },
     height: { value: d.height, min: 0.5, max: 20, step: 0.1 },
   };

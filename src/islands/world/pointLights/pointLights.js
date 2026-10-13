@@ -22,6 +22,7 @@ import {
 } from 'three/tsl';
 
 import { LANTERN_POSITIONS } from '#islands/world/lanterns/lanternPositions.js';
+import { TORCHES } from '#islands/world/torches/torches.js';
 import { INTERACTIVE_ELEMENTS } from '#islands/interaction/interactiveElements.js';
 
 // Old-school point lights (Three.js Journey shading lesson) shaded onto lit
@@ -30,20 +31,7 @@ import { INTERACTIVE_ELEMENTS } from '#islands/interaction/interactiveElements.j
 // the anvil sword, the skills glyph, the well, the house window, the
 // cauldron, the spawn point, the candles and the project plates.
 
-// World-space flame positions: the pre-offset coordinates noted next to each
-// sparks offset in TorchesSparks.jsx
-const TORCH_POSITIONS = [
-  [-5.8, 1.7, -16.6],
-  [-18.5, 5.9, -31],
-  [-18.3, 5.9, -35.7],
-  [-13.8, 5.9, -35.6],
-  [-10.9, 8.0, -46.9],
-  [-15.3, 7.8, -52.9],
-  [-4.7, 7.9, -53.0],
-  [-6.3, 8.5, -58.0],
-  [-13.2, 8.5, -58.0],
-  [-1.5, 7.1, -55.8],
-];
+const TORCH_POSITIONS = TORCHES.map(torch => torch.light);
 
 // One light under each link indicator
 const INDICATOR_POSITIONS = INTERACTIVE_ELEMENTS.filter(
@@ -64,6 +52,33 @@ const PLATE_LIGHT_INDEX = Object.fromEntries(
 // positions can't be baked as constants: Islands.jsx clusters the candles
 // primitive at load and fills this fixed-size uniform array
 const MAX_CANDLE_LIGHTS = 16;
+
+// Fixed-position light groups are split into clusters of consecutive nearby
+// lights (consecutive: the sum keeps its order), each with a bounding sphere:
+// a fragment out of a cluster's reach tests one distance instead of every
+// light in it
+const CLUSTER_RADIUS = 6;
+const clusterLights = positions => {
+  const clusters = [];
+  positions.forEach(p => {
+    const point = new THREE.Vector3(...p);
+    const last = clusters.at(-1);
+    if (last && last.first.distanceTo(point) <= CLUSTER_RADIUS) {
+      last.positions.push(p);
+    } else {
+      clusters.push({ first: point, positions: [p] });
+    }
+  });
+  return clusters.map(({ positions }) => {
+    const center = new THREE.Vector3();
+    positions.forEach(p => center.add(new THREE.Vector3(...p)));
+    center.divideScalar(positions.length);
+    const radius = Math.max(
+      ...positions.map(p => center.distanceTo(new THREE.Vector3(...p)))
+    );
+    return { center: center.toArray(), radius, positions };
+  });
+};
 
 const vector = ([x, y, z]) => new THREE.Vector3(x, y, z);
 
@@ -356,10 +371,11 @@ const pointLight = /*@__PURE__*/ Fn(
     const lightDelta = lightPosition.sub(position).toVar();
     const decay = float(1).sub(length(lightDelta).mul(lightDecay)).toVar();
 
-    // Fragments outside the light radius skip the shading and specular work.
+    // Fragments outside the light radius, and dark lights (portal before the
+    // first press, unpressed plates...), skip the shading and specular work.
     // The branch is spatially coherent (neighboring fragments are in/out of
     // the same lights together), so it's cheap
-    If(decay.greaterThan(0), () => {
+    If(decay.greaterThan(0).and(lightIntensity.greaterThan(0)), () => {
       const lightDirection = normalize(lightDelta);
       const lightReflection = reflect(lightDirection.negate(), normal);
 
@@ -380,7 +396,7 @@ const pointLight = /*@__PURE__*/ Fn(
     return result;
   }
 ).setLayout({
-  name: 'islandPointLight',
+  name: 'pointLight',
   type: 'vec3',
   inputs: [
     { name: 'lightColor', type: 'vec3' },
@@ -423,14 +439,29 @@ const sumPointLights = /*@__PURE__*/ Fn(() => {
     );
   };
   const constant = ([x, y, z]) => vec3(x, y, z);
+  // A light reaches 1 / decay (decay is live: the debug sliders change it)
+  const addLightGroup = (light, positions) =>
+    clusterLights(positions).forEach(cluster => {
+      // A lone light's own radius test is already the cheap early-out
+      if (cluster.positions.length === 1) {
+        addLight(light, constant(cluster.positions[0]));
+        return;
+      }
+      const reach = float(cluster.radius).add(
+        float(1).div(max(light.decay, 1e-4))
+      );
+      If(length(position.sub(constant(cluster.center))).lessThan(reach), () =>
+        cluster.positions.forEach(p => addLight(light, constant(p)))
+      );
+    });
   const l = pointLights;
 
   addLight(l.portal, l.portal.position);
-  TORCH_POSITIONS.forEach(p => addLight(l.torch, constant(p)));
-  LANTERN_POSITIONS.forEach(p => addLight(l.lantern, constant(p)));
+  addLightGroup(l.torch, TORCH_POSITIONS);
+  addLightGroup(l.lantern, LANTERN_POSITIONS);
   addLight(l.characterLantern, l.characterLantern.position);
   addLight(l.houseLantern, l.houseLantern.position);
-  INDICATOR_POSITIONS.forEach(p => addLight(l.indicator, constant(p)));
+  addLightGroup(l.indicator, INDICATOR_POSITIONS);
   addLight(l.forgeLava, l.forgeLava.position);
   addLight(l.sword, l.sword.position);
   addLight(l.skillsGlyph, l.skillsGlyph.position);

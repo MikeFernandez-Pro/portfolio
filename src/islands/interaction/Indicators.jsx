@@ -52,7 +52,14 @@ const Indicators = ({ links, ref }) => {
   const enterTileMesh = useMemo(
     () =>
       new THREE.Mesh(
-        new THREE.PlaneGeometry(1, 1),
+        // Inset tile (SCREENS_ATLAS_RECTS, 250x252 of 256): smaller plane,
+        // centered where the crop sits so the text keeps the size and place
+        // it had on the full 1x1 tile
+        new THREE.PlaneGeometry(250 / 256, 252 / 256).translate(
+          -1 / 256,
+          0,
+          0
+        ),
         new THREE.MeshBasicMaterial({
           map: enterTileTexture,
           alphaMap: enterTileTexture,
@@ -80,16 +87,16 @@ const Indicators = ({ links, ref }) => {
             key={link.id}
           >
             <Ring name={INDICATOR_RING} />
-            {/* Scale must never be exactly 0: three r185 Matrix4.decompose
-                returns scale (1,1,1) for zero-determinant matrices, which
-                makes drei <Merged> instances reappear at full size */}
+            {/* Scale must never be exactly 0 (here or in the interactions.js
+                tweens): three's Matrix4.decompose returns scale (1,1,1) for
+                zero-determinant matrices, which makes drei <Merged>
+                instances reappear at full size */}
             <EnterTile
               name={INDICATOR_ENTER_TILE}
               scale={0.001}
-              onClick={() => {
-                // Tap to open: mobile only (desktop uses Enter)
-                if (IS_MOBILE_DEVICE) openLink(link);
-              }}
+              // Tap to open: mobile only (desktop uses Enter). No handler on
+              // desktop, so R3F doesn't raycast the tiles on every pointer move
+              onClick={IS_MOBILE_DEVICE ? () => openLink(link) : undefined}
             />
           </group>
         ))

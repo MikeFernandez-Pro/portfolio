@@ -300,7 +300,9 @@ const createGrassMaterial = ({ uniforms: u, lit, trample }) => {
   material.side = THREE.DoubleSide;
 
   // Vertex -> fragment
-  const vGrassWorldPos = varyingProperty('vec3', 'vGrassWorldPos');
+  // Cloud shadow factor, computed at the blade root in the vertex stage (the
+  // same for every pixel of a blade)
+  const vCloudShadow = varyingProperty('float', 'vGrassCloudShadow');
   // x: flower flag, y: height percent along the blade
   const vGrassUv = varyingProperty('vec2', 'vGrassUv');
   const vPatchLighting = varyingProperty('float', 'vPatchLighting');
@@ -329,7 +331,7 @@ const createGrassMaterial = ({ uniforms: u, lit, trample }) => {
 
     // Collapsed blade: zero area, rasterizes nothing
     const position = vec3(0).toVar();
-    vGrassWorldPos.assign(bladeWorldPos); // cloud shadows: per blade is enough
+    vCloudShadow.assign(1);
     vGrassUv.assign(vec2(0));
     vPatchLighting.assign(0);
     vBendNormal.assign(vec3(0, 0, 1));
@@ -339,7 +341,7 @@ const createGrassMaterial = ({ uniforms: u, lit, trample }) => {
 
     If(inView, () => {
       // Height data (patchUv also samples the trample map). Green channel
-      // of the packed spiral/grass/star texture, v flipped (the old
+      // of the packed spiral/grass-height texture, v flipped (the old
       // standalone map used flipY = false)
       const patchUv = vec2(
         bladeWorldPos.x.negate().add(u.uPositionX),
@@ -535,6 +537,7 @@ const createGrassMaterial = ({ uniforms: u, lit, trample }) => {
         // One lighting factor per variant, darkening or lightening the root
         // and tip colors together
         vPatchLighting.assign(mix(u.uLighting1, u.uLighting2, variant));
+        vCloudShadow.assign(cloudShadowFactor(bladeWorldPos.xz));
         vGrassUv.assign(vec2(select(isFlower, 1, 0), heightPercent));
       });
     });
@@ -543,7 +546,8 @@ const createGrassMaterial = ({ uniforms: u, lit, trample }) => {
   })();
 
   // --- Fragment
-  const cloudShadow = cloudShadowFactor(vGrassWorldPos.xz);
+  // Clamped: MSAA extrapolates varyings on thin triangles (see the top)
+  const cloudShadow = clamp(vCloudShadow, 0, 1);
   // Root -> tip gradient (see the MSAA note at the top: clamped here)
   const grassColor = max(
     mix(u.uColorBottom, u.uColorTop, clamp(vGrassUv.y, 0, 1)).mul(

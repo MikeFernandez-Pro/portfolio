@@ -52,8 +52,8 @@ const DEFAULTS = {
 
 /**
  * The cauldron's smoke column: same 1x10 plane and debug schema as
- * TorchSmoke, but a single plain mesh with its own shader pair driven by
- * smoke.png instead of the procedural perlin — fully separate from the
+ * TorchSmoke, but a single plain mesh with its own node material driven by
+ * smoke.webp instead of the procedural perlin — fully separate from the
  * torch/bonfire smoke.
  */
 const CauldronSmoke = () => {
@@ -80,8 +80,8 @@ const CauldronSmoke = () => {
       uSwayEnabled: uniform(d.sway ? 1 : 0),
       uSwayAmplitude: uniform(d.swayAmplitude),
       uTimeOffsetStrength: uniform(d.timeOffsetStrength),
-      uDisplacementUv: uniform(d.swayScale),
-      uDisplacementUvY: uniform(d.swayPower),
+      uSwayScale: uniform(d.swayScale),
+      uSwayPower: uniform(d.swayPower),
     };
 
     const smokeMaterial = new THREE.MeshBasicNodeMaterial({
@@ -102,12 +102,9 @@ const CauldronSmoke = () => {
     smokeMaterial.positionNode = Fn(() => {
       const position = vec3(positionGeometry).toVar();
       If(uniforms.uSwayEnabled.greaterThan(0.5), () => {
-        const heightFactor = pow(
-          uv().y,
-          max(uniforms.uDisplacementUvY, 0.0001)
-        );
+        const heightFactor = pow(uv().y, max(uniforms.uSwayPower, 0.0001));
         position.x.addAssign(
-          sin(position.y.mul(uniforms.uDisplacementUv).sub(columnTime))
+          sin(position.y.mul(uniforms.uSwayScale).sub(columnTime))
             .mul(heightFactor)
             .mul(uniforms.uSwayAmplitude)
         );
@@ -199,8 +196,8 @@ const CauldronSmoke = () => {
       3,
       0.01
     ),
-    swayScale: smokeControl('uDisplacementUv', d.swayScale, 0, 10, 0.01),
-    swayPower: smokeControl('uDisplacementUvY', d.swayPower, 0, 3, 0.01),
+    swayScale: smokeControl('uSwayScale', d.swayScale, 0, 10, 0.01),
+    swayPower: smokeControl('uSwayPower', d.swayPower, 0, 3, 0.01),
     // Left/right displacement amplitude at the top of the column, in local
     // plane units (0 = still; the base never moves)
     swayAmplitude: smokeControl('uSwayAmplitude', d.swayAmplitude, 0, 3, 0.01),

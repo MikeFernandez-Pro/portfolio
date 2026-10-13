@@ -14,25 +14,22 @@ import {
   mergeGeometries,
   mergeVertices,
 } from 'three/addons/utils/BufferGeometryUtils.js';
-import { Font } from 'three/addons/loaders/FontLoader.js';
 import gsap from 'gsap';
 
 import { useControls } from '#debug/useControls.jsx';
 import { uniformControls } from '#debug/uniformControls.js';
 import { subscribeWhenSet } from '#store';
-import fontJson from '#assets/fonts/metamorphous.typeface.json';
+import { METAMORPHOUS } from '#utils/metamorphousFont.js';
 
 // Floating skill words above the skills island, in Metamorphous: flat text
 // (ShapeGeometry — TextGeometry with no depth, minus the back cap and the
 // zero-area side walls), the five words welded and merged into one geometry
 // drawn in one call. They replace the baked atlas strip of island_11.
 
-const FONT = new Font(fontJson);
-
 const TEXT_SIZE = 0.24;
 const CURVE_SEGMENTS = 4;
 const SKILLS_COLOR = '#e1754b';
-const SKILLS_INTENSITY = 9.87;
+const SKILLS_INTENSITY = 10.41;
 
 // The five word slots, where island_11 had its baked word planes
 // (island-local space, measured from island.glb): center and facing
@@ -54,7 +51,7 @@ const SKILLS = [
 ];
 
 const wordGeometry = text => {
-  const shapes = FONT.generateShapes(text, TEXT_SIZE);
+  const shapes = METAMORPHOUS.generateShapes(text, TEXT_SIZE);
   const geometry = new THREE.ShapeGeometry(shapes, CURVE_SEGMENTS);
   // Unlit flat color: positions only, so mergeVertices welds every vertex
   // the letter shapes share

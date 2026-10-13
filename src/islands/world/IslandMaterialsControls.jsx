@@ -26,7 +26,7 @@ const EMISSIVE_MATERIALS = [
     material: 'torchesAndFire',
     color: '#f85f3d',
     emissiveColor: '#ff623f',
-    emissiveIntensity: 10.7,
+    emissiveIntensity: 9.5,
   },
   {
     folder: 'Candles',
