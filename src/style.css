@@ -92,7 +92,8 @@ body,
 .start-experience {
   font-size: clamp(2rem, 4.5vh, 7rem);
   opacity: 0;
-  animation: fadeIn 1.5s ease-in 0.5s 1 normal forwards;
+  /* Same timing as the iris peek opening with it (useIris: 1s circ.out) */
+  animation: fadeIn 1s cubic-bezier(0.08, 0.82, 0.17, 1) forwards;
   transition: transform 0.5s;
 }
 

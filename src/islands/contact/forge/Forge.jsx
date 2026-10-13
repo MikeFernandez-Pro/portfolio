@@ -71,7 +71,7 @@ const Forge = props => {
 
     // Clear animations, interval and subscriptions on unmount
     return () => {
-      islandAnimations.actions['anvilAnimation'].stop();
+      islandAnimations.actions['anvilAnimation']?.stop();
       // Unset until the first strike
       forgeHammerAnimationRef.current?.kill();
       forgeHammerAnimationRef.current = null;

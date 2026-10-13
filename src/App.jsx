@@ -83,6 +83,14 @@ const App = () => {
   const maxProgressRef = useRef(0);
   maxProgressRef.current = Math.max(maxProgressRef.current, progress);
 
+  // Debug: when the loader reaches 100% (PrecompileScene logs when the
+  // scene's warm-up starts, both in ms since page load)
+  const loadedLoggedRef = useRef(false);
+  if (DEBUG_ENABLED && progress === 100 && !loadedLoggedRef.current) {
+    loadedLoggedRef.current = true;
+    console.info(`Loader 100% at ${performance.now().toFixed(0)} ms`);
+  }
+
   const initiateExperience = useCallback(() => {
     hoverAnimation?.kill();
     startExperienceRef.current.style.pointerEvents = 'none';

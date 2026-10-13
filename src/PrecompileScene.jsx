@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 
 import { useStore } from '#store';
+import { DEBUG_ENABLED } from '#debug/debugEnabled.js';
 
 const FINISH_PHASE = { phase: 'finish' };
 
@@ -29,7 +30,14 @@ const PrecompileScene = () => {
   // Frames rendered since the warm-up started; -1 = done
   const frameRef = useRef(-1);
 
+  // Debug: how long the warm-up takes (CPU frame, then until sceneReady)
+  const startRef = useRef(0);
+
   useLayoutEffect(() => {
+    startRef.current = performance.now();
+    if (DEBUG_ENABLED) {
+      console.info(`Warm-up start at ${startRef.current.toFixed(0)} ms`);
+    }
     const hidden = [];
     scene.traverse(object => {
       if (!object.visible) {
@@ -48,9 +56,19 @@ const PrecompileScene = () => {
     if (frameRef.current === 1) {
       hiddenRef.current.forEach(object => (object.visible = false));
       hiddenRef.current = [];
+      if (DEBUG_ENABLED) {
+        console.info(
+          `Warm-up frame: ${(performance.now() - startRef.current).toFixed(0)} ms`
+        );
+      }
     } else {
       frameRef.current = -1;
       useStore.setState({ sceneReady: true });
+      if (DEBUG_ENABLED) {
+        console.info(
+          `Warm-up until Enter: ${(performance.now() - startRef.current).toFixed(0)} ms`
+        );
+      }
     }
   }, FINISH_PHASE);
 

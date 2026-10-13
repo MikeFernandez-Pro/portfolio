@@ -45,7 +45,7 @@ const Lights = () => {
       step: 0.0001,
     },
     normalBias: {
-      value: 0.081,
+      value: 0.095,
       min: 0,
       max: 0.2,
       step: 0.001,
