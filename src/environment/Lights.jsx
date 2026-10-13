@@ -1,8 +1,8 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { PerspectiveCamera } from '@react-three/drei/webgpu';
-import { OrbitControls as OrbitControlsImpl } from 'three/examples/jsm/controls/OrbitControls.js';
 import { useControls } from '#debug/useControls.jsx';
+import { DEBUG_ENABLED } from '#debug/debugEnabled.js';
+import ShadowDebugView from '#debug/ShadowDebugView.jsx';
 import * as THREE from 'three/webgpu';
 
 import { useStore } from '#store';
@@ -20,106 +20,11 @@ const LIGHT_ROTATION = new THREE.Matrix4().lookAt(
 const LIGHT_ROTATION_INVERSE = LIGHT_ROTATION.clone().transpose();
 const _snapped = new THREE.Vector3();
 
-/**
- * Renders the scene through a free OrbitControls camera while the gameplay
- * camera keeps following the character (visible via CameraHelper).
- */
-const ShadowDebugView = ({ lightRef, enabled }) => {
-  const debugCameraRef = useRef(null);
-  const orbitControlsRef = useRef(null);
-  const helpersRef = useRef([]);
-  const mainCamera = useThree(state => state.camera);
-  const scene = useThree(state => state.scene);
-  const gl = useThree(state => state.renderer);
-
-  useLayoutEffect(() => {
-    if (!enabled || !debugCameraRef.current) return;
-
-    const controls = new OrbitControlsImpl(
-      debugCameraRef.current,
-      gl.domElement
-    );
-    controls.enableDamping = true;
-    orbitControlsRef.current = controls;
-
-    return () => {
-      controls.dispose();
-      orbitControlsRef.current = null;
-    };
-  }, [enabled, gl.domElement]);
-
-  useLayoutEffect(() => {
-    if (!enabled) return;
-
-    const helpers = [];
-
-    const mainCameraHelper = new THREE.CameraHelper(mainCamera);
-    scene.add(mainCameraHelper);
-    helpers.push(mainCameraHelper);
-
-    const light = lightRef.current;
-    if (light?.shadow?.camera) {
-      const shadowCameraHelper = new THREE.CameraHelper(light.shadow.camera);
-      scene.add(shadowCameraHelper);
-      helpers.push(shadowCameraHelper);
-    }
-
-    if (light) {
-      const directionalLightHelper = new THREE.DirectionalLightHelper(
-        light,
-        2,
-        '#ffdd66'
-      );
-      scene.add(directionalLightHelper);
-      helpers.push(directionalLightHelper);
-    }
-
-    helpersRef.current = helpers;
-
-    return () => {
-      helpers.forEach(helper => {
-        scene.remove(helper);
-        helper.dispose?.();
-      });
-      helpersRef.current = [];
-    };
-  }, [enabled, mainCamera, scene, lightRef]);
-
-  useFrame(() => {
-    if (!enabled) return;
-
-    helpersRef.current.forEach(helper => helper.update?.());
-  });
-
-  // Draw the scene from the debug camera after the post-processing used the
-  // main cam
-  useFrame(
-    ({ renderer, scene: world, size }) => {
-      if (!enabled || !debugCameraRef.current) return;
-
-      orbitControlsRef.current?.update();
-
-      renderer.setRenderTarget(null);
-      renderer.setViewport(0, 0, size.width, size.height);
-      renderer.setScissorTest(false);
-      renderer.clear(true, true, true);
-      renderer.render(world, debugCameraRef.current);
-    },
-    { phase: 'render', after: 'postProcessing' }
-  );
-
-  if (!enabled) return null;
-
-  return (
-    <PerspectiveCamera
-      ref={debugCameraRef}
-      position={[40, 50, 60]}
-      fov={50}
-      near={0.5}
-      far={400}
-    />
-  );
-};
+// The shadow map is redrawn at most ~60 times a second: every frame at 60 Hz,
+// every other frame on 120/144 Hz screens (a skipped frame keeps the last map
+// and the matrix it was drawn with). 3/4 of a 60 Hz frame, so frame-time
+// jitter at 60 Hz never skips one
+const SHADOW_MIN_INTERVAL = 0.75 / 60;
 
 const Lights = () => {
   const characterLightRef = useRef(null);
@@ -140,17 +45,24 @@ const Lights = () => {
       step: 0.0001,
     },
     normalBias: {
-      value: 0.13,
+      value: 0.081,
       min: 0,
       max: 0.2,
       step: 0.001,
     },
     // PCF filter radius, in shadow-map texels
     radius: {
-      value: 2,
+      value: 4,
       min: 0,
       max: 10,
       step: 0.1,
+    },
+    // 1 = the light is fully blocked in shadow, 0 = no shadow
+    shadowDarkness: {
+      value: 1,
+      min: 0,
+      max: 1,
+      step: 0.01,
     },
     // Shadow map resolution. Transient: the live shadow map must be
     // disposed so three reallocates it at the new size on the next frame
@@ -164,6 +76,7 @@ const Lights = () => {
         light.shadow.mapSize.set(value, value);
         light.shadow.map?.dispose();
         light.shadow.map = null;
+        light.shadow.needsUpdate = true;
       },
     },
   });
@@ -284,6 +197,18 @@ const Lights = () => {
     };
   }, []);
 
+  // Shadow refresh cap (SHADOW_MIN_INTERVAL); the light follows the
+  // character every frame, its shadow catches up on the next redraw
+  const lastShadowUpdateRef = useRef(-Infinity);
+  useFrame(({ elapsed }) => {
+    const light = characterLightRef.current;
+    if (!light?.castShadow) return;
+    if (elapsed - lastShadowUpdateRef.current >= SHADOW_MIN_INTERVAL) {
+      light.shadow.needsUpdate = true;
+      lastShadowUpdateRef.current = elapsed;
+    }
+  });
+
   return (
     <>
       <ambientLight
@@ -300,17 +225,32 @@ const Lights = () => {
         // The mapSize control's onChange only runs after mount: the
         // precompile frame already needs the full-size map
         shadow-mapSize={[2048, 2048]}
+        // Redrawn on request only (useFrame above); the first request is
+        // already set for the precompile frame
+        shadow-autoUpdate={false}
+        shadow-needsUpdate={true}
         shadow-bias={directionalLightControls.bias}
         shadow-normalBias={directionalLightControls.normalBias}
         shadow-radius={directionalLightControls.radius}
+        shadow-intensity={directionalLightControls.shadowDarkness}
       />
 
-      <ShadowDebugView
-        lightRef={characterLightRef}
-        enabled={shadowCameraControls.debugHelpers}
-      />
+      {DEBUG_ENABLED && (
+        <ShadowDebugView
+          lightRef={characterLightRef}
+          enabled={shadowCameraControls.debugHelpers}
+        />
+      )}
 
-      <pointLight position={[-9.7, 12, -59.5]} intensity={45} color="#ad7351" />
+      {/* Real three.js light, outside the TSL point light registry: warm
+          glow from above over the resume island's sleeping character (the
+          sleep Zs rise just below it) */}
+      <pointLight
+        name="resumeSleeperLight"
+        position={[-9.7, 12, -59.5]}
+        intensity={45}
+        color="#ad7351"
+      />
     </>
   );
 };

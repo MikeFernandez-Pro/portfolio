@@ -34,11 +34,10 @@ const bakeFallingBodyAngle = ({ track, rest, chain }, angle) => {
  * The character clips plus the falling clip, retargeted onto the rig.
  *
  * The falling animation lives in a separate animation-only GLB (Blender
- * export of the Mixamo clip). Same rig (mixamorig:*) as the character, but
- * the clip carries translation/scale tracks on every bone and animates bones
- * the character rig doesn't have — keep only the rotation tracks of bones
- * that exist so the clip drops cleanly onto the character. The hips rotation
- * is dropped too (it pitches the body into a dive) and replaced with a static
+ * export of the Mixamo clip, same mixamorig:* rig as the character),
+ * stripped offline by scripts/strip-falling-clip.mjs to the rotation tracks
+ * of the bones the character rig has. Its hips rotation is dropped there too
+ * (it pitches the body into a dive): here it's replaced with a static
  * rest-pose keyframe leaned by the body angle.
  */
 const useFallingClip = (scene, animations) => {
@@ -49,18 +48,6 @@ const useFallingClip = (scene, animations) => {
   const mergedAnimations = useMemo(() => {
     const clip = fallingGltf.animations[0].clone();
     clip.name = FALLING;
-    const rigBones = new Set();
-    scene.traverse(object => object.isBone && rigBones.add(object.name));
-    // Note: the loaders sanitize node names ('mixamorig:Hips' becomes
-    // 'mixamorigHips'), so runtime bone and track names have no colon
-    clip.tracks = clip.tracks.filter(track => {
-      const [boneName, property] = track.name.split('.');
-      return (
-        rigBones.has(boneName) &&
-        property === 'quaternion' &&
-        boneName !== 'mixamorigHips'
-      );
-    });
 
     // Rest pose captured before the mixer ever poses the rig, and the
     // rotation chain from the character root down to the hips' parent so the

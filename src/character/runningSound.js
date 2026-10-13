@@ -11,4 +11,22 @@ const runningSoundEffect = new Howl({
   rate: 1.1,
 });
 
+// Whether the loop was started (also while its play is still queued before
+// the file loads). The controller stops it on every idle frame: Howler's
+// stop() walks its sounds, and queues one more stop per call before load. A
+// second play() while playing would overlap a new instance
+let running = false;
+
+export const playRunningSound = () => {
+  if (running) return;
+  running = true;
+  runningSoundEffect.play();
+};
+
+export const stopRunningSound = () => {
+  if (!running) return;
+  running = false;
+  runningSoundEffect.stop();
+};
+
 export default runningSoundEffect;

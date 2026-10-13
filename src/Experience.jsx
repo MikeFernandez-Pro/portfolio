@@ -5,9 +5,8 @@ import { Howl } from 'howler';
 import { useControls } from '#debug/useControls.jsx';
 import { settingControls } from '#debug/settingControls.js';
 
-import { DebugInspector } from './debug/DebugInspector.jsx';
-import { PhysicsDebug } from './debug/PhysicsDebug.jsx';
-import Joystick from '#character/Joystick.jsx';
+import { DebugInspector } from '#debug/DebugInspector.jsx';
+import { PhysicsDebug } from '#debug/PhysicsDebug.jsx';
 import CharacterController from '#character/CharacterController.jsx';
 import { DeathCycleControls } from '#character/deathCycle/DeathCycleControls.jsx';
 import Stars from '#environment/Stars.jsx';
@@ -95,11 +94,10 @@ const Experience = () => {
 
   return (
     <>
-      {freeCamera && <OrbitControls />}
+      {DEBUG_ENABLED && freeCamera && <OrbitControls />}
       {DEBUG_ENABLED && <DebugInspector />}
       {DEBUG_ENABLED && <PhysicsDebug />}
       {DEBUG_ENABLED && <DeathCycleControls />}
-      <Joystick />
       <Clouds />
       <Stars />
       <Lights />

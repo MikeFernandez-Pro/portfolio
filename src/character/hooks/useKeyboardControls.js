@@ -27,13 +27,19 @@ export function useKeyboardControls({
     backward: false,
     leftward: false,
     rightward: false,
-    enter: false,
   });
+
+  // Latest callbacks, read by the listeners: callers pass inline functions,
+  // which would otherwise re-register the listeners on every render
+  const callbacksRef = useRef();
+  callbacksRef.current = { onSpaceDown, onShiftDown, onShiftUp };
 
   useEffect(() => {
     if (IS_MOBILE_DEVICE) return;
 
     const handler = event => {
+      const { onSpaceDown, onShiftDown, onShiftUp } = callbacksRef.current;
+
       // Movement mapping
       if (keysConfigList[event.code]) {
         eventKeysRef.current[keysConfigList[event.code]] =
@@ -51,7 +57,7 @@ export function useKeyboardControls({
 
       if (event.code === 'ShiftLeft' && event.type === 'keydown') {
         event.preventDefault();
-        onShiftDown && onShiftDown(event);
+        onShiftDown && onShiftDown();
       } else if (event.code === 'ShiftLeft' && event.type === 'keyup') {
         event.preventDefault();
         onShiftUp && onShiftUp();
@@ -64,7 +70,7 @@ export function useKeyboardControls({
       document.removeEventListener('keydown', handler);
       document.removeEventListener('keyup', handler);
     };
-  }, [onSpaceDown, onShiftDown, onShiftUp]);
+  }, []);
 
   const resetKeys = () => {
     const map = eventKeysRef.current;

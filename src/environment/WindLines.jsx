@@ -1,25 +1,12 @@
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three/webgpu';
-import {
-  abs,
-  attribute,
-  cos,
-  float,
-  fract,
-  min,
-  mix,
-  positionGeometry,
-  sin,
-  smoothstep,
-  time,
-  uniform,
-  uv,
-  vec3,
-} from 'three/tsl';
+import { uniform } from 'three/tsl';
 
 import { useControls } from '#debug/useControls.jsx';
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 import { mulberry32 } from '#utils/random.js';
+
+import { createWindLinesMaterial } from './windLinesMaterial.js';
 
 const LINE_SEGMENTS = 20;
 const WIND_TIME_OFFSET_MAX = 100;
@@ -119,19 +106,20 @@ const WindLines = () => {
 
   const uniforms = useMemo(
     () => ({
-      uTimeMultiplier: uniform(0.04),
       uAlphaMultiplier: uniform(WIND_LINES_DEFAULTS.alphaMultiplier),
-      uStrength: uniform(1),
       uSpeed: uniform(WIND_LINES_DEFAULTS.speed),
       uLengthMultiplier: uniform(WIND_LINES_DEFAULTS.lengthMultiplier),
-      uRange: uniform(4),
       uColor: uniform(new THREE.Color(WIND_LINES_DEFAULTS.color)),
     }),
     []
   );
 
   const geometry = useMemo(() => {
-    // Ribbon strip centered at the origin, extending along X
+    // Ribbon strip centered at the origin, extending along X, then turned
+    // around Y to the wind direction (the same angle for every instance)
+    const angle = -Math.PI / 2 + controls.direction;
+    const cosAngle = Math.cos(angle);
+    const sinAngle = Math.sin(angle);
     const vertexCount = (LINE_SEGMENTS + 1) * 2;
     const positions = new Float32Array(vertexCount * 3);
     const uvs = new Float32Array(vertexCount * 2);
@@ -145,9 +133,9 @@ const WindLines = () => {
       const localX = (u - 0.5) * controls.geometryLength;
 
       for (let side = 0; side < 2; side += 1) {
-        positions[vertexCursor * 3] = localX;
+        positions[vertexCursor * 3] = localX * cosAngle;
         positions[vertexCursor * 3 + 1] = (side - 0.5) * controls.width;
-        positions[vertexCursor * 3 + 2] = 0;
+        positions[vertexCursor * 3 + 2] = localX * sinAngle;
         uvs[vertexCursor * 2] = u;
         uvs[vertexCursor * 2 + 1] = side;
         vertexCursor += 1;
@@ -181,9 +169,7 @@ const WindLines = () => {
     const count = columns * rows;
     const offsets = new Float32Array(count * 3);
     const timeOffsets = new Float32Array(count);
-    const rotations = new Float32Array(count);
     const rng = mulberry32(WIND_FIELD_SEED);
-    const angle = -Math.PI / 2 + controls.direction;
 
     let i = 0;
     for (let ix = 0; ix < columns; ix += 1) {
@@ -193,7 +179,6 @@ const WindLines = () => {
           controls.baseHeight + rng() * controls.heightVariation;
         offsets[i * 3 + 2] = bounds.minZ + spacing * (iz + 0.5);
         timeOffsets[i] = rng() * WIND_TIME_OFFSET_MAX;
-        rotations[i] = angle;
         i += 1;
       }
     }
@@ -213,15 +198,7 @@ const WindLines = () => {
       'aInstanceTimeOffset',
       new THREE.InstancedBufferAttribute(timeOffsets, 1)
     );
-    windGeometry.setAttribute(
-      'aInstanceRotation',
-      new THREE.InstancedBufferAttribute(rotations, 1)
-    );
     windGeometry.instanceCount = count;
-    windGeometry.boundingSphere = new THREE.Sphere(
-      new THREE.Vector3(controls.centerX, 0, controls.centerZ),
-      Math.max(controls.sizeX, controls.sizeZ)
-    );
 
     return windGeometry;
   }, [
@@ -239,55 +216,7 @@ const WindLines = () => {
 
   useEffect(() => () => geometry.dispose(), [geometry]);
 
-  const material = useMemo(() => {
-    // Unlit glow: lights off
-    const windMaterial = new THREE.MeshBasicNodeMaterial({
-      lights: false,
-      transparent: true,
-      blending: THREE.NormalBlending,
-      depthWrite: false,
-      depthTest: true,
-      side: THREE.DoubleSide,
-    });
-
-    const instanceOffset = attribute('aInstanceOffset', 'vec3');
-    const instanceTimeOffset = attribute('aInstanceTimeOffset', 'float');
-    const instanceRotation = attribute('aInstanceRotation', 'float');
-    const timeMultiplier = uniforms.uTimeMultiplier.mul(uniforms.uSpeed);
-
-    // Rotate the ribbon around Y by the instance angle, offset it, then two
-    // sine wobbles (the mesh has no transform: local space is world space)
-    const c = cos(instanceRotation);
-    const s = sin(instanceRotation);
-    const p = positionGeometry;
-    const rotated = vec3(
-      p.x.mul(c).sub(p.z.mul(s)),
-      p.y,
-      p.x.mul(s).add(p.z.mul(c))
-    );
-    const placed = rotated.add(instanceOffset);
-    const localTime = time.add(instanceTimeOffset).mul(timeMultiplier);
-    const y = placed.y.add(sin(uv().x.mul(10).add(localTime)).mul(0.1));
-    const z = placed.z.add(sin(placed.x.add(localTime.mul(2))).mul(0.2));
-    windMaterial.positionNode = vec3(placed.x, y, z);
-
-    // A soft streak sliding along the ribbon, faded at both ends
-    const t = fract(time.add(instanceTimeOffset).mul(timeMultiplier));
-    const range = uniforms.uRange.mul(uniforms.uLengthMultiplier);
-    const center = mix(float(0.5).sub(range), float(0.5).add(range), t);
-    const d = abs(uv().x.sub(center)).mul(uniforms.uLengthMultiplier);
-    const streak = float(1).sub(smoothstep(0.1, 0.4, d));
-    const edge = min(uv().x, uv().x.oneMinus());
-    const edgeFade = smoothstep(0, 0.1, edge);
-
-    windMaterial.colorNode = uniforms.uColor;
-    windMaterial.opacityNode = streak
-      .mul(edgeFade)
-      .mul(uniforms.uAlphaMultiplier)
-      .mul(uniforms.uStrength);
-
-    return windMaterial;
-  }, [uniforms]);
+  const material = useMemo(() => createWindLinesMaterial(uniforms), [uniforms]);
 
   useEffect(() => () => material.dispose(), [material]);
 

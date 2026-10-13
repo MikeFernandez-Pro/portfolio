@@ -1,110 +1,106 @@
-import { useEffect } from 'react';
-import nipplejs from 'nipplejs';
-import gsap from 'gsap';
+import { useEffect, useRef, useState } from 'react';
 
 import { subscribeWhenSet, useStore } from '#store';
-import { IS_MOBILE_DEVICE } from '#utils/device.js';
 
-// ScreenOrientation constants
-const PORTRAIT_ORIENTATION = 'portrait-primary';
-
-// Joystick configuration constants
-const DEFAULT_CONFIGURATION = {
-  mode: 'static',
-  position: { bottom: '8rem', left: '50%' },
-  dynamicPage: true,
-  follow: false,
-  restOpacity: 0.5,
-  maxNumberOfJoysticks: 1,
-};
-
-// Joystick events constants
-const MOVE_EVENT = 'move';
-const END_EVENT = 'end';
-
-const createJoystick = orientationType => {
-  return nipplejs.create({
-    ...DEFAULT_CONFIGURATION,
-    size:
-      orientationType === PORTRAIT_ORIENTATION
-        ? window.innerWidth * 0.2
-        : window.innerHeight * 0.3,
-    position:
-      orientationType === PORTRAIT_ORIENTATION
-        ? { bottom: '10%', left: '50%' }
-        : { bottom: '10vw', left: '10vw' },
-  });
-};
-
-const setupJoystickEvents = joystick => {
-  joystick.on('move', function (evt) {
-    if (evt.data.angle.radian !== Math.PI) {
-      useStore.setState({ joystickAngle: evt.data.angle.radian });
-    }
-  });
-
-  joystick.on('end', function () {
-    useStore.setState({ joystickAngle: undefined });
-  });
-};
-
-const resetJoystick = joystick => {
-  joystick.off(MOVE_EVENT);
-  joystick.off(END_EVENT);
-  joystick.destroy();
-};
-
-const handleOrientationChange = joystick => {
-  return function curriedFunction(event) {
-    resetJoystick(joystick);
-    joystick = createJoystick(event.target.type);
-    setupJoystickEvents(joystick);
-  };
-};
-
-let joystick = undefined;
-
+/**
+ * Mobile movement joystick: a fixed base (size and place from style.css,
+ * per orientation) and a knob dragged inside it. Publishes the drag
+ * direction as `joystickAngle` (radians, counterclockwise from screen
+ * right, screen up = PI / 2), undefined at rest. Appears once the intro
+ * pan unlocks the controls.
+ */
 const Joystick = () => {
+  const baseRef = useRef(null);
+  const knobRef = useRef(null);
+  const dragRef = useRef(null);
+  const [visible, setVisible] = useState(false);
+  const [active, setActive] = useState(false);
+
   useEffect(() => {
-    // Hooks must run unconditionally; the mobile gate lives inside instead
-    if (!IS_MOBILE_DEVICE) return;
-
-    // Kept so cleanup removes the listener that was actually registered
-    let orientationHandler;
-    let setupTimeout;
-
+    let unsubUnlock;
     const unsubExperienceStarted = subscribeWhenSet(
       state => state.experienceStarted,
       () => {
-        setupTimeout = setTimeout(() => {
-          // Initialize joystick
-          joystick = createJoystick(screen.orientation.type);
-          setupJoystickEvents(joystick);
-
-          // Fade Joystick opacity
-          const joystickInstance = joystick.all.values().next().value;
-          if (joystickInstance) {
-            gsap.to(joystickInstance.ui.el.style, { opacity: 1, duration: 1 });
-          }
-
-          // Trigger screen rotation and update joystick size and position
-          orientationHandler = handleOrientationChange(joystick);
-          screen.orientation.addEventListener('change', orientationHandler);
-        }, 5000);
+        // The camera sets introControlsLocked in its own experienceStarted
+        // listener, which may run after this one: read it once they all ran
+        queueMicrotask(() => {
+          unsubUnlock = subscribeWhenSet(
+            state => !state.introControlsLocked,
+            () => setVisible(true)
+          );
+        });
       }
     );
 
-    // Cleanup subscriber and event listener
     return () => {
       unsubExperienceStarted();
-      clearTimeout(setupTimeout);
-      if (orientationHandler) {
-        screen.orientation.removeEventListener('change', orientationHandler);
-      }
+      unsubUnlock?.();
+      useStore.setState({ joystickAngle: undefined });
     };
   }, []);
 
-  return null;
+  const moveKnob = (event, animate) => {
+    const { centerX, centerY, radius } = dragRef.current;
+    let dx = event.clientX - centerX;
+    let dy = event.clientY - centerY;
+    const distance = Math.hypot(dx, dy);
+    if (distance > radius) {
+      dx *= radius / distance;
+      dy *= radius / distance;
+    }
+    // Snaps to the touch point on press, then tracks the finger 1:1
+    knobRef.current.style.transition = animate ? '' : 'none';
+    knobRef.current.style.transform = `translate(${dx}px, ${dy}px)`;
+
+    if (distance > 0) {
+      const angle = Math.atan2(-dy, dx);
+      useStore.setState({
+        joystickAngle: angle < 0 ? angle + 2 * Math.PI : angle,
+      });
+    }
+  };
+
+  const onPointerDown = event => {
+    if (dragRef.current) return;
+    const rect = baseRef.current.getBoundingClientRect();
+    dragRef.current = {
+      pointerId: event.pointerId,
+      centerX: rect.left + rect.width / 2,
+      centerY: rect.top + rect.height / 2,
+      radius: rect.width / 2,
+    };
+    baseRef.current.setPointerCapture(event.pointerId);
+    setActive(true);
+    moveKnob(event, true);
+  };
+
+  const onPointerMove = event => {
+    if (dragRef.current?.pointerId !== event.pointerId) return;
+    moveKnob(event, false);
+  };
+
+  const onPointerEnd = event => {
+    if (dragRef.current?.pointerId !== event.pointerId) return;
+    dragRef.current = null;
+    knobRef.current.style.transition = '';
+    knobRef.current.style.transform = '';
+    setActive(false);
+    useStore.setState({ joystickAngle: undefined });
+  };
+
+  return (
+    <div
+      ref={baseRef}
+      className={`joystick${visible ? ' is-visible' : ''}${active ? ' is-active' : ''}`}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerEnd}
+      onPointerCancel={onPointerEnd}
+      onLostPointerCapture={onPointerEnd}
+    >
+      <div ref={knobRef} className="joystick-knob" />
+    </div>
+  );
 };
 
 export default Joystick;

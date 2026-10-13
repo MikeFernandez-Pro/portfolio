@@ -4,6 +4,14 @@ import { CharacterBody } from '#physics/CharacterBody.js';
 import { BODY_TYPE_FIXED as FIXED } from '#physics/PhysicsWorld.js';
 import { physicsWorld } from '#physics/world.js';
 
+// Capsule in body space: centered offsetY above the body origin, spanning
+// halfHeight + radius above and below
+export const CHARACTER_CAPSULE = {
+  halfHeight: 0.3,
+  radius: 0.25,
+  offsetY: 0.58,
+};
+
 /**
  * The character's physics capsule, registered with the physics world.
  * Returns the body (in a ref, like the other character hooks expect) and the
@@ -18,9 +26,9 @@ const useCharacterBody = () => {
   if (!characterBody.current) {
     characterBody.current = new CharacterBody({
       position: [0, 0.7, 0],
-      capsuleHalfHeight: 0.3,
-      capsuleRadius: 0.25,
-      capsuleOffsetY: 0.58,
+      capsuleHalfHeight: CHARACTER_CAPSULE.halfHeight,
+      capsuleRadius: CHARACTER_CAPSULE.radius,
+      capsuleOffsetY: CHARACTER_CAPSULE.offsetY,
       bodyType: FIXED,
     });
   }

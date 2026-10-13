@@ -69,6 +69,8 @@ body,
   font-family: var(--primary-font), cursive;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  /* No browser pan / pinch / double-tap zoom over the scene */
+  touch-action: none;
 }
 
 .container {
@@ -109,11 +111,53 @@ body,
   transition: opacity 0.3s;
 }
 
+/* Mobile joystick: the base is centered on its left / bottom point */
+.joystick {
+  position: fixed;
+  z-index: 10;
+  width: var(--joystick-size);
+  height: var(--joystick-size);
+  border-radius: 50%;
+  background: #fff;
+  transform: translate(-50%, 50%);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+
+.joystick.is-visible {
+  opacity: 0.5;
+  pointer-events: auto;
+  animation: joystickFadeIn 1s;
+}
+
+.joystick.is-active {
+  opacity: 1;
+}
+
+.joystick-knob {
+  position: absolute;
+  inset: 25%;
+  border-radius: 50%;
+  background: #fff;
+  opacity: 0.5;
+  transition: transform 0.1s;
+}
+
 /* media queries */
 @media (orientation: portrait) {
   .volume-controller {
     top: 5vw;
     right: 5vw;
+  }
+
+  .joystick {
+    --joystick-size: 20vw;
+    left: 50%;
+    bottom: 10%;
   }
 }
 
@@ -121,6 +165,12 @@ body,
   .volume-controller {
     top: 5vh;
     right: 5vh;
+  }
+
+  .joystick {
+    --joystick-size: 30vh;
+    left: 10vw;
+    bottom: 10vw;
   }
 }
 
@@ -131,5 +181,12 @@ body,
   }
   to {
     opacity: 1;
+  }
+}
+
+/* Ends on the element's own opacity */
+@keyframes joystickFadeIn {
+  from {
+    opacity: 0;
   }
 }

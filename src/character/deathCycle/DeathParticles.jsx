@@ -18,6 +18,7 @@ import gsap from 'gsap';
 import { useStore } from '#store';
 import { useControls } from '#debug/useControls.jsx';
 import { uniformControls } from '#debug/uniformControls.js';
+import { CHARACTER_CAPSULE } from '#character/hooks/useCharacterBody.js';
 import { registerDeathParticles, targets } from './targets.js';
 import {
   createParticleSprite,
@@ -31,11 +32,16 @@ import {
 
 const PARTICLES_COUNT = 30;
 
-// Character capsule the particles spawn in (local space, matches the
-// collider in CharacterController: radius 0.25 + half-height 0.3 at y 0.58)
-const CAPSULE_RADIUS = 0.25;
-const CAPSULE_Y_MIN = 0.05;
-const CAPSULE_Y_MAX = 1.1;
+// The particles spawn inside the character's collider capsule (local space)
+const CAPSULE_RADIUS = CHARACTER_CAPSULE.radius;
+const CAPSULE_Y_MIN =
+  CHARACTER_CAPSULE.offsetY -
+  CHARACTER_CAPSULE.halfHeight -
+  CHARACTER_CAPSULE.radius;
+const CAPSULE_Y_MAX =
+  CHARACTER_CAPSULE.offsetY +
+  CHARACTER_CAPSULE.halfHeight +
+  CHARACTER_CAPSULE.radius;
 
 const DEATH_PARTICLES_DEFAULTS = {
   duration: 1,

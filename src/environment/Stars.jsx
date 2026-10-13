@@ -4,16 +4,15 @@ import { uniformControls } from '#debug/uniformControls.js';
 import * as THREE from 'three/webgpu';
 import {
   float,
+  length,
   select,
   sin,
-  texture,
   time,
   uniform,
   vec3,
   vec4,
 } from 'three/tsl';
 
-import { useSpiralGrassHeightTexture } from '#utils/packedTextures.js';
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 import {
   createParticleSprite,
@@ -33,10 +32,6 @@ const STARS_DEFAULTS = {
 };
 
 const Stars = () => {
-  // Star sprite packed in the blue channel of the spiral/grass/star texture,
-  // sitting at UV origin (sampled at pointCoord * 0.125)
-  const starTexture = useSpiralGrassHeightTexture();
-
   const uniforms = useMemo(
     () => ({
       uSize: uniform(STARS_DEFAULTS.pointSize),
@@ -109,8 +104,13 @@ const Stars = () => {
       )
       .mul(2);
 
-    // 64px star tile at the UV origin of the 512px packed texture (blue)
-    const alpha = texture(starTexture, pointCoord.mul(0.125)).b;
+    // Round soft dot: quadratic falloff from the center to the quad's
+    // inscribed circle, 0 beyond it
+    const alpha = length(pointCoord.sub(0.5))
+      .mul(2)
+      .oneMinus()
+      .clamp(0, 1)
+      .pow2();
     const color = select(
       aColor.lessThan(0.33),
       vec3(uniforms.uColor1),
@@ -123,7 +123,7 @@ const Stars = () => {
     material.colorNode = vec4(color.mul(uniforms.uBrightness), alpha);
 
     return createParticleSprite(material, count);
-  }, [count, starTexture, uniforms]);
+  }, [count, uniforms]);
 
   useEffect(() => () => stars.material.dispose(), [stars]);
 

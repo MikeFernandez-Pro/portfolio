@@ -44,10 +44,20 @@ export function useThirdPersonCamera(characterBodyRef) {
 
   useFrame((state, delta) => {
     const characterPosition = characterBodyRef.current.translation();
-    // Throttle store updates to ~30fps
+    // Throttle store updates to ~30fps, and skip them while the character
+    // stands still: translation() is a new object each call, so every write
+    // re-runs the subscribers (shadow snap, distance volumes)
     lastStoreUpdateRef.current += delta;
     if (lastStoreUpdateRef.current >= 1 / 30) {
-      useStore.setState({ characterPosition });
+      const stored = useStore.getState().characterPosition;
+      if (
+        !stored ||
+        stored.x !== characterPosition.x ||
+        stored.y !== characterPosition.y ||
+        stored.z !== characterPosition.z
+      ) {
+        useStore.setState({ characterPosition });
+      }
       lastStoreUpdateRef.current = 0;
     }
 
@@ -67,7 +77,7 @@ export function useThirdPersonCamera(characterBodyRef) {
     ).add(CAMERA_OFFSET);
     // Exact exp-damp alpha: same smoothing rate at any fps, never exceeds 1
     LERP_CAMERA_POSITION.lerp(CAMERA_POSITION, 1 - Math.exp(-5 * delta));
-    state.camera.position.set(...LERP_CAMERA_POSITION);
+    state.camera.position.copy(LERP_CAMERA_POSITION);
   });
 
   useEffect(() => {

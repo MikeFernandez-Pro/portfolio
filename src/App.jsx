@@ -1,30 +1,27 @@
 import { useState, Suspense, useRef, useEffect, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber/webgpu';
 import Experience from './Experience.jsx';
-import { PerformanceMonitor, useProgress } from '@react-three/drei/webgpu';
-import { Bvh } from './workarounds/Bvh.jsx';
+import { useProgress } from '@react-three/drei/webgpu';
 import gsap from 'gsap';
 import { useStore } from '#store';
 import tunnel from 'tunnel-rat';
 import { Howler } from 'howler';
 import * as THREE from 'three/webgpu';
 
+import { DEBUG_ENABLED } from '#debug/debugEnabled.js';
 import { IS_MOBILE_DEVICE } from '#utils/device.js';
 import { prefersReducedMotion } from '#utils/reducedMotion.js';
 import { CAMERA_INITIAL_OFFSET } from '#character/hooks/useThirdPersonCamera.js';
+import Joystick from '#character/Joystick.jsx';
 
 import soundOnIcon from '/icons/sound-on.svg';
 import soundOffIcon from '/icons/sound-off.svg';
 import { PostProcessing } from './postprocessing/PostProcessing.jsx';
+import { MAX_DPR } from './postprocessing/quality.js';
 import { PrecompileScene } from './PrecompileScene.jsx';
-import { AdaptiveDpr } from './workarounds/AdaptiveDpr.jsx';
 
 /* Tunnel */
 const ui = tunnel();
-
-// Pixel ratio ceiling. dpr 2 is 4x the fill of dpr 1; 1.5 is the visual
-// sweet spot. Slow machines drop to 1 through <PerformanceMonitor>
-const MAX_DPR = 1.5;
 
 // Mute = the user's sound toggle OR a hidden tab, so coming back to the tab
 // never overrides a sound the user turned off
@@ -59,7 +56,7 @@ const SoundToggle = ({ onIconRef }) => {
         src={soundOffIcon}
         style={{ display: muted ? 'block' : 'none' }}
         className="volume-controller"
-        alt="Sound down button"
+        alt="Sound off button"
         onClick={toggle}
       />
     </>
@@ -95,7 +92,6 @@ const App = () => {
     gsap.to(startExperienceRef.current.style, {
       opacity: 0,
       duration: 0.5,
-      delay: 0,
     });
 
     gsap.to(irisRef.current?.progress, {
@@ -136,9 +132,9 @@ const App = () => {
     <>
       <ui.Out />
       <SoundToggle onIconRef={soundOnIconRef} />
+      {IS_MOBILE_DEVICE && <Joystick />}
       <Canvas
         dpr={dpr}
-        performance={{ min: 0.5 }}
         camera={{
           position: [
             CAMERA_INITIAL_OFFSET.x,
@@ -161,13 +157,17 @@ const App = () => {
         // R3F 10 canary leaves state.gl null under WebGPU (its getter is
         // flattened by the first store update), and drei 11 still reads it
         // (Clouds, useTexture...). Point it at the renderer once created.
-        onCreated={({ set, renderer }) => set({ gl: renderer })}
+        // Debug: name the active backend, to spot a silent WebGL2 fallback
+        // (phones without a secure context)
+        onCreated={({ set, renderer }) => {
+          set({ gl: renderer });
+          if (DEBUG_ENABLED) {
+            console.info(
+              `Renderer backend: ${renderer.backend?.isWebGPUBackend ? 'WebGPU' : 'WebGL 2'}`
+            );
+          }
+        }}
       >
-        <PerformanceMonitor
-          onIncline={() => setDpr(MAX_DPR)}
-          onDecline={() => setDpr(1)}
-        />
-        <AdaptiveDpr />
         <Suspense fallback={loader}>
           {!sceneReady && loader}
           {sceneReady && (
@@ -197,11 +197,9 @@ const App = () => {
               </div>
             </ui.In>
           )}
-          <PostProcessing irisRef={irisRef} />
+          <PostProcessing irisRef={irisRef} setDpr={setDpr} />
 
-          <Bvh firstHitOnly>
-            <Experience />
-          </Bvh>
+          <Experience />
           <PrecompileScene />
         </Suspense>
       </Canvas>

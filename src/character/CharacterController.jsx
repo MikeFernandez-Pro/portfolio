@@ -13,7 +13,10 @@ import { IS_MOBILE_DEVICE } from '#utils/device.js';
 import { useControls } from '#debug/useControls.jsx';
 
 import CharacterModel from '#assets/models/character/character.glb';
-import runningSoundEffect from '#character/runningSound.js';
+import runningSoundEffect, {
+  playRunningSound,
+  stopRunningSound,
+} from '#character/runningSound.js';
 
 import { useCharacterMaterial } from '#character/useCharacterMaterial.js';
 import { useCharacterLantern } from '#character/lantern/useCharacterLantern.js';
@@ -94,7 +97,7 @@ const CharacterController = () => {
   useControls('Falling', {
     playFalling: () => {
       s.fallingPreview = true;
-      runningSoundEffect.stop();
+      stopRunningSound();
       characterBody.current.setBodyType(FIXED);
       animation.play(FALLING);
     },
@@ -111,7 +114,7 @@ const CharacterController = () => {
   const killCharacter = useCallback(() => {
     if (s.respawning) return;
     s.respawning = true;
-    runningSoundEffect.stop();
+    stopRunningSound();
     characterBody.current.setBodyType(FIXED);
     s.jumping = false;
     s.sprinting = false;
@@ -248,7 +251,7 @@ const CharacterController = () => {
 
     // Block movement while respawning
     if (s.respawning) {
-      runningSoundEffect.stop();
+      stopRunningSound();
       // The falling pose survives the dissolve; anything else resets to idle
       if (animation.current !== IDLE && animation.current !== FALLING) {
         animation.play(IDLE);
@@ -263,7 +266,7 @@ const CharacterController = () => {
       (direction === undefined && !IS_MOBILE_DEVICE) ||
       (IS_MOBILE_DEVICE && joystickAngleRef.current === undefined)
     ) {
-      runningSoundEffect.stop();
+      stopRunningSound();
       if (animation.current !== IDLE && !s.jumping && !s.falling) {
         animation.play(IDLE);
       }
@@ -276,7 +279,7 @@ const CharacterController = () => {
 
     if (animation.current !== RUN && !s.jumping && !s.sprinting && !s.falling) {
       animation.play(RUN);
-      runningSoundEffect.play();
+      playRunningSound();
     }
 
     updateMovement({
@@ -339,7 +342,7 @@ const CharacterController = () => {
           // cancel the falling animation for the rest of the drop (the zone
           // enter never re-fires)
           characterBody.current.clearGrounded();
-          runningSoundEffect.stop();
+          stopRunningSound();
           animation.play(FALLING);
         }}
         onDeathZoneEnter={state => {
