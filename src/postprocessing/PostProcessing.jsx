@@ -3,25 +3,38 @@ import { useFrame, useThree } from '@react-three/fiber';
 
 import { useControls } from '#debug/useControls.jsx';
 import { uniformControls } from '#debug/uniformControls.js';
+import { DEBUG_ENABLED } from '#debug/debugEnabled.js';
 import { IS_MOBILE_DEVICE } from '#utils/device.js';
 import { useStore } from '#store';
 
 import {
   AO_DEFAULTS,
+  AO_ENABLED,
   BLOOM_DEFAULTS,
+  DOF_ENABLED,
   applyNodeSetting,
   createPipeline,
   createPipelineParams,
 } from './pipeline.js';
 import { CHEAP_DOF_DEFAULTS } from './cheapDof.js';
 import { useIris } from './useIris.js';
+import { MAX_DPR, QualityGovernor, qualityLadder } from './quality.js';
 
-// Antialiasing: 4x MSAA on the scene pass (desktop) + SMAA after tone
+// Antialiasing: 4x MSAA on the scene pass (desktop) + SMAA ULTRA after tone
 // mapping; mobile is SMAA-only. The debug "Antialiasing" msaa control
 // rebuilds the pipeline for A/B. MSAA extrapolates varyings past their
 // vertex range on thin geometry and TSL has no centroid sampling: anything
 // fed into a mix/threshold there is clamped (lantern, grass)
 const COMPOSER_MSAA = IS_MOBILE_DEVICE ? 0 : 4;
+
+// Quality steps from the whole look down (quality.js). Phones already start
+// without MSAA, DoF and AO: their only step is the pixel ratio
+const QUALITY_STEPS = qualityLadder({
+  msaa: COMPOSER_MSAA,
+  dof: DOF_ENABLED,
+  ao: AO_ENABLED,
+  dpr: MAX_DPR,
+});
 
 // Effects the debug "Effects" folder can switch off (a switch rebuilds the
 // pipeline without them, so their cost goes away too). Production keeps them
@@ -161,10 +174,11 @@ const usePostProcessingControls = (params, postRef) => {
 
 /**
  * Renders the frame through the post-processing pipeline (pipeline.js) and
- * rebuilds it when the MSAA sample count or an effect switch changes. `irisRef`
- * receives the iris uniforms (App tweens the intro on `progress`).
+ * rebuilds it when the MSAA sample count, an effect switch or the quality
+ * step changes. `irisRef` receives the iris uniforms (App tweens the intro on
+ * `progress`); `setDpr` sets the Canvas pixel ratio of the quality step.
  */
-const PostProcessing = ({ irisRef }) => {
+const PostProcessing = ({ irisRef, setDpr }) => {
   const renderer = useThree(state => state.renderer);
   const scene = useThree(state => state.scene);
   const camera = useThree(state => state.camera);
@@ -181,12 +195,52 @@ const PostProcessing = ({ irisRef }) => {
     irisRef.current = params.iris;
   }, [irisRef, params]);
 
-  // MSAA sample count of the scene pass. Changing it rebuilds the whole
-  // pipeline: the pass target's sample count is fixed when the graph compiles
-  const [msaa, setMsaa] = useState(COMPOSER_MSAA);
+  // Quality step (quality.js): the governor moves it by the frame times once
+  // the experience starts. Debug pauses it by default (adapt) so it doesn't
+  // fight the switches below; `step` then picks one by hand
+  const [level, setLevel] = useState(0);
+  const step = QUALITY_STEPS[level];
+  const quality = useControls('Quality', {
+    adapt: !DEBUG_ENABLED,
+    step: {
+      value: 0,
+      min: 0,
+      max: QUALITY_STEPS.length - 1,
+      step: 1,
+      onChange: setLevel,
+    },
+  });
+  const governorRef = useRef(null);
+  const experienceStarted = useStore(state => state.experienceStarted);
+  useFrame((_, delta) => {
+    if (!quality.adapt || !experienceStarted) return;
+    const now = performance.now();
+    // Created on the first judged frame: the loading and the precompile
+    // frames are not the device's pace
+    governorRef.current ??= new QualityGovernor(QUALITY_STEPS, level, now);
+    if (governorRef.current.frame(delta * 1000, now)) {
+      setLevel(governorRef.current.level);
+    }
+  });
+  useEffect(() => setDpr(step.dpr), [setDpr, step.dpr]);
 
-  // Per-effect switches (debug); a rebuild keeps every other setting
-  const effects = useControls('Effects', EFFECTS_DEFAULTS);
+  // MSAA sample count of the scene pass, capped by the quality step.
+  // Changing it rebuilds the whole pipeline: the pass target's sample count
+  // is fixed when the graph compiles
+  const [msaaControl, setMsaa] = useState(COMPOSER_MSAA);
+  const msaa = Math.min(msaaControl, step.msaa);
+
+  // Per-effect switches (debug) and the quality step: AO and DoF draw only
+  // when both allow them; a rebuild keeps every other setting
+  const effectControls = useControls('Effects', EFFECTS_DEFAULTS);
+  const effects = useMemo(
+    () => ({
+      ...effectControls,
+      ambientOcclusion: effectControls.ambientOcclusion && step.ao,
+      depthOfField: effectControls.depthOfField && step.dof,
+    }),
+    [effectControls, step]
+  );
 
   const post = useMemo(
     () =>
@@ -212,14 +266,13 @@ const PostProcessing = ({ irisRef }) => {
 
   useIris(params.iris, size.width / size.height);
 
-  const experienceStarted = useStore(state => state.experienceStarted);
   useEffect(() => {
     params.dof.enabled.value = experienceStarted ? 1 : 0;
   }, [params, experienceStarted]);
 
   usePostProcessingControls(params, postRef);
 
-  // MSAA A/B against SMAA-only (rebuilds the pipeline, see above)
+  // MSAA on/off, for A/B (rebuilds the pipeline)
   useControls('Antialiasing', {
     msaa: { value: COMPOSER_MSAA, options: [0, 4], onChange: setMsaa },
   });

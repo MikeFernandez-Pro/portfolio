@@ -39,6 +39,7 @@ const FOLDER_TREE = {
     'Ambient Occlusion': null,
     Bloom: null,
     Antialiasing: null,
+    Quality: null,
   },
   Sky: { SkyColors: null, Stars: null },
   WorldLight: {

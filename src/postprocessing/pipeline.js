@@ -3,7 +3,10 @@ import {
   convertToTexture,
   distance,
   ivec2,
+  max,
   mix,
+  mrt,
+  output,
   pass,
   pow,
   renderOutput,
@@ -19,14 +22,16 @@ import {
 import { ao } from 'three/addons/tsl/display/GTAONode.js';
 import { bloom } from 'three/addons/tsl/display/BloomNode.js';
 import { denoise } from 'three/addons/tsl/display/DenoiseNode.js';
-import { smaa } from 'three/addons/tsl/display/SMAANode.js';
 
 import { IS_MOBILE_DEVICE } from '#utils/device.js';
 import { cheapDof, createCheapDofUniforms } from './cheapDof.js';
 import { createIrisUniforms, iris } from './iris.js';
+import { smaa } from './SMAANode.js';
+import { AO_MASK } from './aoMask.js';
 
-const AO_ENABLED = !IS_MOBILE_DEVICE;
-const DOF_ENABLED = !IS_MOBILE_DEVICE;
+// What the device draws at best (the quality ladder starts there)
+export const AO_ENABLED = !IS_MOBILE_DEVICE;
+export const DOF_ENABLED = !IS_MOBILE_DEVICE;
 
 export const AO_DEFAULTS = {
   // View-space radius of the horizon search
@@ -44,9 +49,13 @@ export const AO_DEFAULTS = {
   denoiseRadius: 5,
 };
 
+// SMAA edge threshold and search steps: the ULTRA preset the WebGL build ran
+// (postprocessing's), sharper than three's SMAANode default (MEDIUM: 0.1, 8)
+const SMAA_ULTRA = { threshold: 0.05, maxSearchSteps: 32 };
+
 export const BLOOM_DEFAULTS = {
-  intensity: 2,
-  radius: 0.85,
+  intensity: 1,
+  radius: 0,
   threshold: 2,
   smoothing: 1,
 };
@@ -78,7 +87,10 @@ const NODE_SETTINGS = {
       thickness: (post, v) => (post.aoPass.thickness.value = v),
       scale: (post, v) => (post.aoPass.scale.value = v),
       samples: (post, v) => (post.aoPass.samples.value = v),
-      halfRes: (post, v) => (post.aoPass.resolutionScale = v ? 0.5 : 1),
+      halfRes: (post, v) => {
+        post.aoPass.resolutionScale = v ? 0.5 : 1;
+        post.denoised.setResolutionScale(v ? 0.5 : 1);
+      },
       denoiseRadius: (post, v) => (post.denoisePass.radius.value = v),
     },
   },
@@ -136,6 +148,19 @@ export const createPipeline = ({
   };
 
   const scenePass = own(pass(scene, camera, { samples }));
+  const aoOn = AO_ENABLED && effects.ambientOcclusion;
+  if (aoOn) {
+    // 0 by default: opaque surfaces write 0, other transparents (alpha 0)
+    // leave it untouched. HDR like the scene color (it holds cloud colors).
+    // Blended like each material's output: three leaves every MRT entry but
+    // `output` unblended, so the puffs overwrote it with their raw color
+    scenePass.setMRT(
+      mrt({ output, [AO_MASK]: vec4(0) }).setBlendMode(
+        AO_MASK,
+        new THREE.BlendMode(THREE.MaterialBlending)
+      )
+    );
+  }
   const sceneColor = scenePass.getTextureNode('output');
   const passDepth = scenePass.getTextureNode('depth');
 
@@ -162,19 +187,30 @@ export const createPipeline = ({
   // the DoF so the blur taps see occluded color
   let aoPass = null;
   let denoisePass = null;
-  if (AO_ENABLED && effects.ambientOcclusion) {
+  let denoised = null;
+  if (aoOn) {
     aoPass = own(ao(sceneDepth, null, camera));
     denoisePass = own(
       denoise(aoPass.getTextureNode(), sceneDepth, null, camera)
     );
-    const occlusion = pow(denoisePass.r, params.aoIntensity);
+    // The denoise node has no pass of its own: inlined in the composite it
+    // ran at full resolution (17 taps, each rebuilding a normal from depth).
+    // Rendered at the AO resolution instead, then upsampled bilinearly. Its
+    // taps are already spaced in AO texels (the halfRes write, applied on
+    // every build, keeps the two scales in step)
+    denoised = own(
+      rtt(denoisePass, null, null, {
+        format: THREE.RedFormat,
+        depthBuffer: false,
+      })
+    );
+    const occlusion = pow(denoised.r, params.aoIntensity);
+    const aoShade = mix(params.aoTint, vec3(1), occlusion);
+    // The AO darkens what lies behind the masked surfaces only (aoMask.js)
+    const overlay = scenePass.getTextureNode(AO_MASK).rgb;
+    const behind = max(sceneColor.rgb.sub(overlay), vec3(0));
     color = own(
-      convertToTexture(
-        vec4(
-          sceneColor.rgb.mul(mix(params.aoTint, vec3(1), occlusion)),
-          sceneColor.a
-        )
-      )
+      convertToTexture(vec4(behind.mul(aoShade).add(overlay), sceneColor.a))
     );
   }
 
@@ -192,7 +228,11 @@ export const createPipeline = ({
   let bloomPass = null;
   let hdr = color;
   if (effects.bloom) {
-    bloomPass = own(bloom(color));
+    // Extracted from the raw scene color: the AO darkens emissives and the
+    // DoF averages their peaks, either dropping them under the threshold
+    // depending on the view / focus. Clamped: negative/NaN RGB must not
+    // reach the mip chain
+    bloomPass = own(bloom(vec4(max(sceneColor.rgb, 0), sceneColor.a)));
     hdr = color.add(bloomPass);
   }
 
@@ -217,13 +257,14 @@ export const createPipeline = ({
   // converted to a texture here so that render target can be disposed too
   const revealed = iris(params.iris)(ldr);
   pipeline.outputNode = effects.smaa
-    ? own(smaa(own(convertToTexture(revealed))))
+    ? own(smaa(own(convertToTexture(revealed)), SMAA_ULTRA))
     : revealed;
 
   const post = {
     pipeline,
     aoPass,
     denoisePass,
+    denoised,
     bloomPass,
     dispose: () => {
       pipeline.dispose();
