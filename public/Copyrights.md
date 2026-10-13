@@ -1,30 +1,11 @@
 _3D Models_
-**Quaternius: https://quaternius.com/**
 
-- Ultimate Animated Character Pack
-- Ultimate RPG Pack
-- Modular Dungeons Pack
-- Animated Knight Pack
-- Animated Fish Pack
+- Dragon Slayer [Berserk] by G.Salmon (modified), CC BY 4.0: https://sketchfab.com/3d-models/dragon-slayer-berserk-8014e6c43ce64a58b2efd64ab307bb18
+- Low Poly dead trees by godgoldfear, CC BY 4.0: https://godgoldfear.itch.io/low-poly-dead-trees
 
-**Kickin'It Studios: https://kickin-it-studios.itch.io/**
+_Fonts_
 
-- FREE LowPoly Weapon Pack
-
-**Kay Lousberg: https://kaylousberg.itch.io/**
-
-- KayKit - Dungeon Pack Remastered
-- (Legacy) KayKit - Dungeon Pack
-
-**Poly Pizza: https://poly.pizza/**
-
-- Glasses Pack by iPoly3D
-
-**Sketchfab: https://sketchfab.com/**
-
-- Dragon Slayer [Berserk] by G.Salmon
-- **Godgoldfear: https://godgoldfear.itch.io/low-poly-dead-trees**
-- low-poly-dead-trees
+- Metamorphous by Sorkin Type Co, SIL Open Font License 1.1 (see src/assets/fonts/OFL.txt): https://fonts.google.com/specimen/Metamorphous
 
 _Sound Effects and Musics_
 
