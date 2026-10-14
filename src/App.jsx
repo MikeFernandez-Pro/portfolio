@@ -16,8 +16,10 @@ import Joystick from '#character/Joystick.jsx';
 
 import soundOnIcon from '/icons/sound-on.svg';
 import soundOffIcon from '/icons/sound-off.svg';
-import { PostProcessing } from '#postprocessing/PostProcessing.jsx';
-import { MAX_DPR } from '#postprocessing/quality.js';
+import {
+  PostProcessing,
+  START_DPR,
+} from '#postprocessing/PostProcessing.jsx';
 import { PrecompileScene } from './PrecompileScene.jsx';
 
 /* Tunnel */
@@ -71,7 +73,7 @@ const App = () => {
   const soundOnIconRef = useRef();
   const startExperienceRef = useRef();
 
-  const [dpr, setDpr] = useState(MAX_DPR);
+  const [dpr, setDpr] = useState(START_DPR);
 
   // The Enter button waits for the shader precompile (PrecompileScene)
   const sceneReady = useStore(state => state.sceneReady);

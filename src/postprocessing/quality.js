@@ -37,8 +37,12 @@ const WINDOW = 1500;
 // After a change of step, frames are not judged for this long, ms: the new
 // pipeline compiles, and the first frames hitch
 const SETTLE = 1000;
-// A frame longer than this is slow, ms: past one vsync at 60 Hz
+// A frame longer than this is slow, ms: past one vsync at 60 Hz. On a
+// display or browser capped lower (50 Hz, iOS Low Power Mode's 30 fps) the
+// bar rises to SLOW_FACTOR times the shortest frame seen, so the cap itself
+// doesn't read as a device falling behind
 const SLOW_FRAME = 20;
+const SLOW_FACTOR = 1.5;
 // More than this share of slow frames in a window, and the device is not
 // keeping up
 const SLOW_SHARE = 0.25;
@@ -62,6 +66,8 @@ export class QualityGovernor {
     // No step above this is tried again: those were too slow
     this.ceiling = 0;
     this.failures = steps.map(() => 0);
+    // The shortest frame seen, ms: about the display's frame interval
+    this.fastest = Infinity;
     this.windowStart = -1;
     this.frames = 0;
     this.slow = 0;
@@ -86,7 +92,8 @@ export class QualityGovernor {
       this.frames = this.slow = 0;
     }
     this.frames++;
-    if (ms > SLOW_FRAME) this.slow++;
+    this.fastest = Math.min(this.fastest, ms);
+    if (ms > Math.max(SLOW_FRAME, this.fastest * SLOW_FACTOR)) this.slow++;
     if (now - this.windowStart < WINDOW) return false;
 
     const keepingUp = this.slow <= this.frames * SLOW_SHARE;

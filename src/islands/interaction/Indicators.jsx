@@ -77,7 +77,8 @@ const Indicators = ({ links, ref }) => {
   );
 
   return (
-    <Merged meshes={meshes} ref={ref}>
+    // One instance per link (drei allocates 1000 by default)
+    <Merged meshes={meshes} limit={links.length} ref={ref}>
       {({ Ring, EnterTile }) =>
         links.map(link => (
           <group

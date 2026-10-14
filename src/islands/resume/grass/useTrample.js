@@ -4,7 +4,10 @@ import * as THREE from 'three/webgpu';
 
 import { useStore } from '#store';
 import { IS_MOBILE_DEVICE } from '#utils/device.js';
-import { DEFAULT_CHARACTER_SPEED } from '#character/constants.js';
+import {
+  DEFAULT_CHARACTER_SPEED,
+  DEFAULT_CHARACTER_SPRINT_SPEED,
+} from '#character/constants.js';
 
 import { TRAMPLE_SIZE, createTrampleField } from './trampleField.js';
 
@@ -20,6 +23,20 @@ let trampleActive = false;
 // from launching the blades
 const TRAMPLE_MAX_DT = 1 / 30;
 
+// The camera hook publishes characterPosition at ~30 Hz, and only while it
+// changes. Velocity samples span the real time between two publications.
+// Without one for STOPPED_AFTER the character has stopped (margin over the
+// slowest regular gap: two ~33ms frames, plus this hook running first). A
+// sample spans at most one publication interval plus the longest frame
+// since the last one: after a stop (many short frames) that is about one
+// interval instead of the whole idle, after a hitch (one long frame) the
+// real gap
+const PUBLISH_INTERVAL = 1 / 30;
+const STOPPED_AFTER = 0.15;
+// Faster than this between two publications is a teleport (respawn), not a
+// step: dropped instead of sweeping the blades toward the spawn point
+const MAX_SAMPLE_SPEED = 4 * DEFAULT_CHARACTER_SPRINT_SPEED;
+
 /**
  * Presses the character's footprint into the trample field while it walks on
  * the grass patch, and relaxes the field back to rest. `trampleControls` and
@@ -33,6 +50,9 @@ export const useTrample = (trampleControls, patch) => {
   // happened, folding the blades over a few frames instead of one
   const wasGroundedRef = useRef(true);
   const previousPositionRef = useRef(null);
+  const sinceSampleRef = useRef(0);
+  const longestFrameRef = useRef(0);
+  const sampledVelocityRef = useRef(new THREE.Vector2());
   const velocityRef = useRef(new THREE.Vector2());
   const impulseRef = useRef({ timer: 0, u: 0, v: 0, radiusScale: 1, peak: 1 });
 
@@ -43,25 +63,46 @@ export const useTrample = (trampleControls, patch) => {
 
     const dt = Math.min(delta, TRAMPLE_MAX_DT);
 
-    // Character state. The position is published by the camera hook every
-    // frame; the velocity is estimated from its deltas and smoothed so the
-    // press direction doesn't jitter with the physics substeps
+    // Character state. The velocity is sampled from the published positions
+    // and smoothed every frame, so the press direction doesn't jitter with
+    // the publication rate or the physics substeps
     const position = useStore.getState().characterPosition;
     const grounded = useStore.getState().characterGrounded;
     const justLanded = grounded && !wasGroundedRef.current;
     const justJumped = !grounded && wasGroundedRef.current;
     wasGroundedRef.current = grounded;
 
+    const sampled = sampledVelocityRef.current;
     const velocity = velocityRef.current;
-    if (position && previousPositionRef.current && delta > 0) {
+    sinceSampleRef.current += delta;
+    longestFrameRef.current = Math.max(longestFrameRef.current, delta);
+    const sinceSample = sinceSampleRef.current;
+    if (position !== previousPositionRef.current) {
       const previous = previousPositionRef.current;
-      const smoothing = 1 - Math.exp(-12 * delta);
-      velocity.x +=
-        ((position.x - previous.x) / delta - velocity.x) * smoothing;
-      velocity.y +=
-        ((position.z - previous.z) / delta - velocity.y) * smoothing;
+      const elapsed = Math.min(
+        sinceSample,
+        PUBLISH_INTERVAL + longestFrameRef.current
+      );
+      if (position && previous && elapsed > 0) {
+        sampled.set(
+          (position.x - previous.x) / elapsed,
+          (position.z - previous.z) / elapsed
+        );
+        if (sampled.length() > MAX_SAMPLE_SPEED) {
+          sampled.set(0, 0);
+          velocity.set(0, 0);
+        }
+      }
+      previousPositionRef.current = position;
+      sinceSampleRef.current = 0;
+      longestFrameRef.current = 0;
+    } else if (sinceSample > STOPPED_AFTER) {
+      sampled.set(0, 0);
     }
-    previousPositionRef.current = position;
+
+    const smoothing = 1 - Math.exp(-12 * delta);
+    velocity.x += (sampled.x - velocity.x) * smoothing;
+    velocity.y += (sampled.y - velocity.y) * smoothing;
 
     // Tread pressure from the smoothed speed: full when running, fading to 0
     // as the character slows so a stop releases the blades over the same

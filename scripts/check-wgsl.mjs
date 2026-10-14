@@ -53,6 +53,14 @@ const { createWindLinesMaterial, createWindLinesUniforms } =
   await import('../src/environment/windLinesMaterial.js');
 const { TORCH_SMOKE_DEFAULTS } =
   await import('../src/islands/world/torches/torches.js');
+const { createPortalSparks } =
+  await import('../src/islands/projects/portalSparks.js');
+const { createCauldronBubbles } =
+  await import('../src/islands/skills/cauldron/cauldronBubbles.js');
+const { createSparksMaterial, createSparksUniforms } =
+  await import('../src/islands/world/torches/sparksMaterial.js');
+const { createParticleSprite, particleAttribute } =
+  await import('../src/utils/pointSprites.js');
 const { createPortalDiscMaterial, createPortalDiscUniforms } =
   await import('../src/islands/projects/portalDisc.js');
 const { createCauldronPotionMaterial, createCauldronPotionUniforms } =
@@ -161,7 +169,7 @@ const unassignedReads = wgsl => {
 
 // The first argument of each pow( call, when it is not visibly non-negative
 // and not one of the bases below, already reviewed
-const NON_NEGATIVE = /^(max|abs|clamp|saturate|length|exp|exp2|sqrt)\(|^\d/;
+const NON_NEGATIVE = /^(max|abs|clamp|saturate|length|exp|exp2|sqrt|fract)\(|^\d/;
 const REVIEWED_POWS = [
   // Cloud shadow shade: mix(1, clamp(darkness, 0, 1), weight in [0, 1])
   { base: /^mix\( 1\.0, clamp\(/ },
@@ -258,6 +266,20 @@ const MATERIALS = {
     );
     return new THREE.Mesh(geometry, material);
   },
+  'torch sparks (point sprites)': () => {
+    const count = 4;
+    const material = createSparksMaterial(createSparksUniforms(), 0.06, {
+      position: particleAttribute(new Float32Array(count * 3), 3),
+      aScale: particleAttribute(new Float32Array(count), 1),
+      aElevation: particleAttribute(new Float32Array(count).fill(1), 1),
+      aOffset: particleAttribute(new Float32Array(count * 3), 3),
+    });
+    return createParticleSprite(material, count);
+  },
+  'portal sparks (point sprites)': () =>
+    createPortalSparks(new THREE.Vector3()).sparks,
+  'cauldron bubbles (point sprites)': () =>
+    createCauldronBubbles(new THREE.Vector2(1, 1)).bubbles,
   'grass (unlit, trample)': grass(false, true),
   'grass (lit, trample)': grass(true, true),
   'grass (unlit, mobile)': grass(false, false),

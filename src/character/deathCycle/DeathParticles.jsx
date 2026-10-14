@@ -18,6 +18,7 @@ import gsap from 'gsap';
 import { useStore } from '#store';
 import { useControls } from '#debug/useControls.jsx';
 import { uniformControls } from '#debug/uniformControls.js';
+import { settingControls } from '#debug/settingControls.js';
 import { CHARACTER_CAPSULE } from '#character/hooks/useCharacterBody.js';
 import { registerDeathParticles, targets } from './targets.js';
 import { RESPAWN_DEFAULTS } from './respawnAnimation.js';
@@ -122,19 +123,14 @@ const DeathParticles = () => {
 
   const d = DEATH_PARTICLES_DEFAULTS;
   const control = uniformControls(uniforms);
+  const setting = settingControls(deathParticlesConfig);
 
   // Shares the 'Character Death' folder with the death timeline controls
   // (DeathCycleControls)
   const controls = useControls('Character Death', {
     // Death particles — rebuild the geometry (new random spread) when changed
     count: { value: PARTICLES_COUNT, min: 10, max: 500, step: 10 },
-    particlesDuration: {
-      value: d.duration,
-      min: 0.2,
-      max: 3,
-      step: 0.01,
-      onChange: v => (deathParticlesConfig.duration = v),
-    },
+    particlesDuration: setting('duration', 0.2, 3, 0.01),
     riseHeight: control('uRiseHeight', d.riseHeight, 0.2, 4, 0.01),
     size: control('uSize', d.size, 0.01, 0.3, 0.001),
     color: control('uColor', d.color),

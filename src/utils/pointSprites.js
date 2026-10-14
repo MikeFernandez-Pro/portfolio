@@ -1,5 +1,12 @@
 import * as THREE from 'three/webgpu';
-import { instancedBufferAttribute, length, max, uv, vec2 } from 'three/tsl';
+import {
+  instancedBufferAttribute,
+  length,
+  max,
+  step,
+  uv,
+  vec2,
+} from 'three/tsl';
 
 // WebGPU draws THREE.Points as 1px points (no gl_PointSize). Sized particles
 // are an instanced THREE.Sprite with a PointsNodeMaterial instead: one quad
@@ -17,6 +24,9 @@ const pointGlow = () =>
     .mul(0.05)
     .sub(0.1)
     .clamp(0, 1);
+
+/** Hard round particle: 1 inside the disc, 0 outside. */
+const pointDisc = () => step(length(pointCoord.sub(0.5)), 0.5);
 
 /**
  * Per-particle attribute node (one value per instance), readable in both
@@ -83,6 +93,7 @@ const spriteCountControl = (sprite, value, max) => ({
 export {
   pointCoord,
   pointGlow,
+  pointDisc,
   particleAttribute,
   createParticleSprite,
   createGlowPointsMaterial,

@@ -132,6 +132,8 @@ const Lights = () => {
     },
   });
 
+  const { near, far, top, right, bottom, left } = shadowCameraControls;
+
   const scene = useThree(state => state.scene);
   const targetObject = useMemo(() => new THREE.Object3D(), []);
 
@@ -139,22 +141,9 @@ const Lights = () => {
     const light = characterLightRef.current;
     if (!light) return;
 
-    const shadowCam = light.shadow.camera;
-    shadowCam.near = shadowCameraControls.near;
-    shadowCam.far = shadowCameraControls.far;
-    shadowCam.top = shadowCameraControls.top;
-    shadowCam.right = shadowCameraControls.right;
-    shadowCam.bottom = shadowCameraControls.bottom;
-    shadowCam.left = shadowCameraControls.left;
-    shadowCam.updateProjectionMatrix();
-  }, [
-    shadowCameraControls.near,
-    shadowCameraControls.far,
-    shadowCameraControls.top,
-    shadowCameraControls.right,
-    shadowCameraControls.bottom,
-    shadowCameraControls.left,
-  ]);
+    Object.assign(light.shadow.camera, { near, far, top, right, bottom, left });
+    light.shadow.camera.updateProjectionMatrix();
+  }, [near, far, top, right, bottom, left]);
 
   useLayoutEffect(() => {
     const unsubCharacterPosition = IS_MOBILE_DEVICE

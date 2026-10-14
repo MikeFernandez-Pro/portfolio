@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 
 import { useControls } from '#debug/useControls.jsx';
 import { uniformControls } from '#debug/uniformControls.js';
+import { settingControls } from '#debug/settingControls.js';
 import { DEBUG_ENABLED } from '#debug/debugEnabled.js';
 import { IS_MOBILE_DEVICE } from '#utils/device.js';
 import { useStore } from '#store';
@@ -10,7 +11,6 @@ import { useStore } from '#store';
 import {
   AO_DEFAULTS,
   AO_ENABLED,
-  BLOOM_DEFAULTS,
   DOF_ENABLED,
   applyNodeSetting,
   createPipeline,
@@ -27,13 +27,17 @@ import { MAX_DPR, QualityGovernor, qualityLadder } from './quality.js';
 // fed into a mix/threshold there is clamped (lantern, grass)
 const COMPOSER_MSAA = IS_MOBILE_DEVICE ? 0 : 4;
 
+// The pixel ratio the ladder starts at: the screen's, capped (a 1x screen
+// gets no supersampling and so no pixel ratio step)
+export const START_DPR = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+
 // Quality steps from the whole look down (quality.js). Phones already start
 // without MSAA, DoF and AO: their only step is the pixel ratio
 const QUALITY_STEPS = qualityLadder({
   msaa: COMPOSER_MSAA,
   dof: DOF_ENABLED,
   ao: AO_ENABLED,
-  dpr: MAX_DPR,
+  dpr: START_DPR,
 });
 
 // Effects the debug "Effects" folder can switch off (a switch rebuilds the
@@ -50,67 +54,25 @@ const EFFECTS_DEFAULTS = {
 // Debug folders. Shared uniforms are written directly; GTAO and bloom values
 // go into params (the next rebuild applies them) and onto the live nodes
 const usePostProcessingControls = (params, postRef) => {
-  const setNodeSetting = (effect, key) => value => {
-    params[effect][key] = value;
-    applyNodeSetting(postRef.current, params, effect, key);
-  };
+  const nodeControls = effect =>
+    settingControls(params[effect], key =>
+      applyNodeSetting(postRef.current, params, effect, key)
+    );
 
   const a = AO_DEFAULTS;
-  const ao = key => setNodeSetting('ao', key);
+  const ao = nodeControls('ao');
   const shared = uniformControls(params);
   useControls('Ambient Occlusion', {
-    radius: {
-      value: a.radius,
-      min: 0.01,
-      max: 4,
-      step: 0.01,
-      onChange: ao('radius'),
-    },
-    distanceExponent: {
-      value: a.distanceExponent,
-      min: 1,
-      max: 4,
-      step: 0.01,
-      onChange: ao('distanceExponent'),
-    },
-    distanceFallOff: {
-      value: a.distanceFallOff,
-      min: 0.01,
-      max: 1,
-      step: 0.01,
-      onChange: ao('distanceFallOff'),
-    },
-    thickness: {
-      value: a.thickness,
-      min: 0.01,
-      max: 10,
-      step: 0.01,
-      onChange: ao('thickness'),
-    },
-    scale: {
-      value: a.scale,
-      min: 0.01,
-      max: 2,
-      step: 0.01,
-      onChange: ao('scale'),
-    },
-    samples: {
-      value: a.samples,
-      min: 4,
-      max: 32,
-      step: 1,
-      onChange: ao('samples'),
-    },
+    radius: ao('radius', 0.01, 4, 0.01),
+    distanceExponent: ao('distanceExponent', 1, 4, 0.01),
+    distanceFallOff: ao('distanceFallOff', 0.01, 1, 0.01),
+    thickness: ao('thickness', 0.01, 10, 0.01),
+    scale: ao('scale', 0.01, 2, 0.01),
+    samples: ao('samples', 4, 32, 1),
     intensity: shared('aoIntensity', a.intensity, 0.01, 4, 0.01),
     color: shared('aoTint', a.color),
-    halfRes: { value: a.halfRes, onChange: ao('halfRes') },
-    denoiseRadius: {
-      value: a.denoiseRadius,
-      min: 1,
-      max: 12,
-      step: 0.1,
-      onChange: ao('denoiseRadius'),
-    },
+    halfRes: ao('halfRes'),
+    denoiseRadius: ao('denoiseRadius', 1, 12, 0.1),
   });
 
   const d = CHEAP_DOF_DEFAULTS;
@@ -133,37 +95,12 @@ const usePostProcessingControls = (params, postRef) => {
     },
   });
 
-  const b = BLOOM_DEFAULTS;
-  const bloom = key => setNodeSetting('bloom', key);
+  const bloom = nodeControls('bloom');
   useControls('Bloom', {
-    intensity: {
-      value: b.intensity,
-      min: 0,
-      max: 10,
-      step: 0.1,
-      onChange: bloom('intensity'),
-    },
-    radius: {
-      value: b.radius,
-      min: 0,
-      max: 1,
-      step: 0.01,
-      onChange: bloom('radius'),
-    },
-    luminanceThreshold: {
-      value: b.threshold,
-      min: 0,
-      max: 5,
-      step: 0.05,
-      onChange: bloom('threshold'),
-    },
-    luminanceSmoothing: {
-      value: b.smoothing,
-      min: 0,
-      max: 2,
-      step: 0.05,
-      onChange: bloom('smoothing'),
-    },
+    intensity: bloom('intensity', 0, 10, 0.1),
+    radius: bloom('radius', 0, 1, 0.01),
+    luminanceThreshold: bloom('threshold', 0, 5, 0.05),
+    luminanceSmoothing: bloom('smoothing', 0, 2, 0.05),
   });
 };
 
@@ -234,7 +171,7 @@ const PostProcessing = ({ irisRef, setDpr }) => {
       ambientOcclusion: effectControls.ambientOcclusion && step.ao,
       depthOfField: effectControls.depthOfField && step.dof,
     }),
-    [effectControls, step]
+    [effectControls, step.ao, step.dof]
   );
 
   const post = useMemo(

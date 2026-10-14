@@ -1,10 +1,8 @@
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three/webgpu';
 import {
-  dot,
   float,
   materialColor,
-  mix,
   positionGeometry,
   positionLocal,
   sin,
@@ -16,6 +14,7 @@ import {
 
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 import { GlbSkinnedMesh } from '#islands/GlbSkinnedMesh.jsx';
+import { adjustSaturation } from '#shaders/includes/saturation.js';
 
 // Grade shared by the three flags, driven by the Flags > Grade debug folder
 // in CountriesFlags (TSL uniform nodes)
@@ -70,9 +69,8 @@ const CountryFlag = props => {
     const { uFlagLightness, uFlagSaturation } = flagsGradeUniforms;
     const { uFlagOwnLightness, uFlagTint } = flagsIndividualUniforms[country];
     const lit = materialColor.rgb.mul(uFlagLightness).mul(uFlagOwnLightness);
-    const luminance = dot(lit, vec3(0.299, 0.587, 0.114));
     material.colorNode = vec4(
-      mix(vec3(luminance), lit, uFlagSaturation).mul(uFlagTint),
+      adjustSaturation(lit, uFlagSaturation).mul(uFlagTint),
       materialColor.a
     );
 

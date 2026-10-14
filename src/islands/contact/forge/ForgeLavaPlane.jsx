@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useControls } from '#debug/useControls.jsx';
 import { uniformControls } from '#debug/uniformControls.js';
+import { settingControls } from '#debug/settingControls.js';
 import * as THREE from 'three/webgpu';
 import {
   max,
@@ -37,16 +38,17 @@ const LAVA_DEFAULTS = {
   perlinNoiseStrength: 0.22,
 };
 
+// Lava intensity range swept by the gasp (the debug controls write it)
+const lavaGasp = {
+  base: LAVA_DEFAULTS.minIntensity,
+  peak: LAVA_DEFAULTS.maxIntensity,
+};
+
 /**
  * Standalone lava plane replacing the GLB lava mesh (island_6, not mounted).
  * Flat by default (rotated -90° on X), spun around Y via its debug control.
  */
 const ForgeLavaPlane = ({ bellowsMesh }) => {
-  const gaspParamsRef = useRef({
-    base: LAVA_DEFAULTS.minIntensity,
-    peak: LAVA_DEFAULTS.maxIntensity,
-  });
-
   // Gasp: uIntensity is driven each frame by the bellows morph weight
   // (`blowerClosed`, as named in Blender, animated by the 'details' clip on
   // the island mixer), so the glow can never drift out of sync with the
@@ -100,6 +102,7 @@ const ForgeLavaPlane = ({ bellowsMesh }) => {
   }, [noiseTexture]);
 
   const control = uniformControls(uniforms);
+  const gaspControl = settingControls(lavaGasp);
 
   useEffect(() => () => lavaMaterial.dispose(), [lavaMaterial]);
 
@@ -147,25 +150,9 @@ const ForgeLavaPlane = ({ bellowsMesh }) => {
       crustColor: control('uCrustColor', LAVA_DEFAULTS.crustColor),
       glowColor: control('uGlowColor', LAVA_DEFAULTS.glowColor),
       // Resting glow intensity (bellows open)
-      minIntensity: {
-        value: LAVA_DEFAULTS.minIntensity,
-        min: 0,
-        max: 30,
-        step: 0.01,
-        onChange: value => {
-          gaspParamsRef.current.base = value;
-        },
-      },
+      minIntensity: gaspControl('base', 0, 30, 0.01),
       // Gasp peak intensity (bellows fully closed)
-      maxIntensity: {
-        value: LAVA_DEFAULTS.maxIntensity,
-        min: 0,
-        max: 60,
-        step: 0.01,
-        onChange: value => {
-          gaspParamsRef.current.peak = value;
-        },
-      },
+      maxIntensity: gaspControl('peak', 0, 60, 0.01),
       borderThicknessX: control(
         'uBorderThicknessX',
         LAVA_DEFAULTS.borderThicknessX,
@@ -194,7 +181,7 @@ const ForgeLavaPlane = ({ bellowsMesh }) => {
     // 0 if the GLB loses the morph: undefined would turn the intensity NaN
     const gasp = bellowsMesh.morphTargetInfluences[bellowsIndex] ?? 0;
 
-    const { base, peak } = gaspParamsRef.current;
+    const { base, peak } = lavaGasp;
     uniforms.uIntensity.value = base + (peak - base) * gasp;
 
     // The point light gasps along the same bellows factor, sweeping

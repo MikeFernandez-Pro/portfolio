@@ -26,6 +26,7 @@ import {
 
 import { uniformControls } from '#debug/uniformControls.js';
 import { flowField } from '#shaders/includes/flowField.js';
+import { adjustSaturation } from '#shaders/includes/saturation.js';
 
 // Current visuals, tweakable from the 'ProjectsPortal' debug folder
 const PORTAL_DISC_DEFAULTS = {
@@ -183,8 +184,7 @@ export const createPortalDiscMaterial = (
     // keep boosted colors from going negative (bloom smears negative RGB
     // into black squares)
     const lit = texColor.rgb.mul(u.uLighting);
-    const luminance = dot(lit, vec3(0.299, 0.587, 0.114));
-    const graded = max(mix(vec3(luminance), lit, u.uSaturation), vec3(0));
+    const graded = max(adjustSaturation(lit, u.uSaturation), vec3(0));
 
     // Emissive rim added after the grade so its HDR color reaches the bloom
     // untouched; flickers with the same noise as the edge

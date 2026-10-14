@@ -11,7 +11,6 @@ import {
   sin,
   smoothstep,
   sqrt,
-  step,
   time,
   uniform,
   vec2,
@@ -26,6 +25,7 @@ import {
   createParticleSprite,
   particleAttribute,
   pointCoord,
+  pointDisc,
   spriteCountControl,
 } from '#utils/pointSprites.js';
 
@@ -100,7 +100,7 @@ const createBubblesMaterial = u => {
   const alpha = mix(u.uCoreOpacity, 1, rim)
     .mul(life)
     .mul(u.uOpacity)
-    .mul(step(distanceToCenter, 0.5));
+    .mul(pointDisc());
   material.colorNode = vec4(u.uColor.mul(u.uIntensity), alpha);
 
   return material;

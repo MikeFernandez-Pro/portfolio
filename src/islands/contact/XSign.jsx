@@ -19,7 +19,8 @@ const X_SIGN_ROTATION_Z = -0.046;
 const X_SIGN_SIZE = 0.5;
 const X_SIGN_SCALE = 1.18;
 
-// Matches the GLB "signs" material tuned via the debug panel
+// Tuned on its own via the debug panel: not the GLB "signs" material values
+// (IslandMaterialsControls)
 const X_SIGN_COLOR = '#ffffff';
 const X_SIGN_EMISSIVE_COLOR = '#ff9165';
 const X_SIGN_EMISSIVE_INTENSITY = 4.6;

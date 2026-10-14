@@ -4,15 +4,12 @@ import { uniformControls } from '#debug/uniformControls.js';
 import * as THREE from 'three/webgpu';
 import {
   cos,
-  distance,
   float,
   max,
   min,
   select,
   sin,
-  step,
   uniform,
-  vec2,
   vec3,
   vec4,
 } from 'three/tsl';
@@ -21,7 +18,7 @@ import {
   createGlowPointsMaterial,
   createParticleSprite,
   particleAttribute,
-  pointCoord,
+  pointDisc,
 } from '#utils/pointSprites.js';
 
 const COUNT = 100;
@@ -85,7 +82,7 @@ const ForgeSparks = props => {
       .mul(2);
 
     // Round spark (alpha 0 outside the disc), dimming over the strike
-    const disc = step(distance(pointCoord, vec2(0.5)), 0.5);
+    const disc = pointDisc();
     material.colorNode = vec4(
       uniforms.uColor
         .mul(uniforms.uIntensity)

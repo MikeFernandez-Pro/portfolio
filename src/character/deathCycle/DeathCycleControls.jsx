@@ -1,5 +1,6 @@
 import { useControls } from '#debug/useControls.jsx';
 import { uniformControls } from '#debug/uniformControls.js';
+import { settingControls } from '#debug/settingControls.js';
 import { useStore } from '#store';
 import {
   RESPAWN_DEFAULTS,
@@ -10,7 +11,6 @@ import {
   refreshRespawnAnimation,
 } from './respawnAnimation.js';
 import {
-  DEATH_DEFAULTS,
   deathConfig,
   playDeathAnimation,
   scrubDeathAnimation,
@@ -44,14 +44,12 @@ const playDeathPreview = () => {
 
 // Build-time values are baked into the timelines; after changing one,
 // re-apply the current scrub frame so the tweak is visible immediately
-const setRespawnConfig = (key, value) => {
-  respawnConfig[key] = value;
-  refreshRespawnAnimation();
-};
-const setDeathConfig = (key, value) => {
-  deathConfig[key] = value;
-  refreshDeathAnimation();
-};
+const respawnControl = settingControls(respawnConfig, () =>
+  refreshRespawnAnimation()
+);
+const deathControl = settingControls(deathConfig, () =>
+  refreshDeathAnimation()
+);
 
 /**
  * Debug folders previewing the death cycle: Play / Reset buttons, progress
@@ -81,27 +79,9 @@ const DeathCycleControls = () => {
     },
     // The lava look (color, intensity, noise) is shared with the respawn
     // and lives in the Respawn Animation folder
-    deathDissolve: {
-      value: DEATH_DEFAULTS.dissolveDuration,
-      min: 0.1,
-      max: 4,
-      step: 0.01,
-      onChange: v => setDeathConfig('dissolveDuration', v),
-    },
-    deathFade: {
-      value: DEATH_DEFAULTS.fadeDuration,
-      min: 0.1,
-      max: 4,
-      step: 0.01,
-      onChange: v => setDeathConfig('fadeDuration', v),
-    },
-    deathThickness: {
-      value: DEATH_DEFAULTS.thickness,
-      min: 0.01,
-      max: 1,
-      step: 0.01,
-      onChange: v => setDeathConfig('thickness', v),
-    },
+    deathDissolve: deathControl('dissolveDuration', 0.1, 4, 0.01),
+    deathFade: deathControl('fadeDuration', 0.1, 4, 0.01),
+    deathThickness: deathControl('thickness', 0.01, 1, 0.01),
   });
 
   useControls('Respawn Animation', {
@@ -117,56 +97,14 @@ const DeathCycleControls = () => {
     },
 
     // Durations
-    charDelay: {
-      value: RESPAWN_DEFAULTS.charDelay,
-      min: 0,
-      max: 2,
-      step: 0.01,
-      onChange: value => setRespawnConfig('charDelay', value),
-    },
-    charDissolveDuration: {
-      value: RESPAWN_DEFAULTS.charProgressDuration,
-      min: 0.1,
-      max: 4,
-      step: 0.01,
-      onChange: value => setRespawnConfig('charProgressDuration', value),
-    },
-    charFormDuration: {
-      value: RESPAWN_DEFAULTS.charRespawnDuration,
-      min: 0.1,
-      max: 4,
-      step: 0.01,
-      onChange: value => setRespawnConfig('charRespawnDuration', value),
-    },
+    charDelay: respawnControl('charDelay', 0, 2, 0.01),
+    charDissolveDuration: respawnControl('charProgressDuration', 0.1, 4, 0.01),
+    charFormDuration: respawnControl('charRespawnDuration', 0.1, 4, 0.01),
     // Spiral timing — fully independent of the character
-    spiralDelay: {
-      value: RESPAWN_DEFAULTS.spiralDelay,
-      min: 0,
-      max: 2,
-      step: 0.01,
-      onChange: value => setRespawnConfig('spiralDelay', value),
-    },
-    spiralDuration: {
-      value: RESPAWN_DEFAULTS.spiralDuration,
-      min: 0.1,
-      max: 4,
-      step: 0.01,
-      onChange: value => setRespawnConfig('spiralDuration', value),
-    },
-    spiralStartX: {
-      value: RESPAWN_DEFAULTS.spiralStartX,
-      min: -2,
-      max: 2,
-      step: 0.01,
-      onChange: value => setRespawnConfig('spiralStartX', value),
-    },
-    spiralEndX: {
-      value: RESPAWN_DEFAULTS.spiralEndX,
-      min: -2,
-      max: 2,
-      step: 0.01,
-      onChange: value => setRespawnConfig('spiralEndX', value),
-    },
+    spiralDelay: respawnControl('spiralDelay', 0, 2, 0.01),
+    spiralDuration: respawnControl('spiralDuration', 0.1, 4, 0.01),
+    spiralStartX: respawnControl('spiralStartX', -2, 2, 0.01),
+    spiralEndX: respawnControl('spiralEndX', -2, 2, 0.01),
 
     // Character look (only visible during the dissolve)
     charColor: charControl('uColor', RESPAWN_DEFAULTS.charColor),
@@ -206,13 +144,7 @@ const DeathCycleControls = () => {
       0.01
     ),
     // Animated peak: thickness ramps 0 -> this -> 0 across the respawn
-    voronoiThickness: {
-      value: RESPAWN_DEFAULTS.charThickness,
-      min: 0.01,
-      max: 1,
-      step: 0.01,
-      onChange: value => setRespawnConfig('charThickness', value),
-    },
+    voronoiThickness: respawnControl('charThickness', 0.01, 1, 0.01),
     // Fragments below this alpha are discarded (don't write depth), which
     // removes the silhouette of the still-invisible character
     alphaClip: charControl(

@@ -12,7 +12,10 @@ import { attachToBoneInRootFrame } from '#character/boneAttachment.js';
 import { useLanternMaterial } from './useLanternMaterial.js';
 import { createLanternSwing } from './lanternSwing.js';
 import { pointLights } from '#islands/world/pointLights/pointLights.js';
-import { pointLightControls } from '#islands/world/pointLights/pointLightControls.js';
+import {
+  pointLightControls,
+  settingControl,
+} from '#islands/world/pointLights/pointLightControls.js';
 
 const ATTACH_GROUP_NAME = 'lanternAttachGroup';
 // The character lantern mesh, as named in Blender
@@ -150,15 +153,7 @@ const useCharacterLantern = ({
   useControls(
     'CharacterLanternLight',
     pointLightControls(light, {
-      offset: {
-        value: light.defaults.offset,
-        min: -1,
-        max: 1,
-        step: 0.01,
-        onChange: v => {
-          light.settings.offset = v;
-        },
-      },
+      offset: settingControl(light, 'offset', -1, 1, 0.01),
     })
   );
 

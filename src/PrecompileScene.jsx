@@ -9,7 +9,8 @@ const FINISH_PHASE = { phase: 'finish' };
 /**
  * Builds every material's pipeline up front so nothing hitches the first time
  * it comes into view (drei's <Preload all> equivalent for WebGPURenderer).
- * Hidden objects are shown for one warm-up frame, then hidden again: that
+ * Hidden objects are shown for one warm-up frame (the second one, once every
+ * effect has run), then hidden again: that
  * frame builds every node material (TSL -> WGSL) and pipeline in the exact
  * render contexts the app draws them in (scene pass, shadow pass,
  * post-processing quads). Mount it inside the Suspense boundary so it runs
@@ -38,14 +39,6 @@ const PrecompileScene = () => {
     if (DEBUG_ENABLED) {
       console.info(`Warm-up start at ${startRef.current.toFixed(0)} ms`);
     }
-    const hidden = [];
-    scene.traverse(object => {
-      if (!object.visible) {
-        hidden.push(object);
-        object.visible = true;
-      }
-    });
-    hiddenRef.current = hidden;
     frameRef.current = 0;
   }, [scene]);
 
@@ -54,6 +47,22 @@ const PrecompileScene = () => {
     frameRef.current++;
 
     if (frameRef.current === 1) {
+      // Collected after the first frame, not in the layout effect: objects
+      // hidden by a useEffect (the projects portal) are only hidden by now,
+      // and would otherwise skip the warm-up and build on first reveal
+      const hidden = [];
+      scene.traverse(object => {
+        if (!object.visible) {
+          hidden.push(object);
+          object.visible = true;
+        }
+        // Shadow maps redraw on request only: build the shadow pipelines too
+        if (object.isLight && object.castShadow) {
+          object.shadow.needsUpdate = true;
+        }
+      });
+      hiddenRef.current = hidden;
+    } else if (frameRef.current === 2) {
       hiddenRef.current.forEach(object => (object.visible = false));
       hiddenRef.current = [];
       if (DEBUG_ENABLED) {

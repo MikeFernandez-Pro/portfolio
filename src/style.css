@@ -62,6 +62,9 @@ body,
     var(--bg-color-300) 0%,
     var(--bg-color-800) 100%
   );
+  /* Under the gradient: iOS paints the landscape safe-area bars with the
+     background color (a gradient doesn't count), white when unset */
+  background-color: #000;
 
   color: var(--text-color);
   font-family: var(--primary-font), cursive;

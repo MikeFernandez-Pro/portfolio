@@ -1,20 +1,17 @@
 import * as THREE from 'three/webgpu';
 import {
   cos,
-  distance,
   max,
   min,
   mix,
   mod,
-  step,
   time,
   uniform,
-  vec2,
   vec3,
   vec4,
 } from 'three/tsl';
 
-import { createGlowPointsMaterial, pointCoord } from '#utils/pointSprites.js';
+import { createGlowPointsMaterial, pointDisc } from '#utils/pointSprites.js';
 
 const SPEED = 6;
 const COLOR = '#f85f3d';
@@ -62,7 +59,7 @@ const createSparksMaterial = (
 
   // Circle, fading from the torch color with height. Color and alpha are both
   // scaled by the fade (alpha can exceed 1: the HDR target doesn't clamp it)
-  const circle = step(0.5, distance(pointCoord, vec2(0.5))).oneMinus();
+  const circle = pointDisc();
   const gradientColor = u.uColor.mul(u.uIntensity).div(max(0.1, posY).mul(255));
   const color = mix(vec3(0), gradientColor, circle);
   const fade = min(10, max(0.1, max(posY, 0.0001).reciprocal()));

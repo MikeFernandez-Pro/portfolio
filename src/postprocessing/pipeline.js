@@ -53,7 +53,7 @@ export const AO_DEFAULTS = {
 // (postprocessing's), sharper than three's SMAANode default (MEDIUM: 0.1, 8)
 const SMAA_ULTRA = { threshold: 0.05, maxSearchSteps: 32 };
 
-export const BLOOM_DEFAULTS = {
+const BLOOM_DEFAULTS = {
   intensity: 1,
   radius: 0,
   threshold: 2,
@@ -150,12 +150,13 @@ export const createPipeline = ({
   const scenePass = own(pass(scene, camera, { samples }));
   const aoOn = AO_ENABLED && effects.ambientOcclusion;
   if (aoOn) {
-    // 0 by default: opaque surfaces write 0, other transparents (alpha 0)
-    // leave it untouched. HDR like the scene color (it holds cloud colors).
+    // 0 by default, at the material's alpha: opaque surfaces write 0,
+    // normal-blended transparents fade it like the color they cover
+    // (additive ones leave it untouched). HDR like the scene color (it holds cloud colors).
     // Blended like each material's output: three leaves every MRT entry but
     // `output` unblended, so the puffs overwrote it with their raw color
     scenePass.setMRT(
-      mrt({ output, [AO_MASK]: vec4(0) }).setBlendMode(
+      mrt({ output, [AO_MASK]: vec4(0, 0, 0, output.a) }).setBlendMode(
         AO_MASK,
         new THREE.BlendMode(THREE.MaterialBlending)
       )

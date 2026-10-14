@@ -5,6 +5,7 @@ import { Discard, Fn, If, materialColor, max, uniform, vec4 } from 'three/tsl';
 import { subscribeWhenSet } from '#store';
 import { useControls } from '#debug/useControls.jsx';
 import { uniformControls } from '#debug/uniformControls.js';
+import { settingControls } from '#debug/settingControls.js';
 import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
 import { toNodeMaterial } from '#utils/nodeMaterials.js';
 import { createDissolveUniforms, dissolveLava } from '#shaders/dissolve.js';
@@ -160,6 +161,7 @@ const MagicBooks = props => {
   };
 
   const control = uniformControls(uniforms);
+  const config = settingControls(booksDissolveConfig);
   useControls('MagicBooks', {
     Play: () => playBooksDissolve(),
     'Reset Animation': () => resetBooksDissolve(),
@@ -173,34 +175,10 @@ const MagicBooks = props => {
     color: control('uColor', BOOKS_DISSOLVE_DEFAULTS.color),
     // Build-time values, read when the next Play/awakening builds its
     // timeline
-    dissolveDuration: {
-      value: BOOKS_DISSOLVE_DEFAULTS.dissolveDuration,
-      min: 0.1,
-      max: 4,
-      step: 0.01,
-      onChange: value => {
-        booksDissolveConfig.dissolveDuration = value;
-      },
-    },
-    formDuration: {
-      value: BOOKS_DISSOLVE_DEFAULTS.formDuration,
-      min: 0.1,
-      max: 4,
-      step: 0.01,
-      onChange: value => {
-        booksDissolveConfig.formDuration = value;
-      },
-    },
+    dissolveDuration: config('dissolveDuration', 0.1, 4, 0.01),
+    formDuration: config('formDuration', 0.1, 4, 0.01),
     // Animated peak: thickness ramps 0 -> this -> 0 across the dissolve
-    thickness: {
-      value: BOOKS_DISSOLVE_DEFAULTS.thickness,
-      min: 0.01,
-      max: 1,
-      step: 0.01,
-      onChange: value => {
-        booksDissolveConfig.thickness = value;
-      },
-    },
+    thickness: config('thickness', 0.01, 1, 0.01),
   });
 
   useEffect(() => {
