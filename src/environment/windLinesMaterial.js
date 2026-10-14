@@ -11,6 +11,7 @@ import {
   sin,
   smoothstep,
   time,
+  uniform,
   uv,
   vec3,
 } from 'three/tsl';
@@ -23,6 +24,22 @@ const STREAK_RANGE = 4;
 // distance (times lengthMultiplier) from the center
 const STREAK_HALF_WIDTH = 0.4;
 
+// Uniform defaults; the field layout ones live in WindLines.jsx
+export const WIND_LINES_UNIFORM_DEFAULTS = {
+  color: '#ffffff',
+  speed: 0.76,
+  alphaMultiplier: 0.11,
+  lengthMultiplier: 1.75,
+};
+
+/** The material's uniform nodes, at their default values. */
+export const createWindLinesUniforms = () => ({
+  uAlphaMultiplier: uniform(WIND_LINES_UNIFORM_DEFAULTS.alphaMultiplier),
+  uSpeed: uniform(WIND_LINES_UNIFORM_DEFAULTS.speed),
+  uLengthMultiplier: uniform(WIND_LINES_UNIFORM_DEFAULTS.lengthMultiplier),
+  uColor: uniform(new THREE.Color(WIND_LINES_UNIFORM_DEFAULTS.color)),
+});
+
 /**
  * The wind-line ribbons' material (WindLines.jsx; React-free so
  * scripts/check-wgsl.mjs can build it). `uniforms`: uSpeed,
@@ -34,9 +51,7 @@ export const createWindLinesMaterial = uniforms => {
   const windMaterial = new THREE.MeshBasicNodeMaterial({
     lights: false,
     transparent: true,
-    blending: THREE.NormalBlending,
     depthWrite: false,
-    depthTest: true,
     side: THREE.DoubleSide,
   });
 
@@ -46,14 +61,14 @@ export const createWindLinesMaterial = uniforms => {
 
   // A soft streak sliding along the ribbon (its center travels from
   // STREAK_RANGE lengths before the start to as far past the end)
-  const t = fract(time.add(instanceTimeOffset).mul(timeMultiplier));
+  const localTime = time.add(instanceTimeOffset).mul(timeMultiplier);
+  const t = fract(localTime);
   const range = uniforms.uLengthMultiplier.mul(STREAK_RANGE);
   const center = mix(float(0.5).sub(range), float(0.5).add(range), t);
 
   // Offset the (pre-rotated) ribbon, then two sine wobbles (the mesh has no
   // transform: local space is world space)
   const placed = positionGeometry.add(instanceOffset);
-  const localTime = time.add(instanceTimeOffset).mul(timeMultiplier);
   const y = placed.y.add(sin(uv().x.mul(10).add(localTime)).mul(0.1));
   const z = placed.z.add(sin(placed.x.add(localTime.mul(2))).mul(0.2));
   // The streak is off the ribbon ~90% of the time: collapse the whole ribbon

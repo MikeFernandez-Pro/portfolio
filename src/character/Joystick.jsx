@@ -17,24 +17,13 @@ const Joystick = () => {
   const [active, setActive] = useState(false);
 
   useEffect(() => {
-    let unsubUnlock;
-    const unsubExperienceStarted = subscribeWhenSet(
-      state => state.experienceStarted,
-      () => {
-        // The camera sets introControlsLocked in its own experienceStarted
-        // listener, which may run after this one: read it once they all ran
-        queueMicrotask(() => {
-          unsubUnlock = subscribeWhenSet(
-            state => !state.introControlsLocked,
-            () => setVisible(true)
-          );
-        });
-      }
+    const unsubUnlocked = subscribeWhenSet(
+      state => state.experienceStarted && !state.introControlsLocked,
+      () => setVisible(true)
     );
 
     return () => {
-      unsubExperienceStarted();
-      unsubUnlock?.();
+      unsubUnlocked();
       useStore.setState({ joystickAngle: undefined });
     };
   }, []);

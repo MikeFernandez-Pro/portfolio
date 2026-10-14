@@ -22,6 +22,7 @@ import {
 import { hash12 } from '#shaders/includes/hash.js';
 import { uniformControls } from '#debug/uniformControls.js';
 import {
+  createGlowPointsMaterial,
   createParticleSprite,
   particleAttribute,
   pointCoord,
@@ -61,11 +62,7 @@ for (let i = 0; i < BUBBLES_COUNT; i++) {
 // spot of the surface every cycle, like water at a rolling boil: it stays in
 // place, swells, then bursts
 const createBubblesMaterial = u => {
-  const material = new THREE.PointsNodeMaterial({
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-  });
+  const material = createGlowPointsMaterial();
 
   const aPhase = particleAttribute(bubblesPhases, 1);
   const aSpeed = particleAttribute(bubblesSpeeds, 1);
@@ -90,7 +87,6 @@ const createBubblesMaterial = u => {
   const life = smoothstep(0, 0.08, t).mul(
     smoothstep(u.uPopStart, 1, t).oneMinus()
   );
-  // gl_PointSize = uSize * uResolution.y * aSize * swell / -viewZ
   material.sizeNode = u.uSize.mul(aSize).mul(swell).mul(2);
 
   // Bright rim around a tunable fill (0 = hollow ring, 1 = full disc),

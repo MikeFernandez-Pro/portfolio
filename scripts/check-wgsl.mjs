@@ -39,28 +39,24 @@ globalThis.matchMedia ??= () => ({
 });
 
 const THREE = await import('three/webgpu');
-const {
-  Discard,
-  Fn,
-  If,
-  attribute,
-  context,
-  materialColor,
-  mix,
-  uniform,
-  vec4,
-} = await import('three/tsl');
+const { attribute, context, uniform } = await import('three/tsl');
 const { createSmokeMaterial, createSmokeUniforms } =
   await import('../src/shaders/smoke.js');
 const { createGrassMaterial, createGrassUniforms } =
   await import('../src/shaders/grass.js');
-const { createDissolveUniforms, dissolveLava } =
+const { createDissolveUniforms, characterDissolveColor } =
   await import('../src/shaders/dissolve.js');
 const { patchCloudShadows } = await import('../src/shaders/cloudShadows.js');
 const { patchPointLights } =
   await import('../src/islands/world/pointLights/pointLights.js');
-const { createWindLinesMaterial } =
+const { createWindLinesMaterial, createWindLinesUniforms } =
   await import('../src/environment/windLinesMaterial.js');
+const { TORCH_SMOKE_DEFAULTS } =
+  await import('../src/islands/world/torches/torches.js');
+const { createPortalDiscMaterial, createPortalDiscUniforms } =
+  await import('../src/islands/projects/portalDisc.js');
+const { createCauldronPotionMaterial, createCauldronPotionUniforms } =
+  await import('../src/islands/skills/cauldron/cauldronPotion.js');
 
 const standInRenderer = library => ({
   backend: {
@@ -256,15 +252,7 @@ const MATERIALS = {
       aTimeOffset: 1,
     });
     const material = createSmokeMaterial(
-      createSmokeUniforms({
-        color: '#313131',
-        opacity: 0.32,
-        fadeHeight: 0.67,
-        baseFade: 0.32,
-        timeOffsetStrength: 1,
-        swayScale: 2.8,
-        swayPower: 0.83,
-      }),
+      createSmokeUniforms(TORCH_SMOKE_DEFAULTS),
       attribute('aTimeOffset', 'float'),
       position => position.add(attribute('aColumnOffset', 'vec3'))
     );
@@ -293,33 +281,38 @@ const MATERIALS = {
       uAlphaClip: uniform(0.5),
     };
     const material = new THREE.MeshStandardNodeMaterial({ map: dataTexture() });
-    const lava = dissolveLava(
+    material.colorNode = characterDissolveColor(
       uniforms,
       uniform(new THREE.Vector3(-1, -1, -1)),
       uniform(new THREE.Vector3(1, 1, 1))
     );
-    material.colorNode = Fn(() => {
-      const color = mix(
-        lava,
-        materialColor,
-        uniforms.uCharFormProgress
-      ).toVar();
-      If(color.a.lessThan(uniforms.uAlphaClip), () => Discard());
-      return vec4(color);
-    })();
     return new THREE.Mesh(new THREE.BoxGeometry(), litPatched(material));
+  },
+  'portal disc (flow field)': () =>
+    new THREE.Mesh(
+      new THREE.CircleGeometry(1, 16),
+      createPortalDiscMaterial(
+        createPortalDiscUniforms(),
+        dataTexture(),
+        dataTexture()
+      )
+    ),
+  'cauldron potion (flow field)': () => {
+    const uniforms = createCauldronPotionUniforms({
+      center: new THREE.Vector2(0, 0),
+      halfSize: new THREE.Vector2(1, 1),
+    });
+    return new THREE.Mesh(
+      new THREE.BoxGeometry(),
+      createCauldronPotionMaterial(uniforms, dataTexture())
+    );
   },
   'wind lines': () => {
     const geometry = instanced(new THREE.PlaneGeometry(1, 0.1, 20, 1), {
       aInstanceOffset: 3,
       aInstanceTimeOffset: 1,
     });
-    const material = createWindLinesMaterial({
-      uSpeed: uniform(0.76),
-      uLengthMultiplier: uniform(1.75),
-      uAlphaMultiplier: uniform(0.11),
-      uColor: uniform(new THREE.Color('#ffffff')),
-    });
+    const material = createWindLinesMaterial(createWindLinesUniforms());
     return new THREE.Mesh(geometry, material);
   },
 };

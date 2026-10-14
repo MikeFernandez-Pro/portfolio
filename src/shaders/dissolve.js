@@ -1,11 +1,15 @@
 import * as THREE from 'three/webgpu';
 import {
+  Discard,
   Fn,
+  If,
   abs,
   clamp,
   float,
   length,
+  materialColor,
   max,
+  mix,
   normalGeometry,
   normalize,
   positionGeometry,
@@ -101,4 +105,20 @@ const dissolveLava = (u, boundsMin, boundsMax) =>
     return vec4(u.uColor.mul(u.uIntensity).mul(pattern), pattern);
   })();
 
-export { createDissolveUniforms, dissolveLava };
+/**
+ * The character's colorNode: the lava mixed over the material's own color
+ * (map included) by `u.uCharFormProgress` (0 = only lava, 1 = formed),
+ * discarding fragments below `u.uAlphaClip`.
+ */
+const characterDissolveColor = (u, boundsMin, boundsMax) => {
+  const lava = dissolveLava(u, boundsMin, boundsMax);
+  return Fn(() => {
+    const color = mix(lava, materialColor, u.uCharFormProgress).toVar();
+    If(color.a.lessThan(u.uAlphaClip), () => {
+      Discard();
+    });
+    return vec4(color);
+  })();
+};
+
+export { createDissolveUniforms, dissolveLava, characterDissolveColor };

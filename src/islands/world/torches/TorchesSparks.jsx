@@ -1,7 +1,15 @@
+import { useMemo } from 'react';
+
 import { useControls } from '#debug/useControls.jsx';
+import { uniformControls } from '#debug/uniformControls.js';
 
 import TorchSparks from './TorchSparks';
-import { SPARKS_COLOR, SPARKS_INTENSITY } from './sparksMaterial';
+import {
+  createSparksUniforms,
+  SPARKS_COLOR,
+  SPARKS_INTENSITY,
+  SPARKS_SIZE_SCALE,
+} from './sparksMaterial';
 import { TORCHES } from './torches.js';
 
 const PARTICLES_COUNT = 40; // Number of particles per torch
@@ -22,22 +30,13 @@ const TORCH_SIZE_CLASSES = [
 }));
 
 const TorchesSparks = () => {
-  const controls = useControls('TorchesSparks', {
-    color: {
-      value: SPARKS_COLOR,
-    },
-    intensity: {
-      value: SPARKS_INTENSITY,
-      min: 0,
-      max: 10,
-      step: 0.01,
-    },
-    sizeScale: {
-      value: 2.12,
-      min: 0,
-      max: 3,
-      step: 0.01,
-    },
+  const uniforms = useMemo(createSparksUniforms, []);
+
+  const control = uniformControls(uniforms);
+  useControls('TorchesSparks', {
+    color: control('uColor', SPARKS_COLOR),
+    intensity: control('uIntensity', SPARKS_INTENSITY, 0, 10, 0.01),
+    sizeScale: control('uSizeScale', SPARKS_SIZE_SCALE, 0, 3, 0.01),
   });
 
   return (
@@ -47,9 +46,7 @@ const TorchesSparks = () => {
           key={index}
           particlesCount={PARTICLES_COUNT}
           config={config}
-          color={controls.color}
-          intensity={controls.intensity}
-          sizeScale={controls.sizeScale}
+          uniforms={uniforms}
         />
       ))}
     </>

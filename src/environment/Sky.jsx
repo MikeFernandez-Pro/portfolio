@@ -12,14 +12,14 @@ import {
 
 import { useControls } from '#debug/useControls.jsx';
 
-// Width of the gradient's bottom→top blend band, in sphere V units — 0.65 is
-// the original hardcoded 0.35→1 stops
+// Width of the gradient's bottom→top blend band, in sphere V units (0.65:
+// stops at 0.35 and 1)
 const MIX_BAND = 0.65;
 
 /**
- * Background sphere with a vertical two-color gradient. Same result as the
- * drei <GradientTexture> it replaces: stop 0 at the top of the sphere, colors
- * interpolated in sRGB (like a canvas gradient) and decoded to linear.
+ * Background sphere with a vertical two-color gradient: stop 0 at the top of
+ * the sphere, colors interpolated in sRGB (like a canvas gradient) and
+ * decoded to linear.
  */
 const Sky = () => {
   const {

@@ -20,7 +20,15 @@ import {
 } from '../src/physics/PhysicsWorld.js';
 import { CharacterBody } from '../src/physics/CharacterBody.js';
 import { GRAVITY_Y } from '../src/physics/world.js';
-import { buildWorldSpaceBvh } from '../src/physics/buildBvh.js';
+import {
+  bakeToWorldSpace,
+  buildWorldSpaceBvh,
+} from '../src/physics/buildBvh.js';
+import {
+  ISLAND_COLLIDER_TRANSFORM,
+  ISLAND_POSITION,
+  ISLAND_SCALE,
+} from '../src/islands/islandSpace.js';
 
 const { default: RAPIER } = await import('@dimforge/rapier3d-compat');
 await RAPIER.init();
@@ -102,24 +110,19 @@ const groundSensorGeometry = findGeometry(sensors, 'Sensor');
 const fallingZoneGeometry = findGeometry(zones, 'fallingZone');
 const deathZoneGeometry = findGeometry(zones, 'deathZone');
 
-// Transforms as authored in the components
-const ISLAND = { position: [-1.35, 2.3, -15], scale: 0.45 };
-const GROUND_SENSOR = { position: [-1.35, 2.4, -15], scale: 0.45 };
-const FALLING_ZONE = { position: [-1.35, 2.25, -15], scale: 0.45 };
-const DEATH_ZONE = { position: [-1.35, 2.25 - 1, -15], scale: 0.45 };
-
-function bake(geometry, { position, scale }) {
-  const matrix = new THREE.Matrix4().compose(
-    new THREE.Vector3(...position),
-    new THREE.Quaternion(),
-    new THREE.Vector3(scale, scale, scale)
-  );
-  const baked = new THREE.BufferGeometry();
-  baked.setAttribute('position', geometry.getAttribute('position').clone());
-  if (geometry.index) baked.setIndex(geometry.index.clone());
-  baked.applyMatrix4(matrix);
-  return baked;
-}
+// Transforms as used by the components (the ground sensor is only baked
+// here: grounded comes from the contact solve in the game)
+const [ISLAND_X, ISLAND_Y, ISLAND_Z] = ISLAND_POSITION;
+const ISLAND = ISLAND_COLLIDER_TRANSFORM;
+const GROUND_SENSOR = {
+  position: [ISLAND_X, 2.4, ISLAND_Z],
+  scale: ISLAND_SCALE,
+};
+const FALLING_ZONE = { position: ISLAND_POSITION, scale: ISLAND_SCALE };
+const DEATH_ZONE = {
+  position: [ISLAND_X, ISLAND_Y - 1, ISLAND_Z],
+  scale: ISLAND_SCALE,
+};
 
 function toTrimeshData(geometry) {
   const vertices = new Float32Array(geometry.getAttribute('position').array);
@@ -137,7 +140,7 @@ function makeRapierSim(offsetX = 0, start = [0, 0.7, 0]) {
   world.timestep = DT;
 
   const fixed = world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
-  const island = toTrimeshData(bake(islandGeometry, ISLAND));
+  const island = toTrimeshData(bakeToWorldSpace(islandGeometry, ISLAND));
   world.createCollider(
     RAPIER.ColliderDesc.trimesh(island.vertices, island.index),
     fixed
@@ -149,7 +152,7 @@ function makeRapierSim(offsetX = 0, start = [0, 0.7, 0]) {
     ['fallingZone', fallingZoneGeometry, FALLING_ZONE],
     ['deathZone', deathZoneGeometry, DEATH_ZONE],
   ]) {
-    const data = toTrimeshData(bake(geometry, transform));
+    const data = toTrimeshData(bakeToWorldSpace(geometry, transform));
     const collider = world.createCollider(
       RAPIER.ColliderDesc.trimesh(data.vertices, data.index)
         .setSensor(true)
@@ -310,7 +313,7 @@ const scenarios = {
 // vertices (the zones hang under the island edges, over the void) and free
 // fall through both — verifies the falling-animation and death event frames.
 {
-  const zoneGeometry = bake(fallingZoneGeometry, FALLING_ZONE);
+  const zoneGeometry = bakeToWorldSpace(fallingZoneGeometry, FALLING_ZONE);
   const positions = zoneGeometry.getAttribute('position');
   for (const fraction of [0.1, 0.5, 0.9]) {
     const i = Math.floor(positions.count * fraction);

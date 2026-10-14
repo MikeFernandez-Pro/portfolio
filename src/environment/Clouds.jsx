@@ -7,12 +7,11 @@ import { AO_MASK } from '#postprocessing/aoMask.js';
 // drei's default puff texture, self-hosted (drei fetches it from githack)
 import cloudUrl from '#assets/textures/cloud.png';
 
-// drei 10 keeps volume at 6 (puff thickness) but defaults growth to 4 and
-// MeshLambertMaterial. Combined with this scene's lighting/ACES that reads
-// thicker than drei 9: growth is cut to 3.5 and the puffs use
-// MeshStandardMaterial (softer response to the directional light) so they
-// stay sprite-like. Node material: drei 11's cloud factory multiplies the
-// per-puff opacity into opacityNode, which a classic material ignores.
+// drei's default growth (4) reads too thick under this scene's lighting/ACES:
+// growth is cut to 3.5 and the puffs use MeshStandardNodeMaterial (softer
+// response to the directional light than drei's Lambert) so they stay
+// sprite-like. It must be a node material: drei's cloud factory multiplies
+// the per-puff opacity into opacityNode, which a classic material ignores.
 
 // The puffs also write their color into the AO mask (see aoMask.js): without
 // it the islands' ambient occlusion shows through them. `output` must be

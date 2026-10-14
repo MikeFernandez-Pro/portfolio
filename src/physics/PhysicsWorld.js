@@ -26,19 +26,20 @@ const MAX_DT = 0.1;
 // holds completely still.
 const CONTACT_MARGIN = 0.002;
 // Grounded when a solved contact pushes steeper than this (~45°) — the
-// contact solve is the source of truth for jumping, replacing the old ground
-// trimesh sensor + zero-velocity fallback (contacts can't miss events the
-// way thin-trimesh sensor intersections did)
+// contact solve is the source of truth for jumping (contacts can't miss
+// events the way thin-trimesh sensor intersections can)
 const GROUND_NORMAL_Y = 0.7;
 // Short grace so micro-hops over terrain bumps and running off an edge keep
-// the grounded state briefly — the old surface-hugging sensor zone gave a
-// comparable tolerance (capsule stayed overlapping ~60ms past the edge)
+// the grounded state briefly (~60ms past an edge, like a surface-hugging
+// sensor zone)
 const GROUNDED_GRACE = 0.1;
 // Resting early-out. Walk/sprint is 4–6 m/s; anything below this is leftover
-// from slope contacts after the controller zeroes xz. 1e-10 (the previous
-// threshold) is ~0.01 mm/s — bumpy ground never settled, so standing still
-// still paid 8 shapecasts/frame against the 71k-tri island collider.
+// from slope contacts after the controller zeroes xz. A much lower threshold
+// never settled on bumpy ground, so standing still kept paying 8
+// shapecasts/frame against the 71k-tri island collider.
 const REST_SPEED_SQ = 0.02 * 0.02;
+// Contact normals kept per step for the debug visualization (PhysicsDebug)
+export const MAX_CONTACT_ARROWS = 32;
 
 // Scratch objects (single character, stepped once per frame)
 const segment = new THREE.Line3();
@@ -88,7 +89,10 @@ const collectVelocityContact = tri => {
   contacts[contactCount] = contactPool[contactCount].copy(pushDir);
   contactGaps[contactCount] = distance - activeBody.capsuleRadius;
   contactCount++;
-  if (activeWorld.debugCapture && activeWorld.debugContacts.length < 32) {
+  if (
+    activeWorld.debugCapture &&
+    activeWorld.debugContacts.length < MAX_CONTACT_ARROWS
+  ) {
     activeWorld.debugContacts.push({
       point: triPoint.clone(),
       normal: pushDir.clone(),
@@ -129,14 +133,8 @@ const SENSOR_CAST = {
 const boundsOf = bvh =>
   bvh.geometry.boundingBox ?? bvh.getBoundingBox(new THREE.Box3());
 
-// Same payload shape the rapier event handlers consumed
-const sensorEvent = (body, sensor) => ({
-  other: { rigidBody: body },
-  target: { rigidBody: { userData: sensor.userData } },
-});
-
 /**
- * Minimal physics world replacing rapier: one dynamic capsule (the character)
+ * Minimal physics world: one dynamic capsule (the character)
  * against static world-space BVH trimeshes, plus BVH sensor zones with
  * enter/exit events. Solids and sensors are baked to world space up front so
  * the per-frame tests are matrix-free. The solver reads and writes the
@@ -161,11 +159,10 @@ export class PhysicsWorld {
     return { remove: () => this.solids.delete(solid) };
   }
 
-  addSensor({ bvh, userData, onEnter, onExit }) {
+  addSensor({ bvh, onEnter, onExit }) {
     const sensor = {
       bvh,
       bounds: boundsOf(bvh),
-      userData,
       onEnter,
       onExit,
       overlapping: false,
@@ -296,16 +293,15 @@ export class PhysicsWorld {
       if (!aabb.intersectsBox(sensor.bounds)) {
         if (sensor.overlapping) {
           sensor.overlapping = false;
-          sensor.onExit?.(sensorEvent(body, sensor));
+          sensor.onExit?.();
         }
         continue;
       }
       const overlapping = sensor.bvh.shapecast(SENSOR_CAST);
       if (overlapping === sensor.overlapping) continue;
       sensor.overlapping = overlapping;
-      const event = sensorEvent(body, sensor);
-      if (overlapping) sensor.onEnter?.(event);
-      else sensor.onExit?.(event);
+      if (overlapping) sensor.onEnter?.();
+      else sensor.onExit?.();
     }
   }
 }

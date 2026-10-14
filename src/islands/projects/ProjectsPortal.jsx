@@ -49,7 +49,7 @@ const ProjectsPortal = props => {
         loop: true,
         volume: 0,
       }),
-    [PortalAudio]
+    []
   );
 
   // Textures
@@ -165,7 +165,7 @@ const ProjectsPortal = props => {
     // Remove subscriptions on unmount
     return () => {
       unsubSelectedProject();
-      portalScaleUpAnimation?.kill();
+      portalScaleUpAnimation.kill();
     };
   }, [portalUniforms, sparks, portalSoundEffect]);
 

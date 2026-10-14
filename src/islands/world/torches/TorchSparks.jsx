@@ -1,22 +1,14 @@
 import { useEffect, useMemo } from 'react';
 
-import { createSparksMaterial, createSparksUniforms } from './sparksMaterial';
+import { createSparksMaterial } from './sparksMaterial';
 import {
   anchorSpread,
   createParticleSprite,
   particleAttribute,
 } from '#utils/pointSprites.js';
 
-const TorchSparks = ({
-  particlesCount,
-  config,
-  color,
-  intensity,
-  sizeScale = 1,
-}) => {
-  const size = config.size * sizeScale;
-
-  const { sparks, uniforms } = useMemo(() => {
+const TorchSparks = ({ particlesCount, config, uniforms }) => {
+  const sparks = useMemo(() => {
     const count = particlesCount * config.offsets.length;
     const positions = new Float32Array(count * 3);
     const offsets = new Float32Array(count * 3);
@@ -44,8 +36,7 @@ const TorchSparks = ({
       offsets[i * 3 + 2] = offset[2];
     }
 
-    const uniforms = createSparksUniforms({ size, color, intensity });
-    const material = createSparksMaterial(uniforms, {
+    const material = createSparksMaterial(uniforms, config.size, {
       position: particleAttribute(positions, 3),
       aScale: particleAttribute(scales, 1),
       aElevation: particleAttribute(elevation, 1),
@@ -59,16 +50,10 @@ const TorchSparks = ({
     // the draw order is all that layers them)
     sparks.renderOrder = 1;
 
-    return { sparks, uniforms };
+    return sparks;
   }, [particlesCount, config.offsets.length]);
 
   useEffect(() => () => sparks.material.dispose(), [sparks]);
-
-  useEffect(() => {
-    uniforms.uSize.value = size;
-    if (color !== undefined) uniforms.uColor.value.set(color);
-    if (intensity !== undefined) uniforms.uIntensity.value = intensity;
-  }, [uniforms, size, color, intensity]);
 
   return <primitive object={sparks} />;
 };

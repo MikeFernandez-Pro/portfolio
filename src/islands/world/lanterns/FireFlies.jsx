@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useControls } from '#debug/useControls.jsx';
+import { uniformControls } from '#debug/uniformControls.js';
 import * as THREE from 'three/webgpu';
 import {
   distance,
@@ -17,6 +18,7 @@ import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 import { LANTERN_POSITIONS } from './lanternPositions.js';
 import {
   anchorSpread,
+  createGlowPointsMaterial,
   createParticleSprite,
   particleAttribute,
   pointCoord,
@@ -46,24 +48,6 @@ for (let i = 0; i < TOTAL_FIREFLIES_COUNT; i++) {
 }
 
 const FireFlies = () => {
-  const controls = useControls('FireFlies', {
-    color: {
-      value: FIREFLIES_COLOR,
-    },
-    intensity: {
-      value: FIREFLIES_INTENSITY,
-      min: 0,
-      max: 20,
-      step: 0.01,
-    },
-    size: {
-      value: FIREFLIES_SIZE,
-      min: 0,
-      max: 0.2,
-      step: 0.001,
-    },
-  });
-
   const { fireflies, uniforms } = useMemo(() => {
     const uniforms = {
       uSize: uniform(FIREFLIES_SIZE),
@@ -71,28 +55,22 @@ const FireFlies = () => {
       uIntensity: uniform(FIREFLIES_INTENSITY),
     };
 
-    const material = new THREE.PointsNodeMaterial({
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    });
+    const material = createGlowPointsMaterial();
 
     const position = particleAttribute(POSITIONS_ARRAY, 3);
     const aScale = particleAttribute(SCALES_ARRAY, 1);
 
-    // Drift: x then y wobble (y reads the already moved x, as before). The
-    // sprite has no transform, so local space is world space
+    // Drift: x then y wobble (y reads the already moved x). The sprite has
+    // no transform, so local space is world space
     const t = time.mul(FIREFLIES_TIME_SCALE).add(aScale.mul(15));
     const x = position.x.add(sin(position.y.add(t)).mul(FIREFLIES_VELOCITY));
     const y = position.y.add(sin(x.add(t)).mul(FIREFLIES_VELOCITY)).add(0.1);
     material.positionNode = vec3(x, y, position.z);
 
-    // gl_PointSize = uSize * aScale * uResolution.y / -viewZ
     material.sizeNode = uniforms.uSize.mul(aScale).mul(2);
 
-    // Glowing disc, alpha 0 outside the circle. max() guards the center
-    // (1/0); the clamp already saturates below 0.05. Color and alpha are both
-    // scaled, as gl_FragColor was
+    // Glowing disc, alpha 0 outside the circle. Color and alpha are both
+    // scaled
     const distanceToCenter = distance(pointCoord, vec2(0.5));
     const strength = pointGlow();
     const glow = vec4(uniforms.uColor, strength)
@@ -112,11 +90,12 @@ const FireFlies = () => {
 
   useEffect(() => () => fireflies.material.dispose(), [fireflies]);
 
-  useEffect(() => {
-    uniforms.uColor.value.set(controls.color);
-    uniforms.uIntensity.value = controls.intensity;
-    uniforms.uSize.value = controls.size;
-  }, [uniforms, controls.color, controls.intensity, controls.size]);
+  const control = uniformControls(uniforms);
+  useControls('FireFlies', {
+    color: control('uColor', FIREFLIES_COLOR),
+    intensity: control('uIntensity', FIREFLIES_INTENSITY, 0, 20, 0.01),
+    size: control('uSize', FIREFLIES_SIZE, 0, 0.2, 0.001),
+  });
 
   return <primitive object={fireflies} />;
 };

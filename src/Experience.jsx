@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei/webgpu';
 import { Howl } from 'howler';
@@ -35,10 +35,19 @@ const ambientSound = new Howl({
   // Opus first (30% smaller); Howler falls back to the mp3 where webm/opus
   // isn't supported (older iOS Safari)
   src: [AmbientSoundEffectWebm, AmbientSoundEffect],
+  // Loaded once the scene is ready (see below), so the track doesn't
+  // compete with the island assets
+  preload: false,
   autoplay: false,
   loop: true,
   volume: SOUND_VOLUMES.ambient,
 });
+
+// play() on an unloaded Howl only queues, so whichever comes first (scene
+// ready, Enter) loads it; the guard keeps a remount from reloading it
+const loadAmbientSound = () => {
+  if (ambientSound.state() === 'unloaded') ambientSound.load();
+};
 
 const Experience = () => {
   const camera = useThree(state => state.camera);
@@ -56,14 +65,12 @@ const Experience = () => {
   const volume = settingControls(SOUND_VOLUMES, (key, value) =>
     loopingSounds[key]?.volume(value)
   );
-  useControls('Sounds', {
-    ambient: volume('ambient', 0, 1, 0.01),
-    running: volume('running', 0, 1, 0.01),
-    skillsGlyph: volume('skillsGlyph', 0, 1, 0.01),
-    projectPlate: volume('projectPlate', 0, 1, 0.01),
-    portal: volume('portal', 0, 1, 0.01),
-    hammer: volume('hammer', 0, 1, 0.01),
-  });
+  useControls(
+    'Sounds',
+    Object.fromEntries(
+      Object.keys(SOUND_VOLUMES).map(key => [key, volume(key, 0, 1, 0.01)])
+    )
+  );
 
   useEffect(() => {
     useStore.setState({ freeCameraActive: freeCamera });
@@ -82,13 +89,20 @@ const Experience = () => {
     const unsubExperienceStarted = subscribeWhenSet(
       state => state.experienceStarted,
       () => {
+        loadAmbientSound();
         ambientSound.play();
         ambientSound.fade(0, SOUND_VOLUMES.ambient, 2000);
       }
     );
 
+    const unsubSceneReady = subscribeWhenSet(
+      state => state.sceneReady,
+      loadAmbientSound
+    );
+
     return () => {
       unsubExperienceStarted();
+      unsubSceneReady();
     };
   }, []);
 
@@ -118,4 +132,6 @@ const Experience = () => {
   );
 };
 
-export default Experience;
+// Memoized: App re-renders on every loader progress tick and DPR step, and
+// R3F re-runs the Canvas children each time
+export default memo(Experience);

@@ -39,6 +39,20 @@ const createParticleSprite = (material, count) => {
 };
 
 /**
+ * Additive, depth-write-free PointsNodeMaterial for glowing particles.
+ * transparent puts them in the transparent render list - required for a
+ * sprite's renderOrder to place them after smoke columns (opaque objects
+ * draw before all transparent ones, whatever their renderOrder), so the
+ * glow reads through the smoke instead of being painted over by it.
+ */
+const createGlowPointsMaterial = () =>
+  new THREE.PointsNodeMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+
+/**
  * Spreads `count` particles over `anchorCount` anchors (torches, lanterns)
  * in contiguous runs: returns `i => anchor index`, to call with increasing
  * i. The boundary test is `>`, so the first anchor gets one particle more
@@ -71,6 +85,7 @@ export {
   pointGlow,
   particleAttribute,
   createParticleSprite,
+  createGlowPointsMaterial,
   anchorSpread,
   spriteCountControl,
 };

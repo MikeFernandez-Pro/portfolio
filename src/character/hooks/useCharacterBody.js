@@ -17,9 +17,8 @@ export const CHARACTER_CAPSULE = {
  * Returns the body (in a ref, like the other character hooks expect) and the
  * ref callback for the group the physics step keeps in sync with it.
  *
- * Same body rapier built from <RigidBody position-y={0.7} type='fixed'
- * lockRotations> + <CapsuleCollider args={[0.3, 0.25]} position-y={0.58}>.
- * Starts FIXED; the controller switches it DYNAMIC on the first movement.
+ * Spawns slightly airborne (y 0.7) and starts FIXED; the controller switches
+ * it DYNAMIC on the first movement.
  */
 const useCharacterBody = () => {
   const characterBody = useRef();

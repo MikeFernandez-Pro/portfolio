@@ -2,6 +2,7 @@ import gsap from 'gsap';
 
 import { targets } from './targets.js';
 import { createScrubbableTimeline } from './scrubbableTimeline.js';
+import { addDissolveGrow, addDissolveRecede } from '#utils/dissolveTweens.js';
 import { pointLights } from '#islands/world/pointLights/pointLights.js';
 
 // Single source of truth for the whole respawn animation (character voronoi
@@ -33,7 +34,7 @@ export const RESPAWN_DEFAULTS = {
 // Live, mutable copy the controls edit and the timeline reads at build time
 export const respawnConfig = { ...RESPAWN_DEFAULTS };
 
-const buildRespawnTimeline = ({ onStart, onComplete, paused = false } = {}) => {
+const buildRespawnTimeline = ({ onComplete, paused = false } = {}) => {
   const character = targets.dissolve;
   const spiral = targets.spiral?.uniforms;
   const spiralMesh = targets.spiral?.mesh;
@@ -44,7 +45,7 @@ const buildRespawnTimeline = ({ onStart, onComplete, paused = false } = {}) => {
   const charStart = Math.max(0, c.charDelay);
   const charEnd = charStart + charTotal;
 
-  const tl = gsap.timeline({ paused, onStart });
+  const tl = gsap.timeline({ paused });
 
   if (character) {
     // Initial state, applied immediately: invisible, no lava, sharp edge
@@ -53,20 +54,11 @@ const buildRespawnTimeline = ({ onStart, onComplete, paused = false } = {}) => {
     tl.set(character.uThickness, { value: 0 }, 0);
 
     // Phase 1 (after the delay): lava grows in, edge thickens 0 -> max
-    tl.to(
-      character.uProgress,
-      { value: 1, duration: c.charProgressDuration, ease: 'power1.out' },
-      charStart
-    );
-    tl.to(
-      character.uThickness,
-      {
-        value: c.charThickness,
-        duration: c.charProgressDuration,
-        ease: 'linear',
-      },
-      charStart
-    );
+    addDissolveGrow(tl, character, {
+      at: charStart,
+      duration: c.charProgressDuration,
+      thickness: c.charThickness,
+    });
 
     // Phase 2: form the real character over the lava while the voronoi recedes
     // (uProgress 1 -> 0) and the edge thins back out
@@ -75,16 +67,10 @@ const buildRespawnTimeline = ({ onStart, onComplete, paused = false } = {}) => {
       { value: 1, duration: c.charRespawnDuration, ease: 'linear' },
       charStart + c.charProgressDuration
     );
-    tl.to(
-      character.uProgress,
-      { value: 0, duration: c.charRespawnDuration, ease: 'linear' },
-      charStart + c.charProgressDuration
-    );
-    tl.to(
-      character.uThickness,
-      { value: 0, duration: c.charRespawnDuration, ease: 'linear' },
-      charStart + c.charProgressDuration
-    );
+    addDissolveRecede(tl, character, {
+      at: charStart + c.charProgressDuration,
+      duration: c.charRespawnDuration,
+    });
   }
 
   // Spawn light: fades in over the first half of the respawn and out over the

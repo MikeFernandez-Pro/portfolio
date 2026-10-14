@@ -8,6 +8,13 @@ import { ISLAND_POSITION, ISLAND_SCALE } from '#islands/islandSpace.js';
 
 import FallingZoneModel from '#assets/models/islandSensors/fallingZone.glb';
 
+// Registers a sensor zone baked at `position`; returns its remover
+const addZone = (geometry, position, onEnter) =>
+  physicsWorld.addSensor({
+    bvh: buildWorldSpaceBvh(geometry, { position, scale: ISLAND_SCALE }),
+    onEnter,
+  }).remove;
+
 // Two trimesh sensor zones stretched under the island edges (same GLB,
 // authored in island space):
 // - falling zone (just below the walkable surface, ~y 0.38): crossing it
@@ -30,33 +37,27 @@ const FallAndDeathZones = ({ onFallingZoneEnter, onDeathZoneEnter }) => {
     deathZoneHeight: { value: -1, min: -10, max: 0, step: 0.1 },
   });
 
-  useEffect(() => {
-    const bvh = buildWorldSpaceBvh(nodes.fallingZone.geometry, {
-      position: ISLAND_POSITION,
-      scale: ISLAND_SCALE,
-    });
-    const handle = physicsWorld.addSensor({
-      bvh,
-      onEnter: event => onFallingZoneEnterRef.current?.(event),
-    });
-    return () => handle.remove();
-  }, [nodes]);
+  useEffect(
+    () =>
+      addZone(nodes.fallingZone.geometry, ISLAND_POSITION, () =>
+        onFallingZoneEnterRef.current?.()
+      ),
+    [nodes]
+  );
 
-  useEffect(() => {
-    const bvh = buildWorldSpaceBvh(nodes.deathZone.geometry, {
-      position: [
-        ISLAND_POSITION[0],
-        ISLAND_POSITION[1] + deathZoneHeight,
-        ISLAND_POSITION[2],
-      ],
-      scale: ISLAND_SCALE,
-    });
-    const handle = physicsWorld.addSensor({
-      bvh,
-      onEnter: event => onDeathZoneEnterRef.current?.(event),
-    });
-    return () => handle.remove();
-  }, [nodes, deathZoneHeight]);
+  useEffect(
+    () =>
+      addZone(
+        nodes.deathZone.geometry,
+        [
+          ISLAND_POSITION[0],
+          ISLAND_POSITION[1] + deathZoneHeight,
+          ISLAND_POSITION[2],
+        ],
+        () => onDeathZoneEnterRef.current?.()
+      ),
+    [nodes, deathZoneHeight]
+  );
 
   return null;
 };

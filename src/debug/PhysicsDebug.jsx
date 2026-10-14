@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three/webgpu';
 import { MeshBVHHelper } from 'three-mesh-bvh';
 
+import { MAX_CONTACT_ARROWS } from '#physics/PhysicsWorld.js';
 import { physicsWorld } from '#physics/world.js';
 import { useControls } from '#debug/useControls.jsx';
 
@@ -12,9 +13,6 @@ const AIRBORNE_COLOR = 0xff5544;
 const SOLID_COLOR = 0x22ff88;
 const SENSOR_COLOR = 0xffaa22;
 const CONTACT_COLOR = 0x66aaff;
-
-// Matches the capture cap in PhysicsWorld
-const MAX_CONTACT_ARROWS = 32;
 
 /**
  * Physics visualization (debug "Physics" folder): wireframes of the

@@ -22,15 +22,9 @@ const hasMobileSignals = () => {
   return false;
 };
 
-const getDeviceType = () => {
-  if (hasMobileSignals()) return 'mobile';
-
-  const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
-  const hasHover = window.matchMedia('(hover: hover)').matches;
-
-  if (hasCoarsePointer && !hasHover) return 'mobile';
-  if (!hasCoarsePointer && hasHover) return 'desktop';
-  return 'hybrid';
-};
-
-export const IS_MOBILE_DEVICE = getDeviceType() === 'mobile';
+// Phones and touch-only tablets: mobile signals, or a coarse pointer
+// without hover
+export const IS_MOBILE_DEVICE =
+  hasMobileSignals() ||
+  (window.matchMedia('(pointer: coarse)').matches &&
+    !window.matchMedia('(hover: hover)').matches);

@@ -9,6 +9,7 @@ import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
 import { toNodeMaterial } from '#utils/nodeMaterials.js';
 import { createDissolveUniforms, dissolveLava } from '#shaders/dissolve.js';
 import { GlbSkinnedMesh } from '#islands/GlbSkinnedMesh.jsx';
+import { addDissolveGrow } from '#utils/dissolveTweens.js';
 
 // Same voronoi lava dissolve as the character respawn (respawnAnimation.js),
 // scoped to the books: hidden at rest, the awakening grows the lava in
@@ -48,7 +49,7 @@ const MagicBooks = props => {
     if (!geometry.boundingBox) geometry.computeBoundingBox();
 
     // The timeline tweens these. Hidden at rest (no lava, no books) until
-    // the glyphs activate; the edge thickness animates up from 0
+    // the glyphs awaken; the edge thickness animates up from 0
     const uniforms = {
       ...createDissolveUniforms(noiseTexture, {
         ...BOOKS_DISSOLVE_DEFAULTS,
@@ -99,6 +100,9 @@ const MagicBooks = props => {
   useEffect(() => () => magicBooksMaterial.dispose(), [magicBooksMaterial]);
 
   const timelineRef = useRef(null);
+  // Hidden (not drawn) until the awakening: at rest the shader would only
+  // discard every fragment. PrecompileScene still warms it up
+  const meshRef = useRef(null);
 
   // One continuous motion, lava layered on top of the fading-in book:
   // phase 1 (dissolveDuration) — voronoi grows to full while book opacity
@@ -111,21 +115,17 @@ const MagicBooks = props => {
     timelineRef.current?.kill();
     const tl = gsap.timeline({ delay });
 
+    tl.set(meshRef.current, { visible: true }, 0);
     tl.set(u.uProgress, { value: 0 }, 0);
     tl.set(u.uFormProgress, { value: 0 }, 0);
     tl.set(u.uThickness, { value: 0 }, 0);
     tl.set(u.uLavaOpacity, { value: 1 }, 0);
 
-    tl.to(
-      u.uProgress,
-      { value: 1, duration: c.dissolveDuration, ease: 'power1.out' },
-      0
-    );
-    tl.to(
-      u.uThickness,
-      { value: c.thickness, duration: c.dissolveDuration, ease: 'linear' },
-      0
-    );
+    addDissolveGrow(tl, u, {
+      at: 0,
+      duration: c.dissolveDuration,
+      thickness: c.thickness,
+    });
     tl.to(
       u.uFormProgress,
       { value: 0.5, duration: c.dissolveDuration, ease: 'linear' },
@@ -151,6 +151,7 @@ const MagicBooks = props => {
     timelineRef.current?.kill();
     timelineRef.current = null;
 
+    meshRef.current.visible = false;
     const u = uniforms;
     u.uProgress.value = 0;
     u.uFormProgress.value = 0;
@@ -221,8 +222,10 @@ const MagicBooks = props => {
 
   return (
     <GlbSkinnedMesh
+      ref={meshRef}
       node={island.nodes.island_10}
       material={magicBooksMaterial}
+      visible={false}
     />
   );
 };

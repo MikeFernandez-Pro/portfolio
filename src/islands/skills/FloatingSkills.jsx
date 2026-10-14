@@ -139,6 +139,8 @@ const FloatingSkills = () => {
 
     const mesh = new THREE.Mesh(buildSkillsGeometry(), material);
     mesh.name = 'floatingSkills';
+    // Not drawn until the fade-in (PrecompileScene still builds it)
+    mesh.visible = false;
 
     return { mesh, uniforms };
   }, []);
@@ -165,6 +167,9 @@ const FloatingSkills = () => {
       value: 1,
       ease: 'expo.in',
       paused: true,
+      onStart: () => {
+        mesh.visible = true;
+      },
     });
     const unsubAwake = subscribeWhenSet(
       state => state.skillsIslandAwake,
@@ -175,7 +180,7 @@ const FloatingSkills = () => {
       fadeIn.kill();
       unsubAwake();
     };
-  }, [uniforms]);
+  }, [mesh, uniforms]);
 
   return <primitive object={mesh} />;
 };

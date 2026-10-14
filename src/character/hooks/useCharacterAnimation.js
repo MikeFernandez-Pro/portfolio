@@ -15,7 +15,6 @@ export function useCharacterAnimation(characterAnimations) {
 
   // Configure one-off animation props
   useEffect(() => {
-    if (!characterAnimations) return;
     // Default state
     characterAnimations.actions[IDLE].fadeIn(0.2).play();
     // Jump config
@@ -26,7 +25,7 @@ export function useCharacterAnimation(characterAnimations) {
   const play = useCallback(
     newAnimation => {
       const prev = currentAnimationRef.current;
-      if (!characterAnimations || prev === newAnimation) return;
+      if (prev === newAnimation) return;
       characterAnimations.actions[prev].fadeOut(0.2);
       currentAnimationRef.current = newAnimation;
       characterAnimations.actions[newAnimation].reset().fadeIn(0.2).play();

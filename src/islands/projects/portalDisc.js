@@ -25,6 +25,7 @@ import {
 } from 'three/tsl';
 
 import { uniformControls } from '#debug/uniformControls.js';
+import { flowField } from '#shaders/includes/flowField.js';
 
 // Current visuals, tweakable from the 'ProjectsPortal' debug folder
 const PORTAL_DISC_DEFAULTS = {
@@ -33,7 +34,6 @@ const PORTAL_DISC_DEFAULTS = {
   deformationStart: 0.3,
   deformationEnd: 0.41,
   deformationStrength: 0.18,
-  textureDistortion: 0.42,
   // Fake window-interior parallax on the project image, driven by the
   // camera (which follows the character): depth of the virtual image plane
   // behind the disc. The offset is horizontal only — the images' extra
@@ -48,9 +48,10 @@ const PORTAL_DISC_DEFAULTS = {
   sizePulseSpeed: 2.39,
   sizePulseMin: 0.063,
   sizePulseMax: 0.1,
-  // Noise flow field that pushes the project texture around
+  // Noise flow field that pushes the project texture around (strength in
+  // disc units, scaled by the opening)
   distortionScale: 0.78,
-  distortionStrength: 0.382,
+  distortionStrength: 0.16044,
   distortionSpeed: 0.033,
 };
 
@@ -72,7 +73,6 @@ export const createPortalDiscUniforms = () => {
     uDeformationStart: uniform(d.deformationStart),
     uDeformationEnd: uniform(d.deformationEnd),
     uDeformationStrength: uniform(d.deformationStrength),
-    uTextureDistortion: uniform(d.textureDistortion),
     uParallaxDepth: uniform(d.parallaxDepth),
     uTextureAspect: uniform(1),
     uRimColor: uniform(new THREE.Color(d.rimColor)),
@@ -136,23 +136,10 @@ export const createPortalDiscMaterial = (
 
     // Two-sample noise flow field deforming the project texture; the center
     // is kept more stable than the rim
-    const noiseUv = portalPosition
-      .mul(u.uDistortionScale)
-      .mul(0.42)
-      .add(
-        vec2(
-          time.mul(u.uDistortionSpeed),
-          time.mul(u.uDistortionSpeed).mul(-0.73)
-        )
-      )
-      .toVar();
-    const distortion = vec2(
-      perlin(noiseUv),
-      perlin(noiseUv.add(vec2(17.31, 41.73)))
-    )
-      .mul(2)
-      .sub(1);
-    const centerStability = smoothstep(0.02, 0.55, length(portalPosition));
+    const { distortion, centerStability } = flowField(perlin, portalPosition, {
+      scale: u.uDistortionScale,
+      speed: u.uDistortionSpeed,
+    });
 
     // Fake interior parallax: intersect the view ray with a virtual plane
     // uParallaxDepth behind the disc, horizontal axis only. Tangent basis
@@ -183,7 +170,6 @@ export const createPortalDiscMaterial = (
         distortion
           .mul(u.uDistortionStrength)
           .mul(mix(0.3, 1, centerStability))
-          .mul(u.uTextureDistortion)
           .mul(max(size, 0.001))
       );
     // Map into the atlas rect; the clamp stops parallax/distortion from
@@ -242,13 +228,6 @@ export const portalDiscControls = uniforms => {
       1,
       0.005
     ),
-    textureDistortion: control(
-      'uTextureDistortion',
-      d.textureDistortion,
-      0,
-      3,
-      0.01
-    ),
     parallaxDepth: control('uParallaxDepth', d.parallaxDepth, 0, 0.5, 0.005),
     rimColor: control('uRimColor', d.rimColor),
     rimIntensity: control('uRimIntensity', d.rimIntensity, 0, 20, 0.1),
@@ -260,7 +239,7 @@ export const portalDiscControls = uniforms => {
       'uDistortionStrength',
       d.distortionStrength,
       0,
-      0.5,
+      1,
       0.001
     ),
     distortionSpeed: control(

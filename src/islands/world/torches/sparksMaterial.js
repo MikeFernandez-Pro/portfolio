@@ -14,53 +14,47 @@ import {
   vec4,
 } from 'three/tsl';
 
-import { pointCoord } from '#utils/pointSprites.js';
+import { createGlowPointsMaterial, pointCoord } from '#utils/pointSprites.js';
 
 const SPEED = 6;
 const COLOR = '#f85f3d';
 const INTENSITY = 0.78;
+const SIZE_SCALE = 2.12;
 
-/** Uniform nodes driven by the TorchSparks props. */
-const createSparksUniforms = ({
-  size,
-  color = COLOR,
-  intensity = INTENSITY,
-}) => ({
-  uSize: uniform(size),
-  uSpeed: uniform(SPEED),
-  uColor: uniform(new THREE.Color(color)),
-  uIntensity: uniform(intensity),
+/**
+ * Uniform nodes shared by every torch size class, written by the
+ * TorchesSparks controls.
+ */
+const createSparksUniforms = () => ({
+  uColor: uniform(new THREE.Color(COLOR)),
+  uIntensity: uniform(INTENSITY),
+  uSizeScale: uniform(SIZE_SCALE),
 });
 
 /**
- * Rising torch sparks on an instanced point sprite. `attributes` are the
- * per-spark particle attribute nodes: position (start jitter), aScale,
- * aElevation (rise length) and aOffset (the torch it belongs to).
+ * Rising torch sparks on an instanced point sprite, `size` being the size
+ * class's spark size. `attributes` are the per-spark particle attribute
+ * nodes: position (start jitter), aScale, aElevation (rise length) and
+ * aOffset (the torch it belongs to).
  */
-const createSparksMaterial = (u, { position, aScale, aElevation, aOffset }) => {
-  // transparent puts the sparks in the transparent render list - required
-  // for the sprite's renderOrder to place them after the smoke columns
-  // (opaque objects draw before all transparent ones, whatever their
-  // renderOrder), so the additive glow reads through the smoke instead of
-  // being painted over by it
-  const material = new THREE.PointsNodeMaterial({
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-  });
+const createSparksMaterial = (
+  u,
+  size,
+  { position, aScale, aElevation, aOffset }
+) => {
+  const material = createGlowPointsMaterial();
 
   // Height inside the rise cycle (also drives the fade); the start jitter
   // narrows as the spark climbs and sways a little
-  const posY = mod(time.mul(u.uSpeed), aElevation).mul(0.03);
+  const posY = mod(time.mul(SPEED), aElevation).mul(0.03);
   const x = position.x
     .div(max(0.9, posY.mul(10)))
     .add(cos(posY.mul(30)).mul(0.01));
   material.positionNode = vec3(x, posY, position.z).add(aOffset);
 
-  // gl_PointSize = min(s, pow(s / (y * s), 2) * 10) * uResolution.y / -viewZ
-  // with s = size * scale: pow(1 / y, 2) * 10 is written 10 / y² with a
-  // floor, posY reaches exactly 0 at the bottom of each cycle
-  const sparkSize = u.uSize.mul(aScale);
+  // Pixel size min(s, 10 / y²) with s = size * scale: sparks shrink as they
+  // rise. y² is floored, posY reaches exactly 0 at the bottom of each cycle
+  const sparkSize = u.uSizeScale.mul(size).mul(aScale);
   material.sizeNode = min(
     sparkSize,
     max(posY.mul(posY), 1e-8).reciprocal().mul(10)
@@ -78,4 +72,8 @@ const createSparksMaterial = (u, { position, aScale, aElevation, aOffset }) => {
 };
 
 export { createSparksUniforms, createSparksMaterial };
-export { COLOR as SPARKS_COLOR, INTENSITY as SPARKS_INTENSITY };
+export {
+  COLOR as SPARKS_COLOR,
+  INTENSITY as SPARKS_INTENSITY,
+  SIZE_SCALE as SPARKS_SIZE_SCALE,
+};

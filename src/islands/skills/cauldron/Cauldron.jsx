@@ -7,7 +7,6 @@ import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 
 import {
-  POTION_DEFAULTS,
   createCauldronPotionMaterial,
   createCauldronPotionUniforms,
   potionControls,
@@ -27,7 +26,6 @@ const Cauldron = props => {
   const { island } = props;
 
   const potionMeshRef = useRef(null);
-  const bubblesPointsRef = useRef(null);
   const planeHeightRef = useRef(POTION_PLANE_HEIGHT);
 
   const perlinNoiseTexture = useVoronoiPerlinTexture();
@@ -46,23 +44,6 @@ const Cauldron = props => {
     };
   }, [island]);
 
-  const applyPlaneHeight = height => {
-    planeHeightRef.current = height;
-
-    if (potionMeshRef.current) {
-      potionMeshRef.current.position.y = height;
-    }
-
-    if (bubblesPointsRef.current) {
-      bubblesPointsRef.current.position.y =
-        potionBounds.surfaceY + BUBBLES_SURFACE_OFFSET + height;
-    }
-  };
-
-  useLayoutEffect(() => {
-    applyPlaneHeight(planeHeightRef.current);
-  }, [potionBounds]);
-
   const { bubbles, uniforms: bubblesUniforms } = useMemo(() => {
     const created = createCauldronBubbles(potionBounds.halfSize);
     // Above the liquid disc (the height follows the planeHeight control)
@@ -74,8 +55,22 @@ const Cauldron = props => {
     return created;
   }, [potionBounds]);
 
+  const applyPlaneHeight = height => {
+    planeHeightRef.current = height;
+
+    if (potionMeshRef.current) {
+      potionMeshRef.current.position.y = height;
+    }
+
+    bubbles.position.y =
+      potionBounds.surfaceY + BUBBLES_SURFACE_OFFSET + height;
+  };
+
+  useLayoutEffect(() => {
+    applyPlaneHeight(planeHeightRef.current);
+  }, [potionBounds]);
+
   useEffect(() => () => bubbles.material.dispose(), [bubbles]);
-  bubblesPointsRef.current = bubbles;
 
   useControls(
     'CauldronBubbles',
@@ -83,10 +78,7 @@ const Cauldron = props => {
   );
 
   const { potionMaterial, potionUniforms } = useMemo(() => {
-    const potionUniforms = createCauldronPotionUniforms(
-      POTION_DEFAULTS,
-      potionBounds
-    );
+    const potionUniforms = createCauldronPotionUniforms(potionBounds);
     const potionMaterial = createCauldronPotionMaterial(
       potionUniforms,
       perlinNoiseTexture

@@ -17,7 +17,8 @@ let _rendererState;
  * should be applied before converting colors to sRGB. SMAA should produce
  * better results than FXAA but is also more expensive to execute.
  *
- * Used Preset: SMAA 1x Medium (with color edge detection)
+ * Preset: SMAA 1x with color edge detection; the defaults are three's
+ * Medium preset, the threshold and search steps are options (see above).
  * Reference: {@link https://github.com/iryoku/smaa/releases/tag/v2.8}.
  *
  * @augments TempNode

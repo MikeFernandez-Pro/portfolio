@@ -1,10 +1,8 @@
 import { useEffect, useMemo } from 'react';
-import { useLoader } from '@react-three/fiber';
 import { useControls } from '#debug/useControls.jsx';
 import { uniformControls } from '#debug/uniformControls.js';
 import * as THREE from 'three/webgpu';
 import {
-  If,
   float,
   max,
   min,
@@ -19,11 +17,9 @@ import {
   uv,
   vec2,
   vec3,
-  Fn,
 } from 'three/tsl';
 import { hash12 } from '#shaders/includes/hash.js';
-
-import smokeUrl from '#assets/textures/smoke.webp';
+import { useSmokeTexture } from '#utils/packedTextures.js';
 
 // World-space cauldron position (GLB `pot` node through the island group
 // transform): the smoke rises from just above the potion surface (the
@@ -40,7 +36,6 @@ const DEFAULTS = {
   topFadeEnd: 1,
   bottomFadeStart: 0.31,
   bottomFadeEnd: 0.41,
-  sway: true,
   timeOffsetStrength: 1,
   swayScale: 2.16,
   swayPower: 3,
@@ -51,19 +46,12 @@ const DEFAULTS = {
 };
 
 /**
- * The cauldron's smoke column: same 1x10 plane and debug schema as
- * TorchSmoke, but a single plain mesh with its own node material driven by
+ * The cauldron's smoke column: same 1x10 plane as TorchSmoke, but a single plain mesh with its own node material driven by
  * smoke.webp instead of the procedural perlin — fully separate from the
  * torch/bonfire smoke.
  */
 const CauldronSmoke = () => {
-  const smokeTexture = useLoader(THREE.TextureLoader, smokeUrl);
-  useMemo(() => {
-    smokeTexture.colorSpace = THREE.NoColorSpace;
-    smokeTexture.wrapS = THREE.RepeatWrapping;
-    smokeTexture.wrapT = THREE.RepeatWrapping;
-    smokeTexture.needsUpdate = true;
-  }, [smokeTexture]);
+  const smokeTexture = useSmokeTexture();
 
   const { smokeMaterial, uniforms } = useMemo(() => {
     const d = DEFAULTS;
@@ -77,7 +65,6 @@ const CauldronSmoke = () => {
       uTopFadeEnd: uniform(d.topFadeEnd),
       uBottomFadeStart: uniform(d.bottomFadeStart),
       uBottomFadeEnd: uniform(d.bottomFadeEnd),
-      uSwayEnabled: uniform(d.sway ? 1 : 0),
       uSwayAmplitude: uniform(d.swayAmplitude),
       uTimeOffsetStrength: uniform(d.timeOffsetStrength),
       uSwayScale: uniform(d.swayScale),
@@ -99,18 +86,16 @@ const CauldronSmoke = () => {
     // base stays anchored to the cauldron whatever the amplitude; swayPower
     // shapes the curve. The epsilon keeps pow(0, 0) out of undefined
     // territory when swayPower is 0
-    smokeMaterial.positionNode = Fn(() => {
-      const position = vec3(positionGeometry).toVar();
-      If(uniforms.uSwayEnabled.greaterThan(0.5), () => {
-        const heightFactor = pow(uv().y, max(uniforms.uSwayPower, 0.0001));
-        position.x.addAssign(
-          sin(position.y.mul(uniforms.uSwayScale).sub(columnTime))
-            .mul(heightFactor)
-            .mul(uniforms.uSwayAmplitude)
-        );
-      });
-      return position;
-    })();
+    const heightFactor = pow(uv().y, max(uniforms.uSwayPower, 0.0001));
+    smokeMaterial.positionNode = positionGeometry.add(
+      vec3(
+        sin(positionGeometry.y.mul(uniforms.uSwayScale).sub(columnTime))
+          .mul(heightFactor)
+          .mul(uniforms.uSwayAmplitude),
+        0,
+        0
+      )
+    );
 
     // Texture rotated 90 degrees: local x reads the texture's y axis and the
     // upward scroll runs along the texture's x axis, at uSpeed
@@ -163,7 +148,7 @@ const CauldronSmoke = () => {
     // Gamma on the texture: < 1 = denser smoke (keeps the detail), > 1 =
     // thinner wisps, 1 = raw texture
     density: smokeControl('uDensity', d.density, 0.1, 3, 0.01),
-    // Texture scroll speed (1 = the old hardcoded pace)
+    // Texture scroll speed
     speed: smokeControl('uSpeed', d.speed, 0, 3, 0.01),
     // Fade width on the plane's vertical edges, in plane units (0 = hard)
     edgeFade: smokeControl('uEdgeFade', d.edgeFade, 0, 0.5, 0.001),
@@ -181,13 +166,6 @@ const CauldronSmoke = () => {
       0.01
     ),
     bottomFadeEnd: smokeControl('uBottomFadeEnd', d.bottomFadeEnd, 0, 1, 0.01),
-    // Fully disables the vertex sway animation
-    sway: {
-      value: d.sway,
-      onChange: v => {
-        uniforms.uSwayEnabled.value = v ? 1 : 0;
-      },
-    },
     // Shifts the animation phase (hashed from the column's world position)
     timeOffsetStrength: smokeControl(
       'uTimeOffsetStrength',

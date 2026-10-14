@@ -9,22 +9,10 @@ import {
   createSmokeUniforms,
   smokeColumnTimeOffset,
 } from '#shaders/smoke.js';
-import { TORCHES } from './torches.js';
+import { TORCHES, TORCH_SMOKE_DEFAULTS as DEFAULTS } from './torches.js';
 
 // The torches' smoke column bases (the bonfire has its own BonfireSmoke)
 const POSITIONS = TORCHES.flatMap(torch => (torch.smoke ? [torch.smoke] : []));
-
-const DEFAULTS = {
-  color: '#313131',
-  opacity: 0.32,
-  fadeHeight: 0.67,
-  baseFade: 0.32,
-  timeOffsetStrength: 1,
-  swayScale: 2.8,
-  swayPower: 0.83,
-  width: 0.14,
-  height: 2.9,
-};
 
 /**
  * The torch smoke columns, reusing the bonfire smoke shader: one shared

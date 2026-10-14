@@ -1,3 +1,4 @@
+import { settingControls } from '#debug/settingControls.js';
 import { uniformControls } from '#debug/uniformControls.js';
 
 /**
@@ -36,16 +37,8 @@ const heightControl = (light, min, max) => ({
   },
 });
 
-// A value of `light.settings` (one an animation scales on top of), from its
-// default
-const settingControl = (light, key, min, max, step) => ({
-  value: light.defaults[key],
-  min,
-  max,
-  step,
-  onChange: v => {
-    light.settings[key] = v;
-  },
-});
+// A value of `light.settings` (one an animation scales on top of)
+const settingControl = (light, key, min, max, step) =>
+  settingControls(light.settings)(key, min, max, step);
 
 export { pointLightControls, positionControl, heightControl, settingControl };

@@ -26,8 +26,8 @@ const SLEEP_TEXT_DEFAULTS = {
   swayFrequency: 2,
 };
 
-// Fills the Z glyph outline (same font size as the old 0.75 * width text),
-// centered on its bounding box: no webfont to download and wait for
+// Fills the Z glyph outline (font size 0.75 * canvas width), centered on
+// its bounding box: no webfont to download and wait for
 function drawLetter(canvas) {
   const ctx = canvas.getContext('2d');
   const { width, height } = canvas;

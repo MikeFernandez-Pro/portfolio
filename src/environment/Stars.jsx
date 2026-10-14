@@ -15,6 +15,7 @@ import {
 
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 import {
+  createGlowPointsMaterial,
   createParticleSprite,
   particleAttribute,
   pointCoord,
@@ -86,11 +87,7 @@ const Stars = () => {
     const aSize = particleAttribute(sizesArray, 1);
     const aColor = particleAttribute(colorsArray, 1);
 
-    const material = new THREE.PointsNodeMaterial({
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    });
+    const material = createGlowPointsMaterial();
     material.positionNode = particleAttribute(positionsArray, 3);
 
     // Twinkle; reduced motion: frozen time = static star sizes

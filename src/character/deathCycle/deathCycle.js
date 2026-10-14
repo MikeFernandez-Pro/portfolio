@@ -4,11 +4,7 @@ import { playDeathAnimation } from './deathAnimation.js';
 import { playRespawnAnimation } from './respawnAnimation.js';
 import { playDeathParticles } from './DeathParticles.jsx';
 
-export {
-  registerDissolve,
-  registerSpiral,
-  registerDeathParticles,
-} from './targets.js';
+export { registerDissolve, registerSpiral } from './targets.js';
 
 // Where the character rests at the spawn point. The body is held FIXED
 // during the respawn, so this is the settled height, not the initial

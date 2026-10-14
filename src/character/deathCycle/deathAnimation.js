@@ -2,6 +2,7 @@ import gsap from 'gsap';
 
 import { targets } from './targets.js';
 import { createScrubbableTimeline } from './scrubbableTimeline.js';
+import { addDissolveGrow, addDissolveRecede } from '#utils/dissolveTweens.js';
 
 // Character death: the respawn dissolve played the other way around — the
 // formed character mixes into the voronoi lava, then the lava recedes to
@@ -19,11 +20,11 @@ export const DEATH_DEFAULTS = {
 // Live, mutable copy the controls edit and the timeline reads at build time
 export const deathConfig = { ...DEATH_DEFAULTS };
 
-const buildDeathTimeline = ({ onComplete, paused = false } = {}) => {
+const buildDeathTimeline = ({ paused = false } = {}) => {
   const character = targets.dissolve;
   const c = deathConfig;
 
-  const tl = gsap.timeline({ paused, onComplete });
+  const tl = gsap.timeline({ paused });
   if (!character) return tl;
 
   // Start from the formed resting state
@@ -32,16 +33,11 @@ const buildDeathTimeline = ({ onComplete, paused = false } = {}) => {
   tl.set(character.uThickness, { value: 0 }, 0);
 
   // Phase 1: the lava grows over the character while it un-forms
-  tl.to(
-    character.uProgress,
-    { value: 1, duration: c.dissolveDuration, ease: 'power1.out' },
-    0
-  );
-  tl.to(
-    character.uThickness,
-    { value: c.thickness, duration: c.dissolveDuration, ease: 'linear' },
-    0
-  );
+  addDissolveGrow(tl, character, {
+    at: 0,
+    duration: c.dissolveDuration,
+    thickness: c.thickness,
+  });
   tl.to(
     character.uCharFormProgress,
     { value: 0, duration: c.dissolveDuration, ease: 'linear' },
@@ -49,16 +45,10 @@ const buildDeathTimeline = ({ onComplete, paused = false } = {}) => {
   );
 
   // Phase 2: the lava recedes, leaving nothing
-  tl.to(
-    character.uProgress,
-    { value: 0, duration: c.fadeDuration, ease: 'linear' },
-    c.dissolveDuration
-  );
-  tl.to(
-    character.uThickness,
-    { value: 0, duration: c.fadeDuration, ease: 'linear' },
-    c.dissolveDuration
-  );
+  addDissolveRecede(tl, character, {
+    at: c.dissolveDuration,
+    duration: c.fadeDuration,
+  });
 
   return tl;
 };

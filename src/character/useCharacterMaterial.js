@@ -1,10 +1,13 @@
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three/webgpu';
-import { Discard, Fn, If, materialColor, mix, uniform, vec4 } from 'three/tsl';
+import { uniform } from 'three/tsl';
 
 import { useVoronoiPerlinTexture } from '#utils/packedTextures.js';
 import { toNodeMaterial } from '#utils/nodeMaterials.js';
-import { createDissolveUniforms, dissolveLava } from '#shaders/dissolve.js';
+import {
+  characterDissolveColor,
+  createDissolveUniforms,
+} from '#shaders/dissolve.js';
 import { patchPointLights } from '#islands/world/pointLights/pointLights.js';
 import { patchCloudShadows } from '#shaders/cloudShadows.js';
 import { RESPAWN_DEFAULTS } from '#character/deathCycle/respawnAnimation.js';
@@ -47,10 +50,6 @@ const useCharacterMaterial = characterScene => {
   useEffect(() => registerDissolve(uniforms), [uniforms]);
 
   useEffect(() => {
-    if (!characterScene) {
-      return;
-    }
-
     const characterMesh = characterScene.getObjectByName(CHARACTER_MESH_NAME);
 
     if (!characterMesh) {
@@ -63,22 +62,11 @@ const useCharacterMaterial = characterScene => {
     material.depthWrite = true;
 
     // Lava dissolve mixed over the knight's own color (map included)
-    const lava = dissolveLava(
+    material.colorNode = characterDissolveColor(
       uniforms,
       uniform(BOUNDS_MIN),
       uniform(BOUNDS_MAX)
     );
-    material.colorNode = Fn(() => {
-      const color = mix(
-        lava,
-        materialColor,
-        uniforms.uCharFormProgress
-      ).toVar();
-      If(color.a.lessThan(uniforms.uAlphaClip), () => {
-        Discard();
-      });
-      return vec4(color);
-    })();
 
     patchCloudShadows(material);
     patchPointLights(material);

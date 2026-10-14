@@ -66,3 +66,17 @@ export const TORCHES = [
     size: 'large',
   },
 ];
+
+// The torch smoke columns' look (TorchSmoke.jsx, also built by
+// scripts/check-wgsl.mjs)
+export const TORCH_SMOKE_DEFAULTS = {
+  color: '#313131',
+  opacity: 0.32,
+  fadeHeight: 0.67,
+  baseFade: 0.32,
+  timeOffsetStrength: 1,
+  swayScale: 2.8,
+  swayPower: 0.83,
+  width: 0.14,
+  height: 2.9,
+};

@@ -57,6 +57,7 @@ const usePostProcessingControls = (params, postRef) => {
 
   const a = AO_DEFAULTS;
   const ao = key => setNodeSetting('ao', key);
+  const shared = uniformControls(params);
   useControls('Ambient Occlusion', {
     radius: {
       value: a.radius,
@@ -100,14 +101,8 @@ const usePostProcessingControls = (params, postRef) => {
       step: 1,
       onChange: ao('samples'),
     },
-    intensity: uniformControls(params)(
-      'aoIntensity',
-      a.intensity,
-      0.01,
-      4,
-      0.01
-    ),
-    color: uniformControls(params)('aoTint', a.color),
+    intensity: shared('aoIntensity', a.intensity, 0.01, 4, 0.01),
+    color: shared('aoTint', a.color),
     halfRes: { value: a.halfRes, onChange: ao('halfRes') },
     denoiseRadius: {
       value: a.denoiseRadius,

@@ -32,7 +32,7 @@ const SkillsGlyph = props => {
     []
   );
 
-  // Progress of the light fade-in (0 → 1 on glyph activation), kept so the
+  // Progress of the light fade-in (0 → 1 on the awakening), kept so the
   // intensity control stays accurate before/after the animation
   const lightProgressRef = useRef(0);
 
@@ -71,17 +71,16 @@ const SkillsGlyph = props => {
   );
 
   useEffect(() => {
-    // Off at rest, the activation animation below raises it
+    // Off at rest, the awakening animation below raises it
     glyphMaterial.emissive = new THREE.Color('#ff6c43');
     glyphMaterial.emissiveIntensity = 0;
 
     // The glyph light sits above the major glyph; its world
     // position lives in the GLB, so it's resolved at runtime
     majorGlyph.updateWorldMatrix(true, false);
-    majorGlyph.getWorldPosition(pointLights.skillsGlyph.position.value);
-    glyphBaseYRef.current = pointLights.skillsGlyph.position.value.y;
-    pointLights.skillsGlyph.position.value.y +=
-      pointLights.skillsGlyph.settings.height;
+    majorGlyph.getWorldPosition(light.position.value);
+    glyphBaseYRef.current = light.position.value.y;
+    light.position.value.y += light.settings.height;
 
     // The glyphs glow up
     const glyphEmissiveAnimation = gsap.fromTo(
@@ -96,8 +95,8 @@ const SkillsGlyph = props => {
       current: 1,
       paused: true,
       onUpdate: () => {
-        pointLights.skillsGlyph.intensity.value =
-          pointLights.skillsGlyph.settings.intensity * lightProgressRef.current;
+        light.intensity.value =
+          light.settings.intensity * lightProgressRef.current;
       },
     });
 

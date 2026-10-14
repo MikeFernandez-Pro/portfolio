@@ -18,7 +18,7 @@ import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 import { GlbSkinnedMesh } from '#islands/GlbSkinnedMesh.jsx';
 
 // Grade shared by the three flags, driven by the Flags > Grade debug folder
-// in CountriesFlags (TSL uniform nodes: `.value` like the old objects)
+// in CountriesFlags (TSL uniform nodes)
 const flagsGradeUniforms = {
   uFlagLightness: uniform(1),
   uFlagSaturation: uniform(1),

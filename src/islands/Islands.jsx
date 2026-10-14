@@ -29,7 +29,7 @@ import { GlbSkinnedMesh } from './GlbSkinnedMesh.jsx';
 import {
   candleFlamePositions,
   dropEmptyMorphTargets,
-  hideVercelSign,
+  dropVercelSign,
   splitIslandTerrain,
 } from './islandGeometryFixups.js';
 import { ISLAND_POSITION, ISLAND_SCALE, islandToWorld } from './islandSpace.js';
@@ -94,9 +94,10 @@ const Islands = () => {
   }, [materials, islandTexture]);
 
   // Geometry edits that must land before the meshes mount: the terrain split
-  // into its static and moving triangles, and no morph targets on the
-  // primitives they don't move (islandGeometryFixups.js)
+  // into its static and moving triangles, no Vercel sign quads, and no morph
+  // targets on the primitives they don't move (islandGeometryFixups.js)
   const staticTerrain = useMemo(() => {
+    dropVercelSign(nodes);
     dropEmptyMorphTargets(nodes);
     return splitIslandTerrain(nodes);
   }, [nodes]);
@@ -120,12 +121,11 @@ const Islands = () => {
   const islandAnimations = useAnimations(filteredAnimations, islandRef);
 
   useEffect(() => {
-    hideVercelSign(nodes);
     // One point light per candle, at its flame tip
     setCandleLightPositions(candleFlamePositions(nodes).map(islandToWorld));
 
     // Hide keyboard controls on mobile
-    island.materials.controls.visible = !IS_MOBILE_DEVICE;
+    materials.controls.visible = !IS_MOBILE_DEVICE;
 
     // Play island animations
     islandAnimations.actions['details'].play();

@@ -3,7 +3,6 @@
 
 /* variables */
 * {
-  --bg-color-100: #73b5f3;
   --bg-color-300: #659fdd;
   --bg-color-800: #161a38;
   --text-color: #fff;
@@ -14,7 +13,7 @@
 /* default reset */
 *,
 *::before,
-a *::after {
+*::after {
   box-sizing: border-box;
 }
 
@@ -41,8 +40,7 @@ button {
   font: inherit;
 }
 
-#root,
-#__next {
+#root {
   isolation: isolate;
 }
 

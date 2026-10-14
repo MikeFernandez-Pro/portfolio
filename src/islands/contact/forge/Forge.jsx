@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Howl } from 'howler';
 import gsap from 'gsap';
 import * as THREE from 'three/webgpu';
+import { uniform } from 'three/tsl';
 
 import { ForgeSparks } from './ForgeSparks.jsx';
 import { useStore } from '#store';
@@ -20,7 +21,8 @@ const Forge = props => {
   const { islandAnimations } = props;
 
   const forgeHammerAnimationRef = useRef();
-  const forgeSparksRef = useRef();
+  // Strike progress of the sparks burst (0 -> 1)
+  const sparksProgress = useMemo(() => uniform(0), []);
 
   const hammerSoundEffect = useMemo(
     () =>
@@ -54,7 +56,7 @@ const Forge = props => {
     const forgeHammerInterval = setInterval(() => {
       islandAnimations.actions['anvilAnimation'].reset().play();
       forgeHammerAnimationRef.current = gsap.fromTo(
-        forgeSparksRef.current.uProgress,
+        sparksProgress,
         { value: 0 },
         {
           value: 1,
@@ -69,7 +71,7 @@ const Forge = props => {
       hammerSoundEffect.play();
     }, HAMMER_INTERVAL);
 
-    // Clear animations, interval and subscriptions on unmount
+    // Clear animations and interval on unmount
     return () => {
       islandAnimations.actions['anvilAnimation']?.stop();
       // Unset until the first strike
@@ -80,7 +82,7 @@ const Forge = props => {
     };
   }, []);
 
-  return <ForgeSparks forgeSparksRef={forgeSparksRef} />;
+  return <ForgeSparks progress={sparksProgress} />;
 };
 
 export { Forge };

@@ -1,7 +1,7 @@
 import { PhysicsWorld } from './PhysicsWorld.js';
 
-// Same gravity the rapier <Physics> wrapper used (~3x earth — tuned for the
-// jump feel). Also read by scripts/physics-parity.mjs
+// ~3x earth — tuned for the jump feel. Also read by
+// scripts/physics-parity.mjs
 export const GRAVITY_Y = -29.43;
 
 // The single game world

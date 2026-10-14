@@ -150,20 +150,27 @@ export const dropEmptyMorphTargets = nodes => {
 /**
  * The old Vercel sign quads are baked into the signs primitive together with
  * the mail and LinkedIn ones, but they sit apart at x > -3 in geometry space:
- * shove them below the island, XSign renders an X logo in their place.
+ * drop their triangles, XSign renders an X logo in their place.
  */
-export const hideVercelSign = nodes => {
-  const geometry = nodes.island_15.geometry;
-  if (geometry.userData.vercelSignHidden) return;
+export const dropVercelSign = nodes => {
+  const node = nodes.island_15;
+  if (node.userData.vercelSignDropped) return;
 
+  const geometry = node.geometry;
   const position = geometry.attributes.position;
-  for (let i = 0; i < position.count; i++) {
-    if (position.getX(i) > -3) {
-      position.setY(i, position.getY(i) - 30);
+  const index = geometry.index;
+  const kept = [];
+  for (let t = 0; t < index.count / 3; t++) {
+    let sign = false;
+    for (let corner = 0; corner < 3 && !sign; corner++) {
+      sign = position.getX(index.getX(t * 3 + corner)) > -3;
     }
+    if (!sign) kept.push(t);
   }
-  position.needsUpdate = true;
-  geometry.userData.vercelSignHidden = true;
+
+  node.geometry = subsetGeometry(geometry, kept, { skinned: true });
+  geometry.dispose();
+  node.userData.vercelSignDropped = true;
 };
 
 /**

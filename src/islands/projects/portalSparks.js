@@ -16,6 +16,7 @@ import {
 
 import { uniformControls } from '#debug/uniformControls.js';
 import {
+  createGlowPointsMaterial,
   createParticleSprite,
   particleAttribute,
   pointGlow,
@@ -52,11 +53,7 @@ for (let i = 0; i < SPARKS_COUNT; i++) {
 // Sparks spiralling into the open portal: each loops on its own phase,
 // spawning on a wide ring in front of the portal and diving into the disc
 const createPortalSparksMaterial = u => {
-  const material = new THREE.PointsNodeMaterial({
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-  });
+  const material = createGlowPointsMaterial();
 
   const aSize = particleAttribute(sparksSizes, 1);
   const aAngle = particleAttribute(sparksAngles, 1);
@@ -74,7 +71,7 @@ const createPortalSparksMaterial = u => {
     u.uFrontOffset.mul(ease.oneMinus())
   );
 
-  // Sparks shrink as they get sucked in (gl_PointSize * uResolution.y / -viewZ)
+  // Sparks shrink as they get sucked in
   material.sizeNode = u.uSize
     .mul(aSize)
     .mul(mix(1, 0.4, ease))

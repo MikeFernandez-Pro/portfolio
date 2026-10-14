@@ -53,6 +53,8 @@ const CharacterController = () => {
     stateRef.current = {
       speed: DEFAULT_CHARACTER_SPEED,
       canJump: false,
+      // Last grounded state published to the store (it starts grounded)
+      grounded: true,
       moving: false,
       jumping: false,
       // Set by the falling zone: the character fell off an island and plays
@@ -139,8 +141,8 @@ const CharacterController = () => {
   }, [animation, characterBody, s]);
 
   // Character jump event. Falling and respawning own the animation: no jump
-  // until the character is back on its feet (the grounded fallback can
-  // re-enable canJump while the body is held FIXED during the respawn)
+  // until the character is back on its feet (the body keeps its last
+  // grounded state while it is held FIXED during the respawn)
   const characterJumpEvent = () => {
     if (!s.canJump || s.falling || s.respawning) return;
     if (s.fallingPreview) return;
@@ -156,19 +158,12 @@ const CharacterController = () => {
     // Kill the grounded grace window, or it would re-enable jumping for a
     // few frames after takeoff
     characterBody.current.clearGrounded();
-    // The frame loop only writes the store flag while canJump is still true,
-    // so a jump has to publish the takeoff itself (the grass trample releases
-    // the blades while airborne and stamps the landing)
-    useStore.setState({ characterGrounded: false });
-    // Uniform jump strength: the impulse cancels whatever vertical velocity
-    // the slope climb added, so takeoff speed is CHARACTER_JUMP_SPEED on any
-    // ground (adding a fixed impulse jumped visibly higher uphill)
-    characterBody.current.applyImpulse({
-      x: 0,
-      y:
-        (CHARACTER_JUMP_SPEED - characterBody.current.linvel().y) *
-        characterBody.current.mass(),
-      z: 0,
+    // Uniform jump strength: the takeoff replaces whatever vertical velocity
+    // the slope climb added, so it is CHARACTER_JUMP_SPEED on any ground
+    // (adding a fixed impulse jumped visibly higher uphill)
+    characterBody.current.setLinvel({
+      ...characterBody.current.linvel(),
+      y: CHARACTER_JUMP_SPEED,
     });
     animation.play(JUMP);
   };
@@ -229,18 +224,20 @@ const CharacterController = () => {
     const characterPosition = characterBody.current.translation();
 
     // Grounded state straight from the contact solve (normals steeper than
-    // ~45° don't count; short grace for bumps and edges). Replaced the old
-    // ground trimesh sensor + zero-velocity fallback — contact normals can't
-    // miss events the way thin-trimesh sensor intersections did.
+    // ~45° don't count; short grace for bumps and edges)
     const characterGrounded = characterBody.current.isGrounded();
     if (characterGrounded && (!s.canJump || s.jumping || s.falling)) {
       s.canJump = true;
       s.jumping = false;
       s.falling = false;
-      useStore.setState({ characterGrounded: true });
     } else if (!characterGrounded && s.canJump) {
       s.canJump = false;
-      useStore.setState({ characterGrounded: false });
+    }
+    // Published on each change (the grass trample releases the blades while
+    // airborne and stamps the landing)
+    if (characterGrounded !== s.grounded) {
+      s.grounded = characterGrounded;
+      useStore.setState({ characterGrounded });
     }
 
     // Primary death trigger is the death zone; this catches the character
@@ -315,10 +312,9 @@ const CharacterController = () => {
 
   useThirdPersonCamera(characterBody);
 
-  // Advance the physics AFTER the controller and camera useFrames, matching
-  // the update order of the rapier <Physics> wrapper (its step ran last, so
-  // the camera always read the previous step's translation). Keep this the
-  // last frame callback registered here
+  // Advance the physics AFTER the controller and camera useFrames (the camera
+  // reads the previous step's translation, the order the parity harness
+  // validated). Keep this the last frame callback registered here
   useFrame((state, delta) => {
     physicsWorld.step(delta);
   });
@@ -332,8 +328,7 @@ const CharacterController = () => {
           crosses the falling zone under the island edges, then the death
           zone below (or the DEATH_HEIGHT fallback) causes death */}
       <FallAndDeathZones
-        onFallingZoneEnter={state => {
-          if (state.other.rigidBody !== characterBody.current) return;
+        onFallingZoneEnter={() => {
           if (s.respawning || s.falling) return;
           s.falling = true;
           // Falling off the edge with downward momentum can cross the zone
@@ -345,10 +340,7 @@ const CharacterController = () => {
           stopRunningSound();
           animation.play(FALLING);
         }}
-        onDeathZoneEnter={state => {
-          if (state.other.rigidBody !== characterBody.current) return;
-          killCharacter();
-        }}
+        onDeathZoneEnter={killCharacter}
       />
       <group ref={characterGroupRef}>
         {/* Visual-only y offset of the mesh inside the body group (the

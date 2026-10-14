@@ -6,6 +6,7 @@ import { useKTX2 } from '@react-three/drei/webgpu';
 import spiralGrassHeightUrl from '#assets/textures/spiral-grassHeight.ktx2';
 import voronoiPerlinUrl from '#assets/textures/voronoi-perlin.ktx2';
 import perlinCloudsUrl from '#assets/textures/perlin-clouds.webp';
+import smokeUrl from '#assets/textures/smoke.webp';
 import screensAtlasUrl from '#assets/textures/screens-atlas.ktx2';
 import islandTextureUrl from '#assets/textures/islandTexture2k.ktx2';
 
@@ -54,17 +55,23 @@ const useSpiralGrassHeightTexture = () =>
 const useVoronoiPerlinTexture = () =>
   useConfiguredKtx2(voronoiPerlinUrl, configureRepeatingData);
 
+// Plain image as repeating linear data. useLoader caches by URL like
+// useKTX2, so consumers share one instance.
+// Not drei's useTexture: drei 11 reads state.gl, null under R3F 10 WebGPU
+const useRepeatingDataTexture = url => {
+  const texture = useLoader(THREE.TextureLoader, url);
+  useMemo(() => configureRepeatingData(texture), [texture]);
+  return texture;
+};
+
 // perlin-clouds — standalone 512 lossless webp for the cloud shadows only:
 // they magnify the noise far beyond the 128 packed copy, and both KTX2
 // variants lost the A/B (UASTC bands on the thresholded gradients, raw R8
 // arrives as a NEAREST-filtered DataTexture).
-// useLoader caches by URL like useKTX2, so consumers share one instance.
-// Not drei's useTexture: drei 11 reads state.gl, null under R3F 10 WebGPU
-const usePerlinCloudsTexture = () => {
-  const texture = useLoader(THREE.TextureLoader, perlinCloudsUrl);
-  useMemo(() => configureRepeatingData(texture), [texture]);
-  return texture;
-};
+const usePerlinCloudsTexture = () => useRepeatingDataTexture(perlinCloudsUrl);
+
+// smoke — the cauldron smoke column's texture (R).
+const useSmokeTexture = () => useRepeatingDataTexture(smokeUrl);
 
 // screens-atlas — images shown on screen (project portal screenshots,
 // indicator Enter tile, X logo), flattened over black. No alpha channel: cutout
@@ -123,6 +130,7 @@ export {
   useSpiralGrassHeightTexture,
   useVoronoiPerlinTexture,
   usePerlinCloudsTexture,
+  useSmokeTexture,
   useScreensAtlasTexture,
   useIslandTexture,
   SCREENS_ATLAS_RECTS,

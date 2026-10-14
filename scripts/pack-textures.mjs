@@ -239,7 +239,7 @@ const encodeKtx2 = async ({ sourcePath, ktx2Path, prepare, args }) => {
 
 if (spawnSync('ktx', ['--version']).error) {
   console.warn(
-    '\nktx CLI not found - skipping KTX2 encoding (PNGs still valid)'
+    '\nktx CLI not found - skipping KTX2 encoding (the app loads the .ktx2 files, which are now stale)'
   );
 } else {
   for (const { source, args } of KTX_ENCODES) {

@@ -183,8 +183,7 @@ const Lights = () => {
 
               targetObject.position.copy(_snapped);
               light.position.copy(_snapped).add(LIGHT_OFFSET);
-              light.target = targetObject;
-              light.target.updateMatrixWorld();
+              targetObject.updateMatrixWorld();
             }
           }
         );

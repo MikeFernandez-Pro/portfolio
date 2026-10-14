@@ -6,6 +6,8 @@ import { IS_MOBILE_DEVICE } from '#utils/device.js';
 const ROTATION_AXIS = new THREE.Vector3(0, 1, 0);
 const TARGET_QUATERNION = new THREE.Quaternion();
 const HALF_PI = Math.PI / 2;
+// How quickly the character turns toward the inpu. Higher value turns faster.
+const TURN_SPEED = 16;
 
 // Keyboard keys held -> movement angle (undefined when not moving)
 export const directionOffset = ({ forward, backward, leftward, rightward }) => {
@@ -35,8 +37,6 @@ export function updateMovement({
   characterSpeed,
   delta,
 }) {
-  if (!characterBody?.current || !characterMesh?.current) return;
-
   const body = characterBody.current;
 
   // Linear velocity
@@ -46,11 +46,13 @@ export function updateMovement({
 
   body.setLinvel({ x, y: body.linvel().y, z });
 
-  // Smooth rotation toward movement direction
+  // Smooth rotation toward movement direction: framerate independent
+  // exponential lerp, fast at first then easing into the target
   TARGET_QUATERNION.setFromAxisAngle(
     ROTATION_AXIS,
     IS_MOBILE_DEVICE ? joystickAngle + HALF_PI : direction - HALF_PI
   );
 
-  characterMesh.current.quaternion.rotateTowards(TARGET_QUATERNION, 15 * delta);
+  const turnAlpha = 1 - Math.exp(-TURN_SPEED * delta);
+  characterMesh.current.quaternion.rotateTowards(TARGET_QUATERNION, turnAlpha);
 }

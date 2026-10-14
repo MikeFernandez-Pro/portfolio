@@ -1,12 +1,16 @@
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three/webgpu';
-import { uniform } from 'three/tsl';
 
 import { useControls } from '#debug/useControls.jsx';
+import { uniformControls } from '#debug/uniformControls.js';
 import { REDUCED_MOTION_AT_LOAD } from '#utils/reducedMotion.js';
 import { mulberry32 } from '#utils/random.js';
 
-import { createWindLinesMaterial } from './windLinesMaterial.js';
+import {
+  createWindLinesMaterial,
+  createWindLinesUniforms,
+  WIND_LINES_UNIFORM_DEFAULTS,
+} from './windLinesMaterial.js';
 
 const LINE_SEGMENTS = 20;
 const WIND_TIME_OFFSET_MAX = 100;
@@ -15,16 +19,12 @@ const WIND_LINES_RENDER_ORDER = 100;
 
 const WIND_LINES_DEFAULTS = {
   enabled: true,
-  color: '#ffffff',
   direction: 1.12,
   gridSpacing: 6,
   geometryLength: 22.1,
   baseHeight: 3,
   heightVariation: 7,
   width: 0.11,
-  speed: 0.76,
-  alphaMultiplier: 0.11,
-  lengthMultiplier: 1.75,
   // Field bounds covering the archipelago
   centerX: -6,
   centerZ: -26,
@@ -36,9 +36,12 @@ const WIND_LINES_DEFAULTS = {
  * Instanced wind-line ribbons drifting above the islands.
  */
 const WindLines = () => {
+  const uniforms = useMemo(createWindLinesUniforms, []);
+
+  const control = uniformControls(uniforms);
   const controls = useControls('Wind Lines', {
     enabled: WIND_LINES_DEFAULTS.enabled,
-    color: WIND_LINES_DEFAULTS.color,
+    color: control('uColor', WIND_LINES_UNIFORM_DEFAULTS.color),
     direction: {
       value: WIND_LINES_DEFAULTS.direction,
       min: -Math.PI,
@@ -75,19 +78,21 @@ const WindLines = () => {
       max: 0.5,
       step: 0.01,
     },
-    speed: { value: WIND_LINES_DEFAULTS.speed, min: 0, max: 5, step: 0.01 },
-    alphaMultiplier: {
-      value: WIND_LINES_DEFAULTS.alphaMultiplier,
-      min: 0,
-      max: 2,
-      step: 0.01,
-    },
-    lengthMultiplier: {
-      value: WIND_LINES_DEFAULTS.lengthMultiplier,
-      min: 0.1,
-      max: 4,
-      step: 0.01,
-    },
+    speed: control('uSpeed', WIND_LINES_UNIFORM_DEFAULTS.speed, 0, 5, 0.01),
+    alphaMultiplier: control(
+      'uAlphaMultiplier',
+      WIND_LINES_UNIFORM_DEFAULTS.alphaMultiplier,
+      0,
+      2,
+      0.01
+    ),
+    lengthMultiplier: control(
+      'uLengthMultiplier',
+      WIND_LINES_UNIFORM_DEFAULTS.lengthMultiplier,
+      0.1,
+      4,
+      0.01
+    ),
     centerX: {
       value: WIND_LINES_DEFAULTS.centerX,
       min: -60,
@@ -103,16 +108,6 @@ const WindLines = () => {
     sizeX: { value: WIND_LINES_DEFAULTS.sizeX, min: 4, max: 120, step: 1 },
     sizeZ: { value: WIND_LINES_DEFAULTS.sizeZ, min: 4, max: 160, step: 1 },
   });
-
-  const uniforms = useMemo(
-    () => ({
-      uAlphaMultiplier: uniform(WIND_LINES_DEFAULTS.alphaMultiplier),
-      uSpeed: uniform(WIND_LINES_DEFAULTS.speed),
-      uLengthMultiplier: uniform(WIND_LINES_DEFAULTS.lengthMultiplier),
-      uColor: uniform(new THREE.Color(WIND_LINES_DEFAULTS.color)),
-    }),
-    []
-  );
 
   const geometry = useMemo(() => {
     // Ribbon strip centered at the origin, extending along X, then turned
@@ -219,13 +214,6 @@ const WindLines = () => {
   const material = useMemo(() => createWindLinesMaterial(uniforms), [uniforms]);
 
   useEffect(() => () => material.dispose(), [material]);
-
-  useEffect(() => {
-    uniforms.uAlphaMultiplier.value = controls.alphaMultiplier;
-    uniforms.uSpeed.value = controls.speed;
-    uniforms.uLengthMultiplier.value = controls.lengthMultiplier;
-    uniforms.uColor.value.set(controls.color);
-  }, [controls, uniforms]);
 
   // The streaks are pure drifting motion - off entirely under reduced motion
   const enabled = controls.enabled && !REDUCED_MOTION_AT_LOAD;

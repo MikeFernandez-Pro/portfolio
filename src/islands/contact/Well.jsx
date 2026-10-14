@@ -297,24 +297,19 @@ const Well = () => {
     fishMaterial.emissiveIntensity = controls.fishIntensity;
   }, [fishMaterial, controls.fishColor, controls.fishIntensity]);
 
+  // Both fish circle the well, the small one SMALL_FISH_OFFSET ahead
+  const fishes = [
+    [bigFishRef, BIG_FISH_AMPLITUDE, 0],
+    [smallFishRef, SMALL_FISH_AMPLITUDE, SMALL_FISH_OFFSET],
+  ];
   useFrame(({ elapsed }) => {
-    // Big fish
-    const bigAmplitude = BIG_FISH_AMPLITUDE * controls.fishMovementStrength;
-    bigFishRef.current.rotation.y = -elapsed * FISHES_SPEED - Math.PI / 2;
-    bigFishRef.current.position.x =
-      Math.sin(-elapsed * FISHES_SPEED) * bigAmplitude;
-    bigFishRef.current.position.z =
-      Math.cos(-elapsed * FISHES_SPEED) * bigAmplitude;
-
-    // Small fish
-    const smallAmplitude = SMALL_FISH_AMPLITUDE * controls.fishMovementStrength;
-    smallFishRef.current.rotation.y =
-      -elapsed * FISHES_SPEED + SMALL_FISH_OFFSET - Math.PI / 2;
-
-    smallFishRef.current.position.x =
-      Math.sin(-elapsed * FISHES_SPEED + SMALL_FISH_OFFSET) * smallAmplitude;
-    smallFishRef.current.position.z =
-      Math.cos(-elapsed * FISHES_SPEED + SMALL_FISH_OFFSET) * smallAmplitude;
+    for (const [fishRef, amplitude, offset] of fishes) {
+      const angle = -elapsed * FISHES_SPEED + offset;
+      const radius = amplitude * controls.fishMovementStrength;
+      fishRef.current.rotation.y = angle - Math.PI / 2;
+      fishRef.current.position.x = Math.sin(angle) * radius;
+      fishRef.current.position.z = Math.cos(angle) * radius;
+    }
   });
 
   return (

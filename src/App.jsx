@@ -16,8 +16,8 @@ import Joystick from '#character/Joystick.jsx';
 
 import soundOnIcon from '/icons/sound-on.svg';
 import soundOffIcon from '/icons/sound-off.svg';
-import { PostProcessing } from './postprocessing/PostProcessing.jsx';
-import { MAX_DPR } from './postprocessing/quality.js';
+import { PostProcessing } from '#postprocessing/PostProcessing.jsx';
+import { MAX_DPR } from '#postprocessing/quality.js';
 import { PrecompileScene } from './PrecompileScene.jsx';
 
 /* Tunnel */
@@ -95,7 +95,12 @@ const App = () => {
     hoverAnimation?.kill();
     startExperienceRef.current.style.pointerEvents = 'none';
 
-    useStore.setState({ experienceStarted: true });
+    // Locked in the same update, so no listener sees a started, unlocked
+    // experience before the intro pan (useThirdPersonCamera) unlocks it
+    useStore.setState({
+      experienceStarted: true,
+      introControlsLocked: !prefersReducedMotion(),
+    });
 
     gsap.to(startExperienceRef.current.style, {
       opacity: 0,

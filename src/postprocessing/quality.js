@@ -75,10 +75,6 @@ export class QualityGovernor {
     this.trying = false;
   }
 
-  get step() {
-    return this.steps[this.level];
-  }
-
   /** A frame `ms` long, ending at `now` ms: true when the step changes. */
   frame(ms, now) {
     if (ms > GAP || now < this.settledAt) {

@@ -24,11 +24,12 @@ import {
   vec4,
 } from 'three/tsl';
 
+import { flowField } from '#shaders/includes/flowField.js';
 import { rotate2d } from '#shaders/includes/rotate2d.js';
 import { uniformControls } from '#debug/uniformControls.js';
 
 // Potion shader defaults
-export const POTION_DEFAULTS = {
+const POTION_DEFAULTS = {
   deepColor: '#429852',
   midColor: '#30e011',
   brightColor: '#35d567',
@@ -62,8 +63,8 @@ export const POTION_DEFAULTS = {
 };
 
 /** Uniform nodes of the cauldron potion, from its defaults. */
-const createCauldronPotionUniforms = (defaults, bounds) => {
-  const d = defaults;
+const createCauldronPotionUniforms = bounds => {
+  const d = POTION_DEFAULTS;
   return {
     uPotionCenter: uniform(bounds.center),
     uPotionHalfSize: uniform(bounds.halfSize),
@@ -125,24 +126,19 @@ const createCauldronPotionMaterial = (u, noiseTexture) => {
     const perlin = uv => texture(noiseTexture, uv).g;
 
     // One shared three-sample flow field drives every visual layer
-    const noiseUv = potionPosition
-      .mul(u.uDistortionScale)
-      .mul(0.42)
-      .add(
-        vec2(
-          time.mul(u.uDistortionSpeed),
-          time.mul(u.uDistortionSpeed).mul(-0.73)
-        )
-      )
-      .toVar();
-    const noiseX = perlin(noiseUv).toVar();
-    const noiseY = perlin(noiseUv.add(vec2(17.31, 41.73))).toVar();
+    const { noiseUv, noiseX, noiseY, distortion, centerStability } = flowField(
+      perlin,
+      potionPosition,
+      {
+        scale: u.uDistortionScale,
+        speed: u.uDistortionSpeed,
+        radius: baseRadius,
+      }
+    );
     const detailNoise = perlin(
       noiseUv.mul(2.67).add(vec2(-9.17, 13.41))
     ).toVar();
 
-    const distortion = vec2(noiseX, noiseY).mul(2).sub(1);
-    const centerStability = smoothstep(0.02, 0.55, baseRadius);
     const flowPosition = rotate2d(time.mul(u.uRotationSpeed))
       .mul(potionPosition)
       .add(

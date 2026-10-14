@@ -51,10 +51,8 @@ const ForgeLavaPlane = ({ bellowsMesh }) => {
   // (`blowerClosed`, as named in Blender, animated by the 'details' clip on
   // the island mixer), so the glow can never drift out of sync with the
   // bellows
-  const bellowsIndex = bellowsMesh?.morphTargetDictionary?.blowerClosed;
+  const bellowsIndex = bellowsMesh.morphTargetDictionary.blowerClosed;
 
-  // Voronoi (R) and perlin (G) share one packed texture; both sampler
-  // uniforms point at it
   const noiseTexture = useVoronoiPerlinTexture();
 
   const { lavaMaterial, uniforms } = useMemo(() => {
@@ -193,9 +191,8 @@ const ForgeLavaPlane = ({ bellowsMesh }) => {
   );
 
   useFrame(() => {
-    const influences = bellowsMesh?.morphTargetInfluences;
-    const gasp =
-      influences && bellowsIndex !== undefined ? influences[bellowsIndex] : 0;
+    // 0 if the GLB loses the morph: undefined would turn the intensity NaN
+    const gasp = bellowsMesh.morphTargetInfluences[bellowsIndex] ?? 0;
 
     const { base, peak } = gaspParamsRef.current;
     uniforms.uIntensity.value = base + (peak - base) * gasp;

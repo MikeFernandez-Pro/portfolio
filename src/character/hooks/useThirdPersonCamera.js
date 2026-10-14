@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import gsap from 'gsap';
 import * as THREE from 'three/webgpu';
@@ -11,8 +11,7 @@ import {
 } from '#utils/reducedMotion.js';
 
 const CAMERA_FOLLOW_HEIGHT = 5.2;
-const CAMERA_FOLLOW_DISTANCE_MOBILE = 7.5;
-const CAMERA_FOLLOW_DISTANCE_DESKTOP = 5.5;
+const CAMERA_FOLLOW_DISTANCE = IS_MOBILE_DEVICE ? 7.5 : 5.5;
 
 // Camera offset before the intro pan (also the Canvas camera's start)
 export const CAMERA_INITIAL_OFFSET = { x: -3.5, y: 17.4, z: 29.6 };
@@ -26,21 +25,20 @@ const CAMERA_POSITION = new THREE.Vector3(0, 0, 0);
 const LERP_CAMERA_POSITION = new THREE.Vector3(
   0,
   CAMERA_FOLLOW_HEIGHT,
-  IS_MOBILE_DEVICE
-    ? CAMERA_FOLLOW_DISTANCE_MOBILE
-    : CAMERA_FOLLOW_DISTANCE_DESKTOP
+  CAMERA_FOLLOW_DISTANCE
 );
-let CAMERA_OFFSET = new THREE.Vector3(
+const CAMERA_OFFSET = new THREE.Vector3(
   CAMERA_INITIAL_OFFSET.x,
   CAMERA_INITIAL_OFFSET.y,
   CAMERA_INITIAL_OFFSET.z
 );
 
+const cameraOffsetOnMouseMove = event => {
+  CAMERA_OFFSET.x = ((event.clientX / window.innerWidth) * 2 - 1) * 0.5;
+};
+
 export function useThirdPersonCamera(characterBodyRef) {
   const lastStoreUpdateRef = useRef(0);
-  const cameraOffsetOnMouseMove = useCallback(event => {
-    CAMERA_OFFSET.x = ((event.clientX / window.innerWidth) * 2 - 1) * 0.5;
-  }, []);
 
   useFrame((state, delta) => {
     const characterPosition = characterBodyRef.current.translation();
@@ -88,14 +86,10 @@ export function useThirdPersonCamera(characterBodyRef) {
     const unsubExperienceStarted = subscribeWhenSet(
       state => state.experienceStarted,
       () => {
-        const followDistance = IS_MOBILE_DEVICE
-          ? CAMERA_FOLLOW_DISTANCE_MOBILE
-          : CAMERA_FOLLOW_DISTANCE_DESKTOP;
-
         // Reduced motion: cut to the gameplay angle instead of the 5s pan.
         // Snap the lerp target too, or the follow damping would still swoop
         if (prefersReducedMotion()) {
-          CAMERA_OFFSET.set(0, 4, followDistance);
+          CAMERA_OFFSET.set(0, 4, CAMERA_FOLLOW_DISTANCE);
           const characterPosition = characterBodyRef.current?.translation();
           if (characterPosition) {
             LERP_CAMERA_POSITION.set(
@@ -107,8 +101,8 @@ export function useThirdPersonCamera(characterBodyRef) {
           return;
         }
 
-        // Character can't move until the pan is almost over
-        useStore.setState({ introControlsLocked: true });
+        // App locks the controls with experienceStarted (outside reduced
+        // motion); the character can move once the pan is almost over
         unlockControlsCall = gsap.delayedCall(INTRO_CONTROLS_UNLOCK_AT, () =>
           useStore.setState({ introControlsLocked: false })
         );
@@ -117,7 +111,7 @@ export function useThirdPersonCamera(characterBodyRef) {
           duration: CAMERA_INTRO_DURATION,
           x: 0,
           y: 4,
-          z: followDistance,
+          z: CAMERA_FOLLOW_DISTANCE,
           ease: 'power3.out',
         });
       }
@@ -140,5 +134,5 @@ export function useThirdPersonCamera(characterBodyRef) {
         window.removeEventListener('mousemove', cameraOffsetOnMouseMove);
       }
     };
-  }, [cameraOffsetOnMouseMove]);
+  }, []);
 }

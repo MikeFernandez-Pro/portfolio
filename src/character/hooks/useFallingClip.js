@@ -16,7 +16,7 @@ const DEFAULT_FALLING_BODY_ANGLE = 56;
 const PITCH_AXIS = new THREE.Vector3(1, 0, 0);
 
 // Write the pitched hips pose into the falling clip's hips keyframe. `chain`
-// maps the pitch (expressed in character space, like the old mesh tilt) into
+// maps the pitch (expressed in character space) into
 // the hips' parent space; live-updating the track values is picked up by the
 // mixer on the next frame
 const bakeFallingBodyAngle = ({ track, rest, chain }, angle) => {

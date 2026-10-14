@@ -213,8 +213,8 @@ const windowDefaults = {
   decay: 1,
   decayPower: 1.4,
   specularPower: 1,
-  // Window-end cap of the ray beam: WindowRay local (-19.28, -0.94, 3.04)
-  // through the island group transform (x0.45, +(-1.35, 2.25, -15))
+  // Near the window-end cap of the ray beam (WindowRay local x -19.28
+  // through the island transform), y and z hand-tuned
   position: [-10.03, 1.43, -13.77],
 };
 
@@ -225,8 +225,8 @@ const well = {
   decay: 0.385,
   decayPower: 1.6,
   specularPower: 1,
-  // Just above the water disc: Well.jsx local (15.45, -1.82, 11.2) through
-  // the island group transform (x0.45, +(-1.35, 2.25, -15))
+  // Above the water disc: Well.jsx local (15.45, 11.2) xz through the
+  // island transform, y hand-tuned
   position: [5.6, 1.9, -9.96],
 };
 

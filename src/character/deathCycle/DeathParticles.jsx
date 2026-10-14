@@ -20,7 +20,9 @@ import { useControls } from '#debug/useControls.jsx';
 import { uniformControls } from '#debug/uniformControls.js';
 import { CHARACTER_CAPSULE } from '#character/hooks/useCharacterBody.js';
 import { registerDeathParticles, targets } from './targets.js';
+import { RESPAWN_DEFAULTS } from './respawnAnimation.js';
 import {
+  createGlowPointsMaterial,
   createParticleSprite,
   particleAttribute,
   pointCoord,
@@ -47,7 +49,7 @@ const DEATH_PARTICLES_DEFAULTS = {
   duration: 1,
   riseHeight: 0.69,
   size: 0.044,
-  color: '#25c447', // matches the respawn voronoi lava
+  color: RESPAWN_DEFAULTS.charColor, // matches the respawn voronoi lava
   intensity: 9.01, // > bloom threshold (2) so the motes glow
 };
 
@@ -166,11 +168,7 @@ const DeathParticles = () => {
     // x: rise speed multiplier, y: start delay, z: sway phase
     const aRandom = particleAttribute(randoms, 3);
 
-    const material = new THREE.PointsNodeMaterial({
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    });
+    const material = createGlowPointsMaterial();
 
     // Per-particle life: delayed start (staggers the burst), normalized so
     // every particle still ends its life exactly when uProgress reaches 1
@@ -191,7 +189,7 @@ const DeathParticles = () => {
       )
     );
 
-    // Dust motes shrink as they rise (gl_PointSize * uResolution.y / -viewZ)
+    // Dust motes shrink as they rise
     material.sizeNode = uniforms.uSize
       .mul(aScale)
       .mul(float(1).sub(life.mul(0.6)))

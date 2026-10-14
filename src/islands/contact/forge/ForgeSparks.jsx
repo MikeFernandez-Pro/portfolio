@@ -18,6 +18,7 @@ import {
 } from 'three/tsl';
 
 import {
+  createGlowPointsMaterial,
   createParticleSprite,
   particleAttribute,
   pointCoord,
@@ -41,16 +42,16 @@ for (let i = 0; i < COUNT; i++) {
 }
 
 /**
- * Burst of sparks off the anvil at each hammer strike. Forge.jsx tweens
- * uProgress (0 -> 1) through forgeSparksRef, which holds the uniforms.
+ * Burst of sparks off the anvil at each hammer strike, driven by the
+ * `progress` uniform (0 -> 1) that Forge.jsx tweens.
  */
 const ForgeSparks = props => {
-  const { forgeSparksRef } = props;
+  const { progress } = props;
 
   const { sparks, uniforms } = useMemo(() => {
     const uniforms = {
       uSize: uniform(FORGE_SPARKS_SIZE),
-      uProgress: uniform(0),
+      uProgress: progress,
       uColor: uniform(new THREE.Color(FORGE_SPARKS_COLOR)),
       uIntensity: uniform(FORGE_SPARKS_INTENSITY),
     };
@@ -59,11 +60,7 @@ const ForgeSparks = props => {
     const aAngle = particleAttribute(angles, 1);
     const aSpeed = particleAttribute(speed, 1);
 
-    const material = new THREE.PointsNodeMaterial({
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    });
+    const material = createGlowPointsMaterial();
 
     // Explodes outward over the first 40% of the strike, then holds; a
     // finished strike (progress 1) collapses back to the anvil
@@ -80,8 +77,8 @@ const ForgeSparks = props => {
     ).mul(explodingProgress);
     material.positionNode = sparkPosition;
 
-    // gl_PointSize = uSize * uResolution.y * aSize, shrunk as the spark
-    // climbs: min(s, s / (y * 4.5)) with a floor where y reaches 0
+    // Shrunk as the spark climbs: min(s, s / (y * 4.5)), with a floor
+    // where y reaches 0
     material.sizeNode = uniforms.uSize
       .mul(aSize)
       .mul(min(1, max(sparkPosition.y.mul(4.5), 1e-6).reciprocal()))
@@ -100,11 +97,9 @@ const ForgeSparks = props => {
     sparks.position.set(-9.93, -1.11, 9.16);
 
     return { sparks, uniforms };
-  }, []);
+  }, [progress]);
 
   useEffect(() => () => sparks.material.dispose(), [sparks]);
-
-  forgeSparksRef.current = uniforms;
 
   const control = uniformControls(uniforms);
   useControls('ForgeSparks', {
