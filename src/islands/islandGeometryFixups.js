@@ -6,6 +6,26 @@ import * as THREE from 'three/webgpu';
 const movesVertex = (deltas, i) =>
   deltas.getX(i) !== 0 || deltas.getY(i) !== 0 || deltas.getZ(i) !== 0;
 
+// All three plate bases sampled tiny solid patches inside the old wave.
+// Move only those UVs onto a solid part of the crown's lower-left band;
+// its transparent cutouts must not punch holes in the other plates' bases.
+export const remapProjectPlateBases = nodes => {
+  for (const name of ['island_12', 'island_13', 'island_14']) {
+    const geometry = nodes[name].geometry;
+    if (geometry.userData.projectPlateBasesRemapped) continue;
+    const uv = geometry.attributes.uv;
+    for (let i = 0; i < uv.count; i++) {
+      const x = uv.getX(i) * 4096;
+      const y = uv.getY(i) * 4096;
+      if (x >= 1636 && x <= 1655 && y >= 2790 && y <= 2811) {
+        uv.setXY(i, 1657.5 / 4096, 2773.5 / 4096);
+      }
+    }
+    uv.needsUpdate = true;
+    geometry.userData.projectPlateBasesRemapped = true;
+  }
+};
+
 // Copy of `geometry` holding only the given triangles (and the vertices they
 // use), with its morph targets or not
 const subsetGeometry = (geometry, triangles, { skinned }) => {

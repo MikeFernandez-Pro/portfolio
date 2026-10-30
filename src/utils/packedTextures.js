@@ -101,9 +101,9 @@ const atlasRect = (left, top, width, height) => ({
 
 // Tile layout of the screens atlas (pixel boxes from scripts/pack-textures.mjs)
 const SCREENS_ATLAS_RECTS = {
-  halloweenChallenge: atlasRect(0, 0, 512, 342),
+  justASimpleTree: atlasRect(0, 0, 512, 342),
   hoHoNo: atlasRect(512, 0, 512, 342),
-  doanTenConVat: atlasRect(0, 342, 512, 342),
+  aCrownOfIceAndFire: atlasRect(0, 342, 512, 342),
   // Inset in its 256px tile at (512, 342): 4px off the right, where the
   // source art's "r" tail runs into the edge and showed as a cut-off line;
   // 2px off the left and top, which touch the neighbor screenshots (edge

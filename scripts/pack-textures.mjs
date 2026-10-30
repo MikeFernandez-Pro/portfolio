@@ -19,13 +19,38 @@ const ATLAS = {
   width: 1024,
   height: 1024,
   tiles: [
-    { file: 'halloween-scene.png', left: 0, top: 0 },
+    { file: 'just-a-simple-tree.png', left: 0, top: 0 },
     { file: 'ho-ho-no.png', left: 512, top: 0 },
-    { file: 'doan-ten-con-vat.png', left: 0, top: 342 },
+    { file: 'a-crown-of-ice-and-fire.png', left: 0, top: 342 },
     { file: 'interactive-link.webp', left: 512, top: 342 },
     { file: 'x2.png', left: 768, top: 342 },
   ],
 };
+
+// Symbol UV rectangles in the original 4096px island atlas.
+const PLATE_TILES = [
+  {
+    file: 'just-a-simple-tree-plate.png',
+    left: 1067,
+    top: 2515,
+    width: 417,
+    height: 413,
+  },
+  {
+    file: 'a-crown-of-ice-and-fire-plate.png',
+    left: 1484,
+    top: 2492,
+    width: 445,
+    height: 440,
+  },
+  {
+    file: 'ho-ho-no-plate.png',
+    left: 1647,
+    top: 2108,
+    width: 394,
+    height: 387,
+  },
+];
 
 // Grabs the red channel's raw bytes without any color-space conversion,
 // so the packed data stays exactly as authored (sampled as linear at runtime).
@@ -217,9 +242,8 @@ const kb = v => `${(v / 1024).toFixed(0)} kB`;
 // with mipmaps, then deletes the temp file
 const encodeKtx2 = async ({ sourcePath, ktx2Path, prepare, args }) => {
   const tempPath = ktx2Path.replace(/\.ktx2$/, '.tmp.png');
-  await prepare(sharp(sourcePath))
-    .png({ compressionLevel: 1 })
-    .toFile(tempPath);
+  const prepared = await prepare(sharp(sourcePath));
+  await prepared.png({ compressionLevel: 1 }).toFile(tempPath);
 
   const result = spawnSync(
     'ktx',
@@ -261,7 +285,31 @@ if (spawnSync('ktx', ['--version']).error) {
   await encodeKtx2({
     sourcePath: 'extracted-textures/islandTexture4k.png',
     ktx2Path: path.join(TEXTURES_DIR, 'islandTexture2k.ktx2'),
-    prepare: image => image.resize(2048, 2048),
+    prepare: async image => {
+      // Replace the old pumpkin, wave and pinwheel symbols. Copy RGBA rows
+      // so alpha clears the old artwork without changing neighboring tiles.
+      // islandGeometryFixups.js keeps the plate bases on solid crown pixels.
+      const { data, info } = await image
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      for (const { file, left, top, width, height } of PLATE_TILES) {
+        const tile = await sharp(path.join(TEXTURES_DIR, file))
+          .resize(width, height, { fit: 'fill' })
+          .ensureAlpha()
+          .raw()
+          .toBuffer();
+        for (let row = 0; row < height; row++) {
+          tile.copy(
+            data,
+            ((top + row) * info.width + left) * 4,
+            row * width * 4,
+            (row + 1) * width * 4
+          );
+        }
+      }
+      return sharp(data, { raw: info }).resize(2048, 2048);
+    },
     // No RDO: it banded the atlas's smooth gradients (RDO trades block
     // quality for zstd size; dropping it costs ~0.4 MB on disk, GPU
     // memory is unchanged)

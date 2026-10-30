@@ -10,14 +10,14 @@ export const PROJECTS = {
     screen: SCREENS_ATLAS_RECTS.hoHoNo,
     plateMaterial: 'portalPlate',
   },
-  doanTenConVat: {
-    url: 'https://doan-ten-con-vat.vercel.app/',
-    screen: SCREENS_ATLAS_RECTS.doanTenConVat,
+  aCrownOfIceAndFire: {
+    url: 'https://mikefernandez-pro.github.io/a-crown-of-ice-and-fire/',
+    screen: SCREENS_ATLAS_RECTS.aCrownOfIceAndFire,
     plateMaterial: 'seaPlate',
   },
-  halloweenChallenge: {
-    url: 'https://halloween-challenge.vercel.app/',
-    screen: SCREENS_ATLAS_RECTS.halloweenChallenge,
+  justASimpleTree: {
+    url: 'https://justasimpletree.com/',
+    screen: SCREENS_ATLAS_RECTS.justASimpleTree,
     plateMaterial: 'halloweenPlate',
   },
 };

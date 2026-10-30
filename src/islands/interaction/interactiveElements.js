@@ -83,7 +83,7 @@ export const INTERACTIVE_ELEMENTS = [
     },
   },
   {
-    id: 'doanTenConVat',
+    id: 'aCrownOfIceAndFire',
     kind: 'plate',
     sensor: {
       position: [-15.085, 4.4, -34.495],
@@ -92,7 +92,7 @@ export const INTERACTIVE_ELEMENTS = [
     },
   },
   {
-    id: 'halloweenChallenge',
+    id: 'justASimpleTree',
     kind: 'plate',
     sensor: {
       position: [-17.14, 4.4, -34.495],

@@ -30,6 +30,7 @@ import {
   candleFlamePositions,
   dropEmptyMorphTargets,
   dropVercelSign,
+  remapProjectPlateBases,
   splitIslandTerrain,
 } from './islandGeometryFixups.js';
 import { ISLAND_POSITION, ISLAND_SCALE, islandToWorld } from './islandSpace.js';
@@ -99,6 +100,7 @@ const Islands = () => {
   const staticTerrain = useMemo(() => {
     dropVercelSign(nodes);
     dropEmptyMorphTargets(nodes);
+    remapProjectPlateBases(nodes);
     return splitIslandTerrain(nodes);
   }, [nodes]);
 
