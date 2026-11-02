@@ -3,10 +3,11 @@ import { useFrame, useThree } from '@react-three/fiber';
 
 import { loadInspector } from '#debug/inspectorControls.jsx';
 
-// The Inspector times frames between begin()/finish(), which three only
-// calls from renderer.setAnimationLoop — R3F runs its own scheduler, so the
-// frame is bracketed here: begin() in 'start' (app logic counts in the CPU
-// time), finish() in 'finish', after the post-processing render
+// The Inspector times frames between begin()/finish(), which three calls from
+// its internal rAF loop — R3F runs its own scheduler, so the frame is bracketed
+// here: begin() in 'start' (app logic counts in the CPU time, and it replaces
+// the frame three opened), finish() in 'finish', after the post-processing
+// render
 const BEGIN_FRAME = { phase: 'start' };
 const END_FRAME = { phase: 'finish' };
 

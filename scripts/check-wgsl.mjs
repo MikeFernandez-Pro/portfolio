@@ -159,7 +159,7 @@ const unassignedReads = wgsl => {
         assigned: new Set(current().assigned),
       });
     } else {
-      const target = /^(nodeVar\d+)\s*=(?!=)/.exec(line);
+      const target = /^(?:var )?(nodeVar\d+)(?: : [^=]+)?\s*=(?!=)/.exec(line);
       read(target ? line.slice(target[0].length) : line, line);
       if (target) current().assigned.add(target[1]);
     }

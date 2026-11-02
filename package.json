@@ -54,7 +54,7 @@
     "howler": "^2.2.4",
     "react": "~19.2.8",
     "react-dom": "~19.2.8",
-    "three": "0.186.1",
+    "three": "0.187.0",
     "three-mesh-bvh": "^0.9.16",
     "tunnel-rat": "^0.1.2",
     "zustand": "5.0.15"
