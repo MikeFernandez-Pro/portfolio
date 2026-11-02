@@ -21,7 +21,7 @@ const ATLAS = {
   tiles: [
     { file: 'just-a-simple-tree.png', left: 0, top: 0 },
     { file: 'ho-ho-no.png', left: 512, top: 0 },
-    { file: 'a-crown-of-ice-and-fire.png', left: 0, top: 342 },
+    { file: 'a-goose-tale.png', left: 0, top: 342 },
     { file: 'interactive-link.webp', left: 512, top: 342 },
     { file: 'x2.png', left: 768, top: 342 },
   ],
@@ -37,7 +37,7 @@ const PLATE_TILES = [
     height: 413,
   },
   {
-    file: 'a-crown-of-ice-and-fire-plate.png',
+    file: 'a-goose-tale-plate.png',
     left: 1484,
     top: 2492,
     width: 445,
@@ -288,7 +288,7 @@ if (spawnSync('ktx', ['--version']).error) {
     prepare: async image => {
       // Replace the old pumpkin, wave and pinwheel symbols. Copy RGBA rows
       // so alpha clears the old artwork without changing neighboring tiles.
-      // islandGeometryFixups.js keeps the plate bases on solid crown pixels.
+      // islandGeometryFixups.js keeps the plate bases on solid rat pixels.
       const { data, info } = await image
         .ensureAlpha()
         .raw()

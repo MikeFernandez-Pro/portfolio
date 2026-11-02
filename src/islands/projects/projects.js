@@ -10,9 +10,9 @@ export const PROJECTS = {
     screen: SCREENS_ATLAS_RECTS.hoHoNo,
     plateMaterial: 'portalPlate',
   },
-  aCrownOfIceAndFire: {
-    url: 'https://mikefernandez-pro.github.io/a-crown-of-ice-and-fire/',
-    screen: SCREENS_ATLAS_RECTS.aCrownOfIceAndFire,
+  aGooseTale: {
+    url: 'https://mikefernandez-pro.github.io/a-goose-tale/',
+    screen: SCREENS_ATLAS_RECTS.aGooseTale,
     plateMaterial: 'seaPlate',
   },
   justASimpleTree: {

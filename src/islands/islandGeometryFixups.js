@@ -7,7 +7,7 @@ const movesVertex = (deltas, i) =>
   deltas.getX(i) !== 0 || deltas.getY(i) !== 0 || deltas.getZ(i) !== 0;
 
 // All three plate bases sampled tiny solid patches inside the old wave.
-// Move only those UVs onto a solid part of the crown's lower-left band;
+// Move only those UVs onto a solid part of the rat symbol's neck;
 // its transparent cutouts must not punch holes in the other plates' bases.
 export const remapProjectPlateBases = nodes => {
   for (const name of ['island_12', 'island_13', 'island_14']) {
@@ -18,7 +18,7 @@ export const remapProjectPlateBases = nodes => {
       const x = uv.getX(i) * 4096;
       const y = uv.getY(i) * 4096;
       if (x >= 1636 && x <= 1655 && y >= 2790 && y <= 2811) {
-        uv.setXY(i, 1657.5 / 4096, 2773.5 / 4096);
+        uv.setXY(i, 1629.5 / 4096, 2621.5 / 4096);
       }
     }
     uv.needsUpdate = true;

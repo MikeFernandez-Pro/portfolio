@@ -83,7 +83,7 @@ export const INTERACTIVE_ELEMENTS = [
     },
   },
   {
-    id: 'aCrownOfIceAndFire',
+    id: 'aGooseTale',
     kind: 'plate',
     sensor: {
       position: [-15.085, 4.4, -34.495],
