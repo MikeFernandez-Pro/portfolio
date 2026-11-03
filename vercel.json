@@ -1,0 +1,24 @@
+{
+  "redirects": [
+    {
+      "source": "/justasimpletree",
+      "destination": "https://justasimpletree.com",
+      "permanent": false
+    },
+    {
+      "source": "/ho-ho-no",
+      "destination": "https://mikefernandez-pro.github.io/ho-ho-no/",
+      "permanent": false
+    },
+    {
+      "source": "/a-goose-tale",
+      "destination": "https://mikefernandez-pro.github.io/a-goose-tale/",
+      "permanent": false
+    },
+    {
+      "source": "/a-crown-of-ice-and-fire",
+      "destination": "https://mikefernandez-pro.github.io/a-crown-of-ice-and-fire/",
+      "permanent": false
+    }
+  ]
+}
